@@ -20,6 +20,7 @@
     "db:types": "supabase gen types typescript --local > lib/supabase/types.ts",
     "ai:spike": "tsx scripts/gemma-shona-spike.ts",
     "ai:verify": "tsx --env-file=.env.local scripts/gemini-verify.ts",
+    "narrate:warm": "tsx --env-file=.env.local scripts/warm-narratives.ts",
     "ping": "tsx scripts/ping-supabase.ts",
     "sim:start": "tsx scripts/sim-runner.ts"
   },
