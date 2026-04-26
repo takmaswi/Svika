@@ -65,7 +65,11 @@ const STOPS = {
 };
 
 const SCRIPTS_DIR = "scripts";
-const REPORT_PATH = "docs/PHASE-3-5-REHEARSAL.md";
+// The human-written summary lives at docs/PHASE-3-5-REHEARSAL.md and is the
+// authoritative report. The orchestrator writes raw per-stage evidence
+// (sheet text + full layer-state JSON) to a sibling file so the summary
+// stays clean and re-runs don't clobber the editorial copy.
+const REPORT_PATH = "docs/PHASE-3-5-REHEARSAL-RAW.md";
 
 interface StageEvidence {
   stage: number;
@@ -222,6 +226,10 @@ async function captureStage(
   kind: string,
 ): Promise<void> {
   const filename = join(SCRIPTS_DIR, `rehearsal-stage-${stage}.png`);
+  // Let React's render → useEffect → mapboxgl paint chain settle before we
+  // probe the layer state. Without this the sheet flips first and the layer
+  // filter can lag behind by one frame, producing inconsistent evidence.
+  await page.waitForTimeout(700);
   await page.screenshot({ path: filename });
   const sheet = await readSheet(page);
   const layers = await readLayers(page);
@@ -372,6 +380,116 @@ async function ensureBuilt(client: SupabaseClient<Database>): Promise<void> {
   }
 }
 
+// Plan label must match a row in seed/network.json's trip_plans so the
+// active-journey loader can reconstruct the legs.
+const PLAN_LABEL = "Lomagundi walking transfer (fastest)";
+const PLAN_TOTAL_FARE = 1.5;
+const PLAN_TOTAL_DURATION = 31;
+const ORIGIN_STOP = "sp_heights_start_north";
+const DEST_STOP = "sp_avondale_shops";
+const LEG1_BOARD = "sp_heights_start_north";
+const LEG1_ALIGHT = "sp_second_lomagundi";
+const LEG2_BOARD = "sp_lomagundi_kinggeorge_pickup";
+const LEG2_ALIGHT = "sp_avondale_shops";
+
+function randomCode(): string {
+  return String(Math.floor(Math.random() * 1000)).padStart(3, "0");
+}
+
+interface DbBookingResult {
+  trip_id: string;
+  leg1_ticket_id: string;
+  leg2_ticket_id: string;
+  leg1_code: string;
+  leg2_code: string;
+}
+
+/**
+ * Book a Heights → Avondale trip directly via DB writes — bypasses the AI
+ * parser so the rehearsal is fully deterministic. Mirrors what
+ * `bookTripAction` would do for the Lomagundi walking-transfer plan.
+ */
+async function bookViaDb(
+  client: SupabaseClient<Database>,
+  tendaiId: string,
+): Promise<DbBookingResult> {
+  const { data: tripData, error: tripErr } = await client
+    .from("trips")
+    .insert({
+      originating_user_id: tendaiId,
+      origin_stop_id: ORIGIN_STOP,
+      destination_stop_id: DEST_STOP,
+      selected_option_label: PLAN_LABEL,
+      total_fare_usd: PLAN_TOTAL_FARE,
+      total_duration_minutes: PLAN_TOTAL_DURATION,
+    })
+    .select("id")
+    .single();
+  if (tripErr || !tripData) throw new Error("trip insert failed: " + tripErr?.message);
+  const trip_id = tripData.id;
+
+  async function insertTicket(
+    routeId: string,
+    board: string,
+    alight: string,
+    fare: number,
+  ): Promise<{ id: string; access_code: string }> {
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      const access_code = randomCode();
+      const { data, error } = await client
+        .from("tickets")
+        .insert({
+          access_code,
+          route_id: routeId,
+          board_at_stop_id: board,
+          alight_at_stop_id: alight,
+          fare_usd: fare,
+          originating_user_id: tendaiId,
+          current_holder_user_id: tendaiId,
+          status: "issued",
+          kind: "passenger",
+        })
+        .select("id, access_code")
+        .single();
+      if (!error && data) return data as { id: string; access_code: string };
+      if (error && error.code !== "23505") {
+        throw new Error("ticket insert failed: " + error.message);
+      }
+    }
+    throw new Error("could not allocate unique access code in 12 attempts");
+  }
+
+  const leg1 = await insertTicket(LEG1_ROUTE, LEG1_BOARD, LEG1_ALIGHT, 1.0);
+  await client
+    .from("trip_tickets")
+    .insert({ trip_id, ticket_id: leg1.id, sequence: 0 });
+
+  const leg2 = await insertTicket(LEG2_ROUTE, LEG2_BOARD, LEG2_ALIGHT, 0.5);
+  await client
+    .from("trip_tickets")
+    .insert({ trip_id, ticket_id: leg2.id, sequence: 1 });
+
+  // Deduct fare so the persona-balance line in the header reads $3.50.
+  const { data: userRow } = await client
+    .from("users")
+    .select("credit_balance_usd")
+    .eq("id", tendaiId)
+    .maybeSingle();
+  const current = Number(userRow?.credit_balance_usd ?? 5);
+  await client
+    .from("users")
+    .update({ credit_balance_usd: Number((current - PLAN_TOTAL_FARE).toFixed(2)) })
+    .eq("id", tendaiId);
+
+  return {
+    trip_id,
+    leg1_ticket_id: leg1.id,
+    leg2_ticket_id: leg2.id,
+    leg1_code: leg1.access_code,
+    leg2_code: leg2.access_code,
+  };
+}
+
 async function moveVehicle(
   client: SupabaseClient<Database>,
   vehicleId: string,
@@ -442,33 +560,14 @@ async function main(): Promise<void> {
     if (msg.type() === "error") console.error("[console error]", msg.text());
   });
 
-  log("1. open /?as=tendai (search bar should be visible after drain)");
+  log("1. book Heights → Avondale (Lomagundi walking-transfer) directly via DB");
+  const booking = await bookViaDb(client, tendaiId);
+  console.log(`    trip=${booking.trip_id}`);
+  console.log(`    leg1 code=${booking.leg1_code} leg2 code=${booking.leg2_code}`);
+
+  log("2. open /?as=tendai — Journey sheet should already be active");
   await page.goto(`${BASE}/?as=tendai`, { waitUntil: "domcontentloaded" });
-  await page.waitForSelector("#trip-search", { timeout: 30_000 });
-
-  log("2. click 'Heights to Avondale' preset");
-  await page.getByRole("button", { name: "Heights to Avondale" }).click();
-  try {
-    await page
-      .getByRole("button", { name: /Buy for \$1\.50/ })
-      .first()
-      .waitFor({ timeout: 60_000 });
-  } catch (err) {
-    const headerText = await page.locator("header").innerText().catch(() => "");
-    const bodyText = await page.locator("body").innerText().catch(() => "");
-    console.error("    plan list never rendered.");
-    console.error("    HEADER:", headerText);
-    console.error("    BODY (first 800 chars):", bodyText.slice(0, 800));
-    await page.screenshot({ path: "scripts/rehearsal-search-fail.png" });
-    throw err;
-  }
-
-  log("3. buy fastest plan ($1.50)");
-  await page.getByRole("button", { name: /Buy for \$1\.50/ }).click();
-  await page.getByRole("heading", { name: "Wallet" }).waitFor({ timeout: 15_000 });
-  await page.waitForTimeout(800);
-  await page.getByRole("button", { name: /Close wallet/ }).first().click();
-  await page.waitForTimeout(800);
+  await page.waitForSelector('[data-testid="journey-sheet"]', { timeout: 30_000 });
 
   // Pre-seed kombi position cache so the assigned-vehicle halo + ETA chip have
   // something to lock onto from the very start of the rehearsal.
@@ -478,7 +577,7 @@ async function main(): Promise<void> {
   ]);
   await page.waitForTimeout(400);
 
-  log("4. resolve trip + leg tickets");
+  log("3. resolve trip + leg tickets");
   const { trip_id, legs } = await resolveLatestTripLegs(client, tendaiId);
   if (legs.length !== 2) {
     throw new Error(`expected 2 legs in the new trip, got ${legs.length}`);
@@ -496,16 +595,9 @@ async function main(): Promise<void> {
 
   // ---------------------- STAGE 2: boarding (flash) ------------------------
   log("STAGE 2 — boarding (leg 1 ticket flips to redeemed)");
-  await redeemTicket(client, leg1, LEG1_VEHICLE, tendaiId);
-  // The ticket-redeemed broadcast triggers a router.refresh() in the Journey
-  // sheet; wait for the post-refresh stage to flip away from walk-to-board.
-  await waitForKind(
-    page,
-    (k) => k === "boarding" || k === "in-transit",
-    15_000,
-  );
-  // Position vehicle near the board stop so ETA chip and halo are visibly
-  // anchored to the assigned kombi.
+  // Position the vehicle at the board stop FIRST so the boarding screenshot
+  // shows the assigned kombi parked at the right place. Then redeem and poll
+  // aggressively for the ~1.1s flash window.
   await moveVehicle(
     client,
     LEG1_VEHICLE,
@@ -513,7 +605,12 @@ async function main(): Promise<void> {
     STOPS.heights_north[0],
     STOPS.heights_north[1],
   );
-  await page.waitForTimeout(400);
+  await redeemTicket(client, leg1, LEG1_VEHICLE, tendaiId);
+  await waitForKind(
+    page,
+    (k) => k === "boarding" || k === "in-transit",
+    15_000,
+  );
   await captureStage(page, 2, "boarding");
 
   // ---------------------- STAGE 3: in-transit ------------------------------
@@ -547,10 +644,12 @@ async function main(): Promise<void> {
     STOPS.lomagundi_kg[1],
   );
   await redeemTicket(client, leg2, LEG2_VEHICLE, tendaiId);
+  // Once leg 2 redeems, the active stage should advance to boarding-leg-2
+  // (flash window ~1.1s) and then settle into in-transit on leg 2 (idx=5).
   await waitForKind(
     page,
     (k, i) => k === "boarding-leg-2" || (k === "in-transit" && i === "5"),
-    15_000,
+    20_000,
   );
   await captureStage(page, 5, "boarding-leg-2");
 
@@ -576,10 +675,10 @@ async function main(): Promise<void> {
 
 function writeReport(items: StageEvidence[]): void {
   const lines: string[] = [];
-  lines.push("# Phase 3.5 Journey UX — production rehearsal");
+  lines.push("# Phase 3.5 rehearsal — raw per-stage evidence");
   lines.push("");
   lines.push(
-    "Drove the full six-stage Journey UX against `https://svika.vercel.app/?as=tendai` after draining Tendai's wallet and topping up to $5.00. Each stage's evidence below was captured from the live production page (no mocks, no local overrides).",
+    "Auto-generated by `scripts/phase3-5-rehearsal.ts`. The editorial summary lives in `docs/PHASE-3-5-REHEARSAL.md`. This file is the dump of sheet text and layer state captured at each stage on `https://svika.vercel.app/?as=tendai`.",
   );
   lines.push("");
   lines.push("Vehicles used:");

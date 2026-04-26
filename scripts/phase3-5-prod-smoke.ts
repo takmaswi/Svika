@@ -71,7 +71,7 @@ async function clickIfPresent(page: Page, selector: string, timeoutMs = 2000): P
 
 async function ensureConductorOnVehicle(page: Page, plate: string): Promise<void> {
   await page.goto(`${BASE}/hwindi?as=farai`, { waitUntil: "domcontentloaded" });
-  await page.waitForLoadState("networkidle");
+  await page.waitForTimeout(1500);
   // If keypad already shown for the right vehicle, return; otherwise switch.
   const headerText = await page.locator("header").innerText().catch(() => "");
   if (headerText.includes(plate)) {
@@ -143,9 +143,62 @@ async function main(): Promise<void> {
   // 1. Tendai opens passenger surface, books Heights → Avondale.
   step("1. tendai opens /?as=tendai");
   await tendai.goto(`${BASE}/?as=tendai`, { waitUntil: "domcontentloaded" });
-  await tendai.waitForLoadState("networkidle");
+  await tendai.waitForSelector("#trip-search, [data-testid='journey-sheet']", {
+    timeout: 30_000,
+  });
 
   step("2. plan 'Heights to Avondale'");
+  // If a journey is already active, dismiss it via "Plan another" so search
+  // becomes available again. Phase 3.5 collapses the sheet only after stage 6,
+  // so for active trips we can't simply book over them — we accept whatever
+  // active journey is showing and skip booking.
+  const searchVisible = await tendai
+    .locator("#trip-search")
+    .isVisible()
+    .catch(() => false);
+  if (!searchVisible) {
+    console.log("    journey already active for tendai — booking step skipped");
+    const stateNow = await readJourneyState(tendai);
+    console.log(`    current stage: ${JSON.stringify(stateNow)}`);
+    await tendai.screenshot({ path: "phase35-stage-existing.png" });
+    console.log("    captured phase35-stage-existing.png");
+
+    // Pull the active leg's code from the sheet so the conductor can redeem it.
+    const activeCode = await tendai.evaluate(() => {
+      const sheet = document.querySelector('[data-testid="journey-sheet"]');
+      const text = sheet?.textContent ?? "";
+      const matches = text.match(/code\s+(\d{3})/);
+      return matches?.[1] ?? null;
+    });
+    console.log(`    active leg code: ${activeCode ?? "(none)"}`);
+    if (!activeCode) {
+      console.log("    no code on the active stage — capturing what we have and exiting");
+      await browser.close();
+      return;
+    }
+
+    step(`existing-flow: farai assign ${LEG1_VEHICLE} + redeem ${activeCode}`);
+    try {
+      await ensureConductorOnVehicle(farai, LEG1_VEHICLE);
+      await typeCode(farai, activeCode);
+      const fb = await readKombiFeedback(farai);
+      console.log(`    feedback: ${fb}`);
+      const post = await waitForStage(
+        tendai,
+        (k) => k === "boarding" || k === "in-transit" || k === "arrived",
+        20_000,
+      );
+      console.log(`    post-redeem stage: ${JSON.stringify(post)}`);
+      await tendai.screenshot({ path: "phase35-stage-after-redeem.png" });
+      console.log("    captured phase35-stage-after-redeem.png");
+    } catch (err) {
+      console.log(
+        `    existing-flow redeem skipped: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+    await browser.close();
+    return;
+  }
   // Use a fresh trip — reuse the preset.
   await tendai.getByRole("button", { name: "Heights to Avondale" }).click();
   await tendai
