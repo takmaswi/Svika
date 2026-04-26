@@ -192,6 +192,9 @@ export default function PassengerMap({
       attributionControl: false,
     });
     mapRef.current = map;
+    // Expose for audit / smoke probes only. Read-only handle; no behaviour
+    // depends on this attachment.
+    (window as unknown as { __svikaMap?: mapboxgl.Map }).__svikaMap = map;
     map.addControl(new mapboxgl.AttributionControl({ compact: true }));
 
     map.on("load", () => {
@@ -358,6 +361,8 @@ export default function PassengerMap({
     return () => {
       map.remove();
       mapRef.current = null;
+      const w = window as unknown as { __svikaMap?: mapboxgl.Map | null };
+      if (w.__svikaMap === map) w.__svikaMap = null;
     };
     // Build the map exactly once per (network, token). `stage` and `journey`
     // are read via mutable refs so they don't tear the map down mid-load.

@@ -95,6 +95,53 @@ async function main(): Promise<void> {
   await page.screenshot({ path: "diag-mapbox-prod.png", fullPage: false });
   console.log("\n[diag] screenshot saved: diag-mapbox-prod.png");
 
+  // Inspect the live layer state — proves the Phase 3.5 paint pipeline is wired.
+  const layerState = await page.evaluate(() => {
+    type LayerEntry = {
+      id: string;
+      filter?: unknown;
+      lineOpacity?: unknown;
+      circleOpacity?: unknown;
+      circleRadius?: unknown;
+      featureCount?: number;
+    };
+    const map = (
+      window as unknown as {
+        __svikaMap?: {
+          getFilter: (id: string) => unknown;
+          getPaintProperty: (id: string, prop: string) => unknown;
+          querySourceFeatures: (
+            sourceId: string,
+            opts?: { sourceLayer?: string; filter?: unknown },
+          ) => unknown[];
+        };
+      }
+    ).__svikaMap;
+    if (!map) return { ok: false, reason: "no __svikaMap handle on window" };
+    const interesting = [
+      "svika-routes-base",
+      "svika-routes-highlight",
+      "svika-walking-line",
+      "svika-kombis-dot",
+      "svika-kombis-halo",
+    ];
+    const out: LayerEntry[] = [];
+    for (const id of interesting) {
+      const entry: LayerEntry = { id };
+      try { entry.filter = map.getFilter(id); } catch { /* */ }
+      try { entry.lineOpacity = map.getPaintProperty(id, "line-opacity"); } catch { /* */ }
+      try { entry.circleOpacity = map.getPaintProperty(id, "circle-opacity"); } catch { /* */ }
+      try { entry.circleRadius = map.getPaintProperty(id, "circle-radius"); } catch { /* */ }
+      out.push(entry);
+    }
+    let walkingFeatures = 0;
+    try { walkingFeatures = map.querySourceFeatures("svika-walking").length; } catch { /* */ }
+    let kombiFeatures = 0;
+    try { kombiFeatures = map.querySourceFeatures("svika-kombis").length; } catch { /* */ }
+    return { ok: true, layers: out, walkingFeatures, kombiFeatures };
+  });
+  console.log("[diag] phase 3.5 layer state:", JSON.stringify(layerState, null, 2));
+
   // Also probe the canvas pixel content directly: read a few pixels to see
   // if the WebGL context actually drew anything.
   const pixelProbe = await page.evaluate(() => {
