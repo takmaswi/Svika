@@ -45,6 +45,7 @@ audit-*.png
 best-bud-*.png
 mobile-*.png
 v1-*.png v2-*.png v3-*.png v4-*.png v5-*.png v6-*.png v7-*.png
+phase*-*.png
 
 # Cowork session artifacts
 .claude/sessions/

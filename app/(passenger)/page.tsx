@@ -1,8 +1,10 @@
+import PassengerMap from "@/components/PassengerMap";
+import { loadNetwork } from "@/lib/network/loadNetwork";
 import { resolvePersona } from "@/lib/personas";
 
 /**
  * Passenger surface — Tendai (default), Rudo (via ?as=rudo).
- * Phase 1: live kombi map + named stops.
+ * Phase 1: live kombi map + named stops, Realtime kombi positions.
  * Phase 2: trip planner, ticket purchase, wallet, transfer.
  */
 export default async function PassengerHome({
@@ -12,10 +14,12 @@ export default async function PassengerHome({
 }) {
   const params = await searchParams;
   const persona = await resolvePersona(params.as, "passenger");
+  const network = await loadNetwork();
+  const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
 
   return (
-    <main className="min-h-dvh">
-      <header className="sticky top-0 z-10 border-b border-svika-teal-100 bg-svika-stone/90 px-4 py-3 backdrop-blur">
+    <main className="flex min-h-dvh flex-col">
+      <header className="z-10 border-b border-svika-teal-100 bg-svika-stone/90 px-4 py-3 backdrop-blur">
         <div className="flex items-baseline justify-between">
           <h1 className="text-xl font-semibold text-svika-teal">Svika</h1>
           <span className="text-xs text-svika-mute">
@@ -24,15 +28,20 @@ export default async function PassengerHome({
         </div>
       </header>
 
-      <section className="px-4 py-6">
-        <p className="text-sm text-svika-mute">
-          Passenger surface — placeholder. Phase 1 will render the live kombi map here.
-        </p>
-        {params.claim ? (
-          <div className="mt-4 rounded-md border border-svika-rust bg-white p-3 text-sm">
-            Incoming ticket transfer: <code>{params.claim}</code>. Claim flow ships in Phase 2.
+      {params.claim ? (
+        <div className="border-b border-svika-rust bg-white px-4 py-2 text-sm">
+          Incoming ticket transfer: <code>{params.claim}</code>. Claim flow ships in Phase 2.
+        </div>
+      ) : null}
+
+      <section className="relative flex-1">
+        {mapboxToken ? (
+          <PassengerMap network={network} mapboxToken={mapboxToken} />
+        ) : (
+          <div className="flex h-full items-center justify-center px-4 text-center text-sm text-svika-mute">
+            NEXT_PUBLIC_MAPBOX_TOKEN missing — set it in .env.local to render the map.
           </div>
-        ) : null}
+        )}
       </section>
     </main>
   );
