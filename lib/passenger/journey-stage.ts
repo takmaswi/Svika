@@ -195,6 +195,14 @@ export function deriveJourneyStage(input: StageInputs): JourneyStage {
       const redeemedAtMs = leg.redeemed_at ? Date.parse(leg.redeemed_at) : null;
       const flashing =
         redeemedAtMs !== null && nowMs - redeemedAtMs < FLASH_WINDOW_MS;
+      const next = i + 1 < kombi.length ? kombi[i + 1] : null;
+      // If a later leg has already been boarded, the rider is past this leg's
+      // ride; advance the loop so we don't return "in-transit on leg 1" once
+      // leg 2 is also redeemed. The boarding flash branch above still wins
+      // for this leg's own ~1.1s flash window.
+      if (!flashing && next && next.status === "redeemed") {
+        continue;
+      }
 
       const distToAlight = vehicle ? distanceToStop(vehicle, leg.alight_stop) : null;
       const distFromBoard = vehicle ? distanceToStop(vehicle, leg.board_stop) : null;
