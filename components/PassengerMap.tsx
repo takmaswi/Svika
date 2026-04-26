@@ -1,13 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import mapboxgl, { type GeoJSONSource, type LngLatBoundsLike, type MapMouseEvent } from "mapbox-gl";
+import mapboxgl, {
+  type GeoJSONSource,
+  type LngLatBoundsLike,
+  type MapMouseEvent,
+} from "mapbox-gl";
 
 import "mapbox-gl/dist/mapbox-gl.css";
 
 import { createClient } from "@/lib/supabase/client";
 import { SIM_CHANNEL, SIM_EVENT, type KombiTickPayload } from "@/lib/sim/simRunner";
 import type { NetworkPayload, RouteForMap, StopForMap } from "@/lib/network/loadNetwork";
+import type { ActiveJourney, JourneyStage } from "@/lib/passenger/journey-types";
 
 const ROUTES_SOURCE = "svika-routes";
 const ROUTES_LAYER_BASE = "svika-routes-base";
@@ -20,6 +25,10 @@ const STOPS_LAYER_LABEL = "svika-stops-label";
 
 const KOMBIS_SOURCE = "svika-kombis";
 const KOMBIS_LAYER = "svika-kombis-dot";
+const KOMBIS_LAYER_HALO = "svika-kombis-halo";
+
+const WALKING_SOURCE = "svika-walking";
+const WALKING_LAYER = "svika-walking-line";
 
 const TEAL = "#0a4b5c";
 const RUST = "#d9622a";
@@ -28,6 +37,10 @@ const STONE = "#f2ede6";
 interface PassengerMapProps {
   network: NetworkPayload;
   mapboxToken: string;
+  /** Active journey for the current persona, if any. Drives leg highlighting. */
+  journey: ActiveJourney | null;
+  /** Latest stage from the Journey sheet. Identifies the assigned kombi. */
+  stage: JourneyStage | null;
 }
 
 interface SelectedRouteInfo {
@@ -87,7 +100,10 @@ function stopsGeoJSON(stops: StopForMap[]): GeoJSON.FeatureCollection {
   };
 }
 
-function kombisGeoJSON(positions: Map<string, KombiTickPayload>): GeoJSON.FeatureCollection {
+function kombisGeoJSON(
+  positions: Map<string, KombiTickPayload>,
+  assignedVehicleId: string | null,
+): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: Array.from(positions.values()).map((p) => ({
@@ -97,17 +113,68 @@ function kombisGeoJSON(positions: Map<string, KombiTickPayload>): GeoJSON.Featur
         vehicle_id: p.vehicle_id,
         route_id: p.route_id,
         direction: p.direction,
+        is_assigned: assignedVehicleId === p.vehicle_id,
       },
       geometry: { type: "Point", coordinates: [p.lng, p.lat] },
     })),
   };
 }
 
-export default function PassengerMap({ network, mapboxToken }: PassengerMapProps) {
+function walkingGeoJSON(journey: ActiveJourney | null): GeoJSON.FeatureCollection {
+  if (!journey) return { type: "FeatureCollection", features: [] };
+  const features: GeoJSON.Feature[] = [];
+  for (const leg of journey.legs) {
+    if (leg.kind !== "walk") continue;
+    if (leg.walking_polyline.length < 2) continue;
+    features.push({
+      type: "Feature",
+      properties: { transfer_id: leg.transfer_id },
+      geometry: {
+        type: "LineString",
+        coordinates: leg.walking_polyline,
+      },
+    });
+  }
+  return { type: "FeatureCollection", features };
+}
+
+export default function PassengerMap({
+  network,
+  mapboxToken,
+  journey,
+  stage,
+}: PassengerMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const positionsRef = useRef<Map<string, KombiTickPayload>>(new Map());
+  const assignedVehicleIdRef = useRef<string | null>(null);
+  const journeyRef = useRef<ActiveJourney | null>(journey);
+  const haloPhaseRef = useRef<number>(0);
   const [selected, setSelected] = useState<SelectedRouteInfo | null>(null);
+
+  // Keep mutable refs synced for the imperative tick loop below.
+  useEffect(() => {
+    journeyRef.current = journey;
+  }, [journey]);
+  useEffect(() => {
+    assignedVehicleIdRef.current = stage?.assigned_vehicle_id ?? null;
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+    repaintAssignedHighlight(map, stage?.assigned_vehicle_id ?? null);
+    repaintActiveLeg(map, journeyRef.current, stage);
+  }, [stage]);
+
+  // Refresh the kombi source paint and walking source whenever journey/stage
+  // change without re-rendering the map.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+    const walkingSrc = map.getSource(WALKING_SOURCE) as GeoJSONSource | undefined;
+    if (walkingSrc) walkingSrc.setData(walkingGeoJSON(journey));
+    const kombiSrc = map.getSource(KOMBIS_SOURCE) as GeoJSONSource | undefined;
+    if (kombiSrc) kombiSrc.setData(kombisGeoJSON(positionsRef.current, assignedVehicleIdRef.current));
+    repaintActiveLeg(map, journey, stage);
+  }, [journey, stage]);
 
   // Build the map exactly once. Subsequent network changes would require a
   // full restyle; for the demo the network is frozen after Phase 1.
@@ -143,11 +210,25 @@ export default function PassengerMap({ network, mapboxToken }: PassengerMapProps
         type: "line",
         source: ROUTES_SOURCE,
         layout: { "line-cap": "round", "line-join": "round" },
-        filter: ["==", ["get", "id"], "__none__"],
+        filter: ["in", ["get", "id"], ["literal", []]],
         paint: {
           "line-color": RUST,
           "line-width": ["interpolate", ["linear"], ["zoom"], 10, 4, 14, 7, 16, 10],
-          "line-opacity": 0.9,
+          "line-opacity": 0.95,
+        },
+      });
+
+      map.addSource(WALKING_SOURCE, { type: "geojson", data: walkingGeoJSON(journeyRef.current) });
+      map.addLayer({
+        id: WALKING_LAYER,
+        type: "line",
+        source: WALKING_SOURCE,
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": RUST,
+          "line-width": 3,
+          "line-opacity": 0.85,
+          "line-dasharray": [1.5, 1.5],
         },
       });
 
@@ -194,7 +275,19 @@ export default function PassengerMap({ network, mapboxToken }: PassengerMapProps
 
       map.addSource(KOMBIS_SOURCE, {
         type: "geojson",
-        data: kombisGeoJSON(positionsRef.current),
+        data: kombisGeoJSON(positionsRef.current, assignedVehicleIdRef.current),
+      });
+      map.addLayer({
+        id: KOMBIS_LAYER_HALO,
+        type: "circle",
+        source: KOMBIS_SOURCE,
+        filter: ["==", ["get", "is_assigned"], true],
+        paint: {
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 12, 14, 18, 16, 22],
+          "circle-color": RUST,
+          "circle-opacity": 0.25,
+          "circle-blur": 0.4,
+        },
       });
       map.addLayer({
         id: KOMBIS_LAYER,
@@ -205,7 +298,12 @@ export default function PassengerMap({ network, mapboxToken }: PassengerMapProps
           "circle-color": RUST,
           "circle-stroke-color": STONE,
           "circle-stroke-width": 2,
-          "circle-opacity": 0.95,
+          "circle-opacity": [
+            "case",
+            ["==", ["get", "is_assigned"], true],
+            1,
+            0.5,
+          ],
         },
       });
 
@@ -217,19 +315,27 @@ export default function PassengerMap({ network, mapboxToken }: PassengerMapProps
       map.on("mouseleave", ROUTES_LAYER_BASE, () => {
         map.getCanvas().style.cursor = "";
       });
-      // Click empty space clears the selection.
+      // Click empty space clears the selection (only when no journey is active).
       map.on("click", (e: MapMouseEvent) => {
+        if (journeyRef.current) return;
         const hits = map.queryRenderedFeatures(e.point, {
           layers: [ROUTES_LAYER_BASE, STOPS_LAYER_HALO, STOPS_LAYER_DOT, KOMBIS_LAYER],
         });
         if (hits.length === 0) {
           setSelected(null);
-          map.setFilter(ROUTES_LAYER_HIGHLIGHT, ["==", ["get", "id"], "__none__"]);
+          map.setFilter(ROUTES_LAYER_HIGHLIGHT, ["in", ["get", "id"], ["literal", []]]);
         }
       });
+
+      // Now the layers exist — apply current journey/stage paint.
+      repaintActiveLeg(map, journeyRef.current, stage);
+      repaintAssignedHighlight(map, assignedVehicleIdRef.current);
     });
 
     function handleRouteClick(e: mapboxgl.MapLayerMouseEvent) {
+      // Suppress route inspection when there's an active journey — the active
+      // leg is already telling the right story.
+      if (journeyRef.current) return;
       const feature = e.features?.[0];
       if (!feature) return;
       const id = feature.properties?.id as string | undefined;
@@ -242,14 +348,65 @@ export default function PassengerMap({ network, mapboxToken }: PassengerMapProps
         .map((rs) => network.stops.find((s) => s.id === rs.stop_id))
         .filter((s): s is StopForMap => Boolean(s));
       setSelected({ route, stops });
-      map.setFilter(ROUTES_LAYER_HIGHLIGHT, ["==", ["get", "id"], id]);
+      map.setFilter(ROUTES_LAYER_HIGHLIGHT, ["in", ["get", "id"], ["literal", [id]]]);
     }
 
     return () => {
       map.remove();
       mapRef.current = null;
     };
-  }, [network, mapboxToken]);
+  }, [network, mapboxToken, stage]);
+
+  // Pulsing halo on the assigned vehicle. ~2.2s breathing cycle, lightweight
+  // CPU cost (one paint property update per ~80ms).
+  useEffect(() => {
+    let raf: number | null = null;
+    let last = performance.now();
+    function frame(t: number) {
+      if (t - last < 80) {
+        raf = requestAnimationFrame(frame);
+        return;
+      }
+      last = t;
+      const map = mapRef.current;
+      if (!map || !map.isStyleLoaded()) {
+        raf = requestAnimationFrame(frame);
+        return;
+      }
+      if (!map.getLayer(KOMBIS_LAYER_HALO)) {
+        raf = requestAnimationFrame(frame);
+        return;
+      }
+      haloPhaseRef.current = (haloPhaseRef.current + 0.04) % (Math.PI * 2);
+      const breathe = 0.5 + 0.5 * Math.sin(haloPhaseRef.current);
+      // 0.18 → 0.45 alpha, 18px → 28px radius (mid-zoom)
+      try {
+        map.setPaintProperty(
+          KOMBIS_LAYER_HALO,
+          "circle-opacity",
+          0.2 + 0.25 * breathe,
+        );
+        map.setPaintProperty(KOMBIS_LAYER_HALO, "circle-radius", [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          10,
+          12 + 4 * breathe,
+          14,
+          18 + 6 * breathe,
+          16,
+          22 + 8 * breathe,
+        ]);
+      } catch {
+        // map closed mid-frame
+      }
+      raf = requestAnimationFrame(frame);
+    }
+    raf = requestAnimationFrame(frame);
+    return () => {
+      if (raf !== null) cancelAnimationFrame(raf);
+    };
+  }, []);
 
   // Subscribe to the sim runner's broadcast channel. Imperatively patch the
   // GeoJSON source on every tick — never use React state for kombi positions.
@@ -266,7 +423,7 @@ export default function PassengerMap({ network, mapboxToken }: PassengerMapProps
       const map = mapRef.current;
       if (!map || !map.isStyleLoaded()) return;
       const src = map.getSource(KOMBIS_SOURCE) as GeoJSONSource | undefined;
-      if (src) src.setData(kombisGeoJSON(positionsRef.current));
+      if (src) src.setData(kombisGeoJSON(positionsRef.current, assignedVehicleIdRef.current));
     });
 
     channel.subscribe();
@@ -279,7 +436,20 @@ export default function PassengerMap({ network, mapboxToken }: PassengerMapProps
   return (
     <div className="absolute inset-0">
       <div ref={containerRef} className="h-full w-full" />
-      {selected ? (
+
+      {journey && stage && stage.assigned_vehicle_id ? (
+        <div
+          className="pointer-events-none absolute left-3 top-3 z-10 rounded-full border border-svika-teal-100 bg-white/95 px-3 py-1 text-xs font-medium text-svika-teal shadow-sm"
+          data-testid="journey-eta-chip"
+        >
+          {stage.assigned_vehicle_id}
+          {stage.eta_seconds !== null
+            ? " · ETA " + (stage.eta_seconds <= 0 ? "now" : Math.max(1, Math.round(stage.eta_seconds / 60)) + " min")
+            : null}
+        </div>
+      ) : null}
+
+      {selected && !journey ? (
         <aside className="pointer-events-auto absolute right-3 top-3 max-w-xs rounded-lg border border-svika-teal-100 bg-svika-stone/95 p-3 text-sm shadow-md backdrop-blur">
           <header className="mb-2 flex items-baseline justify-between gap-2">
             <h2 className="text-sm font-semibold text-svika-teal">{selected.route.name}</h2>
@@ -288,7 +458,7 @@ export default function PassengerMap({ network, mapboxToken }: PassengerMapProps
               onClick={() => {
                 setSelected(null);
                 const map = mapRef.current;
-                if (map) map.setFilter(ROUTES_LAYER_HIGHLIGHT, ["==", ["get", "id"], "__none__"]);
+                if (map) map.setFilter(ROUTES_LAYER_HIGHLIGHT, ["in", ["get", "id"], ["literal", []]]);
               }}
               className="text-svika-mute hover:text-svika-teal"
               aria-label="Close route details"
@@ -313,11 +483,59 @@ export default function PassengerMap({ network, mapboxToken }: PassengerMapProps
             ))}
           </ol>
         </aside>
-      ) : (
+      ) : null}
+
+      {!selected && !journey ? (
         <div className="pointer-events-none absolute bottom-3 left-3 rounded-md bg-svika-stone/90 px-2 py-1 text-xs text-svika-mute shadow-sm backdrop-blur">
           Tap a route line to see its stops
         </div>
-      )}
+      ) : null}
     </div>
   );
+}
+
+function repaintAssignedHighlight(map: mapboxgl.Map, assignedVehicleId: string | null): void {
+  if (!map.isStyleLoaded()) return;
+  const src = map.getSource(KOMBIS_SOURCE) as GeoJSONSource | undefined;
+  if (!src) return;
+  // We need to read the current data without mutating it. Easiest path is to
+  // ask the caller to call setData; here we just toggle the halo filter.
+  if (map.getLayer(KOMBIS_LAYER_HALO)) {
+    map.setFilter(KOMBIS_LAYER_HALO, [
+      "==",
+      ["get", "vehicle_id"],
+      assignedVehicleId ?? "__none__",
+    ]);
+  }
+}
+
+/**
+ * When a journey is active:
+ *   - Fade all base routes to 0.22 opacity.
+ *   - Highlight the active kombi leg's route in rust.
+ * When no journey:
+ *   - Restore normal opacity. Highlight is empty until the user clicks a route.
+ */
+function repaintActiveLeg(
+  map: mapboxgl.Map,
+  journey: ActiveJourney | null,
+  stage: JourneyStage | null,
+): void {
+  if (!map.isStyleLoaded()) return;
+  if (!map.getLayer(ROUTES_LAYER_BASE) || !map.getLayer(ROUTES_LAYER_HIGHLIGHT)) return;
+
+  if (!journey || !stage || stage.active_kombi_leg_index === null) {
+    map.setPaintProperty(ROUTES_LAYER_BASE, "line-opacity", 0.55);
+    map.setFilter(ROUTES_LAYER_HIGHLIGHT, ["in", ["get", "id"], ["literal", []]]);
+    return;
+  }
+
+  const activeLeg = journey.legs[stage.active_kombi_leg_index];
+  const activeRouteId = activeLeg && activeLeg.kind === "kombi" ? activeLeg.route_id : null;
+  map.setPaintProperty(ROUTES_LAYER_BASE, "line-opacity", 0.22);
+  map.setFilter(ROUTES_LAYER_HIGHLIGHT, [
+    "in",
+    ["get", "id"],
+    ["literal", activeRouteId ? [activeRouteId] : []],
+  ]);
 }

@@ -4,6 +4,11 @@ import { revalidatePath } from "next/cache";
 
 import { resolvePersona } from "@/lib/personas";
 import { createServerClient } from "@/lib/supabase/server";
+import {
+  SIM_CHANNEL,
+  TICKET_REDEEMED_EVENT,
+  type TicketRedeemedPayload,
+} from "@/lib/sim/simRunner";
 import type { TicketRow, VehicleRow } from "@/lib/supabase/types";
 import { PG_UNIQUE_VIOLATION, randomAccessCode } from "@/lib/passenger/access-code";
 
@@ -148,8 +153,20 @@ export async function redeemTicketAction(input: {
       .eq("id", vehicle.id);
     if (vehicleUpdateError) return { ok: false, error: vehicleUpdateError.message };
 
+    // Best-effort broadcast so the passenger's Journey sheet flashes the
+    // boarding moment without waiting for revalidation. Realtime hiccups must
+    // never block a fare clearance.
+    void broadcastTicketRedeemed(client, {
+      ticket_id: ticket.id,
+      vehicle_id: vehicle.id,
+      route_id: ticket.route_id,
+      current_holder_user_id: ticket.current_holder_user_id,
+      redeemed_at: new Date().toISOString(),
+    });
+
     revalidatePath("/hwindi");
     revalidatePath("/fleet");
+    revalidatePath("/");
     return {
       ok: true,
       ticket_id: ticket.id,
@@ -161,6 +178,34 @@ export async function redeemTicketAction(input: {
     };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Redeem failed." };
+  }
+}
+
+async function broadcastTicketRedeemed(
+  client: Awaited<ReturnType<typeof createServerClient>>,
+  payload: TicketRedeemedPayload,
+): Promise<void> {
+  try {
+    const channel = client.channel(SIM_CHANNEL, {
+      config: { broadcast: { self: false, ack: false } },
+    });
+    await new Promise<void>((resolve) => {
+      const timeout = setTimeout(resolve, 800);
+      channel.subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          clearTimeout(timeout);
+          resolve();
+        }
+      });
+    });
+    await channel.send({
+      type: "broadcast",
+      event: TICKET_REDEEMED_EVENT,
+      payload,
+    });
+    await client.removeChannel(channel);
+  } catch {
+    // Realtime hiccup; the next revalidate / page load will reconcile.
   }
 }
 

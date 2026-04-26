@@ -32,6 +32,12 @@ import {
 export const SIM_TICK_MS = 2000;
 export const SIM_CHANNEL = "kombi-positions";
 export const SIM_EVENT = "tick";
+/**
+ * Broadcast on the same channel as `SIM_EVENT` whenever a conductor clears a
+ * fare. The passenger's Journey sheet listens for this to flash the boarding
+ * moment in real time, ahead of the eventual server-side revalidation.
+ */
+export const TICKET_REDEEMED_EVENT = "ticket-redeemed";
 
 export interface KombiTickPayload {
   vehicle_id: string;
@@ -40,6 +46,14 @@ export interface KombiTickPayload {
   lng: number;
   direction: "outbound" | "inbound";
   at: string;
+}
+
+export interface TicketRedeemedPayload {
+  ticket_id: string;
+  vehicle_id: string;
+  route_id: string;
+  current_holder_user_id: string | null;
+  redeemed_at: string;
 }
 
 interface RoutePolyline {

@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import PassengerMap from "@/components/PassengerMap";
+import Journey from "@/components/passenger/Journey";
 import PlanList from "@/components/passenger/PlanList";
 import SearchBar from "@/components/passenger/SearchBar";
 import Wallet from "@/components/passenger/Wallet";
@@ -13,6 +14,7 @@ import {
   findPlansAction,
   transferTicketAction,
 } from "@/lib/passenger/actions";
+import type { ActiveJourney, JourneyStage } from "@/lib/passenger/journey-types";
 import type { NetworkPayload } from "@/lib/network/loadNetwork";
 import type { WalletTicket } from "@/lib/passenger/wallet";
 import type { Persona } from "@/lib/personas";
@@ -24,6 +26,7 @@ interface PassengerShellProps {
   network: NetworkPayload;
   mapboxToken: string;
   initialTickets: WalletTicket[];
+  initialJourney: ActiveJourney | null;
   pendingClaim: string | null;
 }
 
@@ -51,6 +54,7 @@ export default function PassengerShell({
   network,
   mapboxToken,
   initialTickets,
+  initialJourney,
   pendingClaim,
 }: PassengerShellProps) {
   const router = useRouter();
@@ -62,7 +66,15 @@ export default function PassengerShell({
   const [bookingFlash, setBookingFlash] = useState<BookingFlash | null>(null);
   const [busyOption, setBusyOption] = useState<string | null>(null);
   const [claimFlash, setClaimFlash] = useState<ClaimFlash | null>(null);
+  const [stage, setStage] = useState<JourneyStage | null>(null);
+  const [dismissedTripId, setDismissedTripId] = useState<string | null>(null);
   const claimedRef = useRef<string | null>(null);
+
+  const journey = useMemo<ActiveJourney | null>(() => {
+    if (!initialJourney) return null;
+    if (dismissedTripId === initialJourney.trip_id) return null;
+    return initialJourney;
+  }, [initialJourney, dismissedTripId]);
 
   // Auto-claim when arriving via /?as=<recipient>&claim=<id>.
   useEffect(() => {
@@ -134,6 +146,10 @@ export default function PassengerShell({
       access_codes: result.access_codes,
     });
     setPlans(null);
+    setDismissedTripId(null);
+    // Auto-open the wallet so the Phase 2 demo flow (codes visible + transfer
+    // affordance) still works. The Journey sheet will surface once the server
+    // refresh pulls in the new active trip and renders behind the drawer.
     setWalletOpen(true);
     router.refresh();
   }
@@ -155,8 +171,35 @@ export default function PassengerShell({
     };
   }
 
+  const handleLifecycleEvent = useCallback(
+    (event: "redeemed" | "arrived") => {
+      // On redeem: refresh from server so the Journey sheet sees the new
+      // ticket status and can advance the stage.
+      // On arrival: nothing extra — the sheet collapses to summary itself.
+      if (event === "redeemed") {
+        router.refresh();
+      }
+    },
+    [router],
+  );
+
+  const handleStageChange = useCallback((next: JourneyStage) => {
+    setStage(next);
+  }, []);
+
+  const handlePlanAnother = useCallback(() => {
+    if (initialJourney) {
+      setDismissedTripId(initialJourney.trip_id);
+    }
+    setStage(null);
+    setBookingFlash(null);
+    setSearchError(null);
+    router.refresh();
+  }, [initialJourney, router]);
+
   const balance = persona.credit_balance_usd.toFixed(2);
   const activeCount = tickets.filter((t) => !t.is_outgoing_transfer).length;
+  const showSearchUI = !journey;
 
   return (
     <main className="flex min-h-dvh flex-col">
@@ -181,9 +224,11 @@ export default function PassengerShell({
             ) : null}
           </button>
         </div>
-        <div className="mt-3">
-          <SearchBar onSubmit={handleSearch} disabled={searchBusy} />
-        </div>
+        {showSearchUI ? (
+          <div className="mt-3">
+            <SearchBar onSubmit={handleSearch} disabled={searchBusy} />
+          </div>
+        ) : null}
         {searchError ? (
           <p className="mt-2 rounded bg-white px-2 py-1 text-xs text-svika-rust">{searchError}</p>
         ) : null}
@@ -226,14 +271,19 @@ export default function PassengerShell({
 
       <section className="relative flex-1">
         {mapboxToken ? (
-          <PassengerMap network={network} mapboxToken={mapboxToken} />
+          <PassengerMap
+            network={network}
+            mapboxToken={mapboxToken}
+            journey={journey}
+            stage={stage}
+          />
         ) : (
           <div className="flex h-full items-center justify-center px-4 text-center text-sm text-svika-mute">
             NEXT_PUBLIC_MAPBOX_TOKEN missing — set it in .env.local to render the map.
           </div>
         )}
 
-        {plans ? (
+        {showSearchUI && plans ? (
           <div className="pointer-events-auto absolute bottom-3 left-3 right-3 z-10 max-h-[60vh] overflow-y-auto rounded-lg bg-svika-stone/95 p-3 shadow-lg backdrop-blur">
             <PlanList
               options={plans.options}
@@ -244,6 +294,15 @@ export default function PassengerShell({
           </div>
         ) : null}
       </section>
+
+      {journey ? (
+        <Journey
+          journey={journey}
+          onPlanAnother={handlePlanAnother}
+          onLifecycleEvent={handleLifecycleEvent}
+          onStageChange={handleStageChange}
+        />
+      ) : null}
 
       <Wallet
         open={walletOpen}

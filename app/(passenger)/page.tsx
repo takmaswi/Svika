@@ -1,4 +1,5 @@
 import PassengerShell from "@/components/passenger/PassengerShell";
+import { loadActiveJourney } from "@/lib/passenger/journey";
 import { loadNetwork } from "@/lib/network/loadNetwork";
 import { loadWallet } from "@/lib/passenger/wallet";
 import { resolvePersona } from "@/lib/personas";
@@ -7,6 +8,7 @@ import { resolvePersona } from "@/lib/personas";
  * Passenger surface — Tendai (default), Rudo (via ?as=rudo).
  * Phase 1: live kombi map + named stops, Realtime kombi positions.
  * Phase 2: trip planner, ticket purchase, wallet, transfer.
+ * Phase 3.5: live Journey UX — active-leg highlighting, six-stage bottom sheet.
  */
 export default async function PassengerHome({
   searchParams,
@@ -16,9 +18,10 @@ export default async function PassengerHome({
   const params = await searchParams;
   const personaSlug = (params.as ?? "tendai").toLowerCase();
   const persona = await resolvePersona(personaSlug, "passenger");
-  const [network, tickets] = await Promise.all([
+  const [network, tickets, journey] = await Promise.all([
     loadNetwork(),
     loadWallet(persona.id),
+    loadActiveJourney(persona.id),
   ]);
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
 
@@ -29,6 +32,7 @@ export default async function PassengerHome({
       network={network}
       mapboxToken={mapboxToken}
       initialTickets={tickets}
+      initialJourney={journey}
       pendingClaim={params.claim ?? null}
     />
   );
