@@ -102,6 +102,75 @@ export type KombiPingRow = {
   recorded_at: string;
 };
 
+export type TicketStatus =
+  | "issued"
+  | "transferred_pending"
+  | "held"
+  | "redeemed"
+  | "completed"
+  | "expired"
+  | "cash_walkin";
+
+export type TicketRow = {
+  id: string;
+  access_code: string;
+  route_id: string;
+  board_at_stop_id: string;
+  alight_at_stop_id: string;
+  fare_usd: number;
+  originating_user_id: string | null;
+  current_holder_user_id: string | null;
+  vehicle_id: string | null;
+  status: TicketStatus;
+  kind: "passenger" | "parcel";
+  parcel_receiver_phone: string | null;
+  parcel_description: string | null;
+  created_at: string;
+  redeemed_at: string | null;
+  completed_at: string | null;
+};
+
+export type TripRow = {
+  id: string;
+  originating_user_id: string;
+  origin_stop_id: string;
+  destination_stop_id: string;
+  selected_option_label: string;
+  total_fare_usd: number;
+  total_duration_minutes: number;
+  created_at: string;
+};
+
+export type TripTicketRow = {
+  trip_id: string;
+  ticket_id: string;
+  sequence: number;
+};
+
+export type TransferRow = {
+  id: string;
+  ticket_id: string;
+  from_user_id: string;
+  to_user_id: string | null;
+  to_phone: string | null;
+  transferred_at: string;
+  claimed_at: string | null;
+};
+
+export type AuditNarrativeRow = {
+  id: string;
+  vehicle_id: string;
+  for_date: string;
+  english_text: string;
+  shona_text: string;
+  stops_made: number;
+  digital_fares_logged: number;
+  cash_walkons_logged: number;
+  revenue_gap_estimate_usd: number;
+  zimra_liability_estimate_usd: number;
+  generated_at: string;
+};
+
 export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "12";
@@ -116,6 +185,11 @@ export type Database = {
       transfer_points: Table<TransferPointRow>;
       vehicles: Table<VehicleRow>;
       kombi_pings: Table<KombiPingRow>;
+      tickets: Table<TicketRow>;
+      trips: Table<TripRow>;
+      trip_tickets: Table<TripTicketRow>;
+      transfers: Table<TransferRow>;
+      audit_narratives: Table<AuditNarrativeRow>;
     };
     Views: { [key: string]: never };
     Functions: {

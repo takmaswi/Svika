@@ -47,7 +47,23 @@ When the agent gets interrupted and restarts, the next session reads this log to
 
 ## Phase 2 — Passenger experience
 
-<!-- agent: append entries below as Phase 2 tasks complete -->
+2026-04-26 07:30 | Phase 2 | Database types extended — tickets/trips/trip_tickets/transfers/audit_narratives row shapes added to `lib/supabase/types.ts` | (uncommitted) | typecheck
+2026-04-26 07:32 | Phase 2 | Access-code helper (`lib/passenger/access-code.ts`) — random 3-digit code + PG_UNIQUE_VIOLATION constant for retry loop | (uncommitted) | typecheck
+2026-04-26 07:35 | Phase 2 | Wallet reader (`lib/passenger/wallet.ts`) — pulls active tickets where persona is current_holder OR originator, decorates with route+stop names from seed | (uncommitted) | typecheck
+2026-04-26 07:42 | Phase 2 | Server actions (`lib/passenger/actions.ts`) — findPlansAction (understand+planTrip), bookTripAction (mint tickets per leg with unique code retry, deduct credit), transferTicketAction (issued/held → transferred_pending + transfers row), claimTicketAction (transferred_pending → held, claim audit) | (uncommitted) | typecheck
+2026-04-26 07:50 | Phase 2 | Passenger UI — `SearchBar` (presets + free text), `PlanList` (option cards, Buy CTA), `Wallet` drawer (3-digit codes, share/transfer per ticket) | (uncommitted) | typecheck+lint
+2026-04-26 07:55 | Phase 2 | `PassengerShell` orchestrator — auto-claim on `?claim=`, search + plan + buy + share flow, router.refresh after every action; wraps Phase 1 PassengerMap | (uncommitted) | typecheck+lint+build
+2026-04-26 07:58 | Phase 2 | Server client typing — cast createSsrServerClient return through `unknown as SupabaseClient<Database>` to dodge the 5-generic ssr signature collapsing tickets/trips/transfers Insert types to `never` | (uncommitted) | typecheck
+2026-04-26 08:05 | Phase 2 | Phase 2 gate verified — passenger surface 200 at /?as=tendai with search bar + Wallet button rendering, planTrip("Heights","Avondale") returns 2 options ($1.50 / $2.50) | (uncommitted) | manual
+
+### Phase 2 known issues / follow-ups
+
+- **No new smoke test yet** — per CLAUDE.md hackathon exception, Playwright smoke ships at the Phase 5 gate. Manual test plan: load `/?as=tendai` → click "Heights to Avondale" preset → buy fastest option → wallet should show 2 access codes → tap "Share / transfer" on one → "Transfer to Rudo" → load `/?as=rudo&claim=<id>` → ticket should appear in Rudo's wallet.
+- **Web Share API requires HTTPS** — falls back to clipboard on localhost (Wallet.tsx). The deep-link string is correct either way.
+- **Booking has no DB transaction** — if `tickets` insert succeeds but `trip_tickets` link fails, the ticket is orphaned. Acceptable for the demo. A Postgres function wrapping the whole booking is roadmap.
+- **No idempotency on claim** — re-loading `?claim=<id>` after claim shows "you already hold this ticket" but won't change state, which is correct behaviour.
+
+
 
 ## Phase 3 — Conductor and fleet surfaces
 
