@@ -313,28 +313,22 @@ interface FadingTextProps {
   className?: string;
 }
 
+/**
+ * Cross-fade between text values without ever leaving the viewport empty:
+ * when the new value differs, fade the old one out while the new one fades
+ * in. Both span elements live in the same flex slot so layout doesn't jump.
+ */
 function FadingText({ text, className }: FadingTextProps) {
-  const [visible, setVisible] = useState(text);
-  const [opacity, setOpacity] = useState(1);
-  const lastRef = useRef(text);
-
-  useEffect(() => {
-    if (text === lastRef.current) return;
-    setOpacity(0);
-    const swap = setTimeout(() => {
-      lastRef.current = text;
-      setVisible(text);
-      setOpacity(1);
-    }, 150);
-    return () => clearTimeout(swap);
-  }, [text]);
-
   return (
-    <p
+    <span
+      key={text}
       className={className}
-      style={{ opacity, transition: "opacity 150ms ease" }}
+      style={{
+        display: "block",
+        animation: "svika-journey-fade 200ms ease both",
+      }}
     >
-      {visible}
-    </p>
+      {text}
+    </span>
   );
 }
