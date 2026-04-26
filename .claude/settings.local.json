@@ -100,7 +100,12 @@
       "Bash(git init *)",
       "Bash(UNDERSTAND_PROVIDER=gemini pnpm tsx --env-file=.env.local scripts/gemini-verify.ts)",
       "Bash(awk -F= '/^GEMINI_API_KEY=/ {print \"GEMINI_API_KEY length:\", length\\($2\\)}' .env.local)",
-      "Bash(awk -F= '/^GEMINI_API_KEY=/ {print \"GEMINI_API_KEY first 4 chars:\", substr\\($2,1,4\\)\"…\"}' .env.local)"
+      "Bash(awk -F= '/^GEMINI_API_KEY=/ {print \"GEMINI_API_KEY first 4 chars:\", substr\\($2,1,4\\)\"…\"}' .env.local)",
+      "Bash(git -c user.email=\"takmaswi@gmail.com\" -c user.name=\"takmaswi\" -c core.editor=true rebase --continue)",
+      "Bash(git -c user.email=\"takmaswi@gmail.com\" -c user.name=\"takmaswi\" commit -F .git/rebase-merge/message)",
+      "Bash(git -c core.editor=true rebase --continue)",
+      "Bash(git rebase *)",
+      "Bash(git -c user.email=\"takmaswi@gmail.com\" -c user.name=\"takmaswi\" commit -a --amend --no-edit)"
     ],
     "deny": [
       "Bash(rm -rf:*)",
