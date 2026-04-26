@@ -80,6 +80,8 @@ When the agent gets interrupted and restarts, the next session reads this log to
 2026-04-26 16:42 | Phase 3 | scripts/phase3-prod-smoke.ts written — drives /hwindi PIN entry on ZH 4821 with code 724 (cash-walkon fallback if already redeemed) then asserts /fleet revenue + ZIMRA + bilingual audit text | (uncommitted) | typecheck+lint+build
 2026-04-26 16:43 | Phase 3 | scripts/warm-narratives.ts written — pnpm narrate:warm runs Ollama Gemma E2B for every fleet-owned kombi today and upserts into audit_narratives | (uncommitted) | typecheck+lint+build
 2026-04-26 16:45 | Phase 3 | Phase 3 prod-verified — git push d0f15d6..8a92173, https://svika.vercel.app/hwindi?as=farai HTTP 200 with marker `hwindi-pin-keypad`, /fleet?as=baba_tino HTTP 200 with marker `fleet-audit-panel`; full smoke via scripts/phase3-prod-smoke.ts (Farai → code 724 → "Cleared 724 · $1.00 · 1/15 on board" → /fleet shows $1.00 revenue, $3.00 ZIMRA, English+Shona narrative) | 8a92173 | prod-smoke
+2026-04-26 17:00 | Phase 3 | Audit cache warmed — pnpm narrate:warm produced 8/8 real Gemma 4 E2B narratives on first attempt (avg ~115s/inference), upserted into svika-dev audit_narratives for 2026-04-26. Bumped num_predict 512→1024 + 3-attempt retry loop hardens against Gemma's intermittent JSON truncation. | 8111b0d | manual
+2026-04-26 17:05 | Phase 3 | Hydration fix — ConductorShell.prettyTime sliced HH:MM off the ISO string instead of toLocaleTimeString(undefined). Server UTC vs client locale was tripping React error #418 on /hwindi. Re-smoke confirms no page errors, /fleet now serves real Gemma bilingual narratives (211c en / 183c sn for ZH 4821) end-to-end through the audit_narratives cache. | 8111b0d | prod-smoke
 
 ### Phase 3 known issues / follow-ups
 
