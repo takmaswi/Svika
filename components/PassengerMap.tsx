@@ -149,6 +149,7 @@ export default function PassengerMap({
   const positionsRef = useRef<Map<string, KombiTickPayload>>(new Map());
   const assignedVehicleIdRef = useRef<string | null>(null);
   const journeyRef = useRef<ActiveJourney | null>(journey);
+  const stageRef = useRef<JourneyStage | null>(stage);
   const haloPhaseRef = useRef<number>(0);
   const [selected, setSelected] = useState<SelectedRouteInfo | null>(null);
 
@@ -157,6 +158,7 @@ export default function PassengerMap({
     journeyRef.current = journey;
   }, [journey]);
   useEffect(() => {
+    stageRef.current = stage;
     assignedVehicleIdRef.current = stage?.assigned_vehicle_id ?? null;
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
@@ -327,8 +329,10 @@ export default function PassengerMap({
         }
       });
 
-      // Now the layers exist — apply current journey/stage paint.
-      repaintActiveLeg(map, journeyRef.current, stage);
+      // Now the layers exist — apply current journey/stage paint via refs so
+      // the build effect can have stable deps (re-running it would tear the
+      // map down mid-load and leave the canvas blank).
+      repaintActiveLeg(map, journeyRef.current, stageRef.current);
       repaintAssignedHighlight(map, assignedVehicleIdRef.current);
     });
 
@@ -355,7 +359,9 @@ export default function PassengerMap({
       map.remove();
       mapRef.current = null;
     };
-  }, [network, mapboxToken, stage]);
+    // Build the map exactly once per (network, token). `stage` and `journey`
+    // are read via mutable refs so they don't tear the map down mid-load.
+  }, [network, mapboxToken]);
 
   // Pulsing halo on the assigned vehicle. ~2.2s breathing cycle, lightweight
   // CPU cost (one paint property update per ~80ms).
