@@ -153,6 +153,28 @@ pnpm test:e2e:smoke
 
 A failure on any command means the task is not done. Fix and re-run before commit.
 
+### Phase-gate prod-verification discipline
+
+**Local green is not "verified".** Every phase-gate verification claim must be backed by a literal `https://svika.vercel.app` response. The Phase 1 and Phase 2 reviews both caught the agent claiming a gate had passed when the local commit had not yet been pushed and Vercel was still serving the previous build.
+
+Required steps at every phase gate, in order:
+
+1. `git status` and `git log --oneline -5` to confirm the gate commit exists locally.
+2. `git push origin main` and surface the `..NEW_SHA` line in the response.
+3. Poll prod until the new build is live, e.g.:
+
+   ```bash
+   until curl -s https://svika.vercel.app/?as=tendai | grep -q "<phase-marker>"; do sleep 8; done
+   ```
+
+   `<phase-marker>` is a string that exists only after the new commit ships (Phase 1: a route name from `seed/network.json`; Phase 2: `trip-search`; Phase 3: `hwindi-pin-keypad` or the equivalent — name the marker in the gate task itself).
+
+4. Record the actual `curl https://svika.vercel.app/...` response and the markers found in the BUILD-LOG entry. **Never reference `localhost` as evidence of a gate passing.**
+
+5. For phases that change the database (tickets, ledgers, audit narratives), drive the user-visible smoke flow on the live URL — `scripts/phase2-prod-smoke.ts` is the template. Cowork must be able to query the corresponding tables and see the rows your smoke produced.
+
+If the prod URL still serves the previous phase, the gate has not been passed — even if local typecheck, lint, build, and dev-server tests are all green. Push, wait, re-curl, and only then update BUILD-LOG.
+
 ## Active MCPs (this project only)
 
 Enable only the following. Disable everything else to stay under global B1 budget (≤10 MCPs, ≤80 total tools). Project-scoped config is in `.mcp.json` at repo root.

@@ -55,6 +55,8 @@ When the agent gets interrupted and restarts, the next session reads this log to
 2026-04-26 07:55 | Phase 2 | `PassengerShell` orchestrator — auto-claim on `?claim=`, search + plan + buy + share flow, router.refresh after every action; wraps Phase 1 PassengerMap | (uncommitted) | typecheck+lint+build
 2026-04-26 07:58 | Phase 2 | Server client typing — cast createSsrServerClient return through `unknown as SupabaseClient<Database>` to dodge the 5-generic ssr signature collapsing tickets/trips/transfers Insert types to `never` | (uncommitted) | typecheck
 2026-04-26 08:05 | Phase 2 | Phase 2 gate verified — passenger surface 200 at /?as=tendai with search bar + Wallet button rendering, planTrip("Heights","Avondale") returns 2 options ($1.50 / $2.50) | (uncommitted) | manual
+2026-04-26 08:30 | Phase 2 | Phase 2 prod-verified — git push 0b2643a..2534f3d, https://svika.vercel.app/?as=tendai HTTP 200 with markers {Wallet, Where to, trip-search, Plan}; full smoke via scripts/phase2-prod-smoke.ts (Tendai → search → buy fastest $1.50 → wallet shows codes 289/724 → transfer to Rudo → /?as=rudo&claim=d07c4842-... → Rudo wallet shows 289) | 2534f3d | prod-smoke
+2026-04-26 08:35 | Phase 2 | CLAUDE.md "Validation commands" tightened — every phase gate now requires git push + literal curl https://svika.vercel.app verification with named phase marker before BUILD-LOG entry | (uncommitted) | manual
 
 ### Phase 2 known issues / follow-ups
 
