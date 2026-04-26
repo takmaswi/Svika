@@ -105,7 +105,21 @@
       "Bash(git -c user.email=\"takmaswi@gmail.com\" -c user.name=\"takmaswi\" commit -F .git/rebase-merge/message)",
       "Bash(git -c core.editor=true rebase --continue)",
       "Bash(git rebase *)",
-      "Bash(git -c user.email=\"takmaswi@gmail.com\" -c user.name=\"takmaswi\" commit -a --amend --no-edit)"
+      "Bash(git -c user.email=\"takmaswi@gmail.com\" -c user.name=\"takmaswi\" commit -a --amend --no-edit)",
+      "Bash(git push *)",
+      "Bash(curl -sS -o /dev/null -w \"/ %{http_code}\\\\n\" http://localhost:3000/)",
+      "Bash(curl -sS -o /dev/null -w \"/?as=tendai %{http_code}\\\\n\" \"http://localhost:3000/?as=tendai\")",
+      "Bash(curl -sS -o /dev/null -w \"/hwindi?as=farai %{http_code}\\\\n\" \"http://localhost:3000/hwindi?as=farai\")",
+      "Bash(curl -sS -o /dev/null -w \"/fleet?as=baba_tino %{http_code}\\\\n\" \"http://localhost:3000/fleet?as=baba_tino\")",
+      "Bash(curl -sS -o /dev/null -w \"/wa?as=tendai %{http_code}\\\\n\" \"http://localhost:3000/wa?as=tendai\")",
+      "Bash(curl -sS \"http://localhost:3000/?as=tendai\")",
+      "Bash(grep -oE \"\\(Svika|Tendai|\\\\\\\\\\\\$5\\\\.00|svika-teal\\)\")",
+      "Bash(curl -sS \"http://localhost:3000/hwindi?as=farai\")",
+      "Bash(curl -sS \"http://localhost:3000/fleet?as=baba_tino\")",
+      "Bash(curl -sS \"http://localhost:3000/wa?as=tendai\")",
+      "mcp__vercel__list_teams",
+      "mcp__vercel__deploy_to_vercel",
+      "Bash(git -c user.email=takmaswi@gmail.com -c user.name=takmaswi commit -m ' *)"
     ],
     "deny": [
       "Bash(rm -rf:*)",

@@ -21,6 +21,10 @@ When the agent gets interrupted and restarts, the next session reads this log to
 2026-04-26 04:35 | Phase 0 | aiClient refactor — per-job UNDERSTAND_PROVIDER/NARRATE_PROVIDER, defaults gemini/ollama | (pre-commit) | typecheck
 2026-04-26 04:40 | Phase 0 | Supabase migrations applied to svika-dev (via Cowork) — 12 tables, 4 demo users seeded | (external) | manual
 2026-04-26 04:45 | Phase 0 | Gemini understand verification — 1.2s warm latency, 2/2 cases correct | (pre-commit) | manual
+2026-04-26 04:55 | Phase 0 | First commit on main — 61 files | 81444d2 | typecheck+lint+build
+2026-04-26 05:00 | Phase 0 | Push to GitHub — merged with auto-init readme stub | 66e4964 | manual
+2026-04-26 05:10 | Phase 0 | Vercel link + 8 env vars (production+development) + first prod deploy | dpl_EBwRDkTfrdwUPpCURfgdngrq6WGQ | manual
+2026-04-26 05:12 | Phase 0 | Production smoke — 4/4 surfaces 200 with persona+brand markup at https://svika.vercel.app | (post-deploy) | manual
 
 ## Phase 1 — The network on the map
 
