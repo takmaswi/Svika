@@ -150,13 +150,23 @@ export default function PassengerMap({
   const assignedVehicleIdRef = useRef<string | null>(null);
   const journeyRef = useRef<ActiveJourney | null>(journey);
   const stageRef = useRef<JourneyStage | null>(stage);
+  const networkRef = useRef<NetworkPayload>(network);
+  const tokenRef = useRef<string>(mapboxToken);
   const haloPhaseRef = useRef<number>(0);
   const [selected, setSelected] = useState<SelectedRouteInfo | null>(null);
 
-  // Keep mutable refs synced for the imperative tick loop below.
+  // Keep mutable refs synced. The build effect runs once and reads these so
+  // a router.refresh() that returns a new (but content-identical) `network`
+  // object reference doesn't tear down the map mid-flight.
   useEffect(() => {
     journeyRef.current = journey;
   }, [journey]);
+  useEffect(() => {
+    networkRef.current = network;
+  }, [network]);
+  useEffect(() => {
+    tokenRef.current = mapboxToken;
+  }, [mapboxToken]);
   useEffect(() => {
     stageRef.current = stage;
     assignedVehicleIdRef.current = stage?.assigned_vehicle_id ?? null;
@@ -179,9 +189,15 @@ export default function PassengerMap({
   }, [journey, stage]);
 
   // Build the map exactly once. Subsequent network changes would require a
-  // full restyle; for the demo the network is frozen after Phase 1.
+  // full restyle; for the demo the network is frozen after Phase 1. Reading
+  // network/token from refs (synced above) means a server-side
+  // `router.refresh()` that returns a content-identical but newly-allocated
+  // `network` prop doesn't trigger an effect re-run that would tear the map
+  // down mid-load — that was the Phase 3.5 stage-2/5 blank-map regression.
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
+    const network = networkRef.current;
+    const mapboxToken = tokenRef.current;
 
     mapboxgl.accessToken = mapboxToken;
     const map = new mapboxgl.Map({
@@ -347,12 +363,13 @@ export default function PassengerMap({
       if (!feature) return;
       const id = feature.properties?.id as string | undefined;
       if (!id) return;
-      const route = network.routes.find((r) => r.id === id);
+      const net = networkRef.current;
+      const route = net.routes.find((r) => r.id === id);
       if (!route) return;
-      const stops = network.routeStops
+      const stops = net.routeStops
         .filter((rs) => rs.route_id === id)
         .sort((a, b) => a.sequence - b.sequence)
-        .map((rs) => network.stops.find((s) => s.id === rs.stop_id))
+        .map((rs) => net.stops.find((s) => s.id === rs.stop_id))
         .filter((s): s is StopForMap => Boolean(s));
       setSelected({ route, stops });
       map.setFilter(ROUTES_LAYER_HIGHLIGHT, ["in", ["get", "id"], ["literal", [id]]]);
@@ -364,9 +381,10 @@ export default function PassengerMap({
       const w = window as unknown as { __svikaMap?: mapboxgl.Map | null };
       if (w.__svikaMap === map) w.__svikaMap = null;
     };
-    // Build the map exactly once per (network, token). `stage` and `journey`
-    // are read via mutable refs so they don't tear the map down mid-load.
-  }, [network, mapboxToken]);
+    // Build the map exactly once per component mount. `network`, `mapboxToken`,
+    // `stage`, and `journey` are all read via refs so server-driven prop
+    // refreshes don't tear the map down mid-load.
+  }, []);
 
   // Pulsing halo on the assigned vehicle. ~2.2s breathing cycle, lightweight
   // CPU cost (one paint property update per ~80ms).
