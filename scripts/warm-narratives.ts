@@ -176,7 +176,11 @@ function summarise(agg: VehicleAggregate): FleetVehicleStats {
   };
 }
 
-async function generateNarrative(stats: AuditStats): Promise<{ english_text: string; shona_text: string }> {
+const MAX_ATTEMPTS = 3;
+
+async function generateNarrativeOnce(
+  stats: AuditStats,
+): Promise<{ english_text: string; shona_text: string; raw: string }> {
   const res = await ollama.chat({
     model: OLLAMA_MODEL,
     messages: [
@@ -184,20 +188,37 @@ async function generateNarrative(stats: AuditStats): Promise<{ english_text: str
       { role: "user", content: narrateUserMessage(stats) },
     ],
     format: "json",
-    options: { temperature: 0.2, num_predict: 512 },
+    options: { temperature: 0.3, num_predict: 1024 },
   });
-  const parsed = JSON.parse(stripJsonFences(res.message.content)) as {
-    english_text?: unknown;
-    shona_text?: unknown;
-  };
+  const raw = res.message.content ?? "";
+  let parsed: { english_text?: unknown; shona_text?: unknown } = {};
+  try {
+    parsed = JSON.parse(stripJsonFences(raw)) as typeof parsed;
+  } catch {
+    throw new Error(`malformed JSON (first 80c: ${raw.slice(0, 80).replace(/\s+/g, " ")})`);
+  }
   const english = typeof parsed.english_text === "string" ? parsed.english_text : "";
   const shona = typeof parsed.shona_text === "string" ? parsed.shona_text : "";
   if (english.length < 20 || shona.length < 20) {
-    throw new Error(
-      `Gemma output too short: english=${english.length} shona=${shona.length}`,
-    );
+    throw new Error(`output too short (en=${english.length} sn=${shona.length})`);
   }
-  return { english_text: english, shona_text: shona };
+  return { english_text: english, shona_text: shona, raw };
+}
+
+async function generateNarrative(
+  stats: AuditStats,
+): Promise<{ english_text: string; shona_text: string; attempts: number }> {
+  let lastError: Error | null = null;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
+    try {
+      const result = await generateNarrativeOnce(stats);
+      return { english_text: result.english_text, shona_text: result.shona_text, attempts: attempt };
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      console.warn(`[warm]   ${stats.vehicle_id} attempt ${attempt} → ${lastError.message}`);
+    }
+  }
+  throw lastError ?? new Error("Gemma failed without an error");
 }
 
 async function main() {
@@ -253,7 +274,7 @@ async function main() {
       }
       ok += 1;
       console.log(
-        `[warm] ${stats.vehicle_id} ok in ${elapsedSec}s — en=${narrative.english_text.length}c sn=${narrative.shona_text.length}c`,
+        `[warm] ${stats.vehicle_id} ok in ${elapsedSec}s (attempt ${narrative.attempts}) — en=${narrative.english_text.length}c sn=${narrative.shona_text.length}c`,
       );
     } catch (err) {
       fail += 1;

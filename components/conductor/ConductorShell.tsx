@@ -28,9 +28,11 @@ interface ConductorShellProps {
 }
 
 function prettyTime(iso: string | null): string {
+  // Server renders in UTC and the client may render in a different locale,
+  // which trips React hydration (error #418). Slice HH:MM straight off the
+  // ISO string so the same characters land on both sides.
   if (!iso) return "";
-  const d = new Date(iso);
-  return d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  return iso.slice(11, 16);
 }
 
 export default function ConductorShell({

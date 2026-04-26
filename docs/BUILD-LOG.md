@@ -69,7 +69,24 @@ When the agent gets interrupted and restarts, the next session reads this log to
 
 ## Phase 3 — Conductor and fleet surfaces
 
-<!-- agent: append entries below as Phase 3 tasks complete -->
+2026-04-26 16:20 | Phase 3 | Conductor server actions — `assignVehicleAction`, `redeemTicketAction` (3-digit code → ticket.status='redeemed', vehicle.current_passenger_count++), `cashWalkonAction` (mint cash_walkin ticket marked completed) (`lib/conductor/actions.ts`) | (uncommitted) | typecheck
+2026-04-26 16:22 | Phase 3 | Conductor state loader — assigned vehicle, available kombi list, today's clears feed (`lib/conductor/state.ts`) | (uncommitted) | typecheck
+2026-04-26 16:25 | Phase 3 | Fleet state loader — per-vehicle revenue from tickets + stop count from kombi_pings (5-min bucketed dedupe), totals strip, ZIMRA = 10% × monthly extrapolation (`lib/fleet/state.ts`) | (uncommitted) | typecheck
+2026-04-26 16:27 | Phase 3 | Audit narrative pipeline — page is cache-only, never blocks on AI; deterministic English+Shona fallback on cache miss; `narrateAndCache` exposed for the warm script (`lib/fleet/audit.ts`) | (uncommitted) | typecheck
+2026-04-26 16:30 | Phase 3 | Conductor UI — `PinKeypad` (3-digit fat-finger keypad with Enter/Clear + keyboard support), `RouteHeaderMap` (single-route Mapbox preview, non-interactive, route line + position dot), `ConductorShell` (vehicle picker → keypad → +Cash/Parcel → today's clears feed) | (uncommitted) | typecheck+lint
+2026-04-26 16:32 | Phase 3 | Fleet UI — `VehicleCard` (per-kombi tile), `AuditPanel` (English/Shona tab toggle, generated-by metadata), `ZimraCard` (10% liability), `FleetShell` orchestrator with selectable vehicle drill-in | (uncommitted) | typecheck+lint
+2026-04-26 16:35 | Phase 3 | Pages wired — `/hwindi` and `/fleet` swap from placeholder to full shells; `/fleet` runs cache-first narrative read in parallel across all owned kombis (no AI inline) | (uncommitted) | typecheck+lint+build
+2026-04-26 16:40 | Phase 3 | Local sanity — pnpm start, /hwindi?as=farai shows ZH 4821 keypad markers, /fleet?as=baba_tino renders in 1.5s with revenue/zimra/audit panel markers | (uncommitted) | manual
+2026-04-26 16:42 | Phase 3 | scripts/phase3-prod-smoke.ts written — drives /hwindi PIN entry on ZH 4821 with code 724 (cash-walkon fallback if already redeemed) then asserts /fleet revenue + ZIMRA + bilingual audit text | (uncommitted) | typecheck+lint+build
+2026-04-26 16:43 | Phase 3 | scripts/warm-narratives.ts written — pnpm narrate:warm runs Ollama Gemma E2B for every fleet-owned kombi today and upserts into audit_narratives | (uncommitted) | typecheck+lint+build
+2026-04-26 16:45 | Phase 3 | Phase 3 prod-verified — git push d0f15d6..8a92173, https://svika.vercel.app/hwindi?as=farai HTTP 200 with marker `hwindi-pin-keypad`, /fleet?as=baba_tino HTTP 200 with marker `fleet-audit-panel`; full smoke via scripts/phase3-prod-smoke.ts (Farai → code 724 → "Cleared 724 · $1.00 · 1/15 on board" → /fleet shows $1.00 revenue, $3.00 ZIMRA, English+Shona narrative) | 8a92173 | prod-smoke
+
+### Phase 3 known issues / follow-ups
+
+- **Audit narratives use deterministic fallback until `pnpm narrate:warm` is run.** Gemma 4 E2B on CPU is ~55s per inference (Phase 0 spike), too slow to call inline from the dashboard, and Vercel cannot reach localhost Ollama anyway. The warm script is the demo path: run it once a day on a machine with Ollama, then prod reads from `audit_narratives` cache. The fallback is honest English+Shona that mentions the right numbers, so the demo is never blank.
+- **Stop count uses 5-minute bucket dedupe** — `kombi_pings` rows where `is_at_stop=true` are grouped by `(nearest_stop_id, 5-min bucket)`. This prevents a kombi sitting at a rank from inflating the count, but a vehicle that loiters >5 minutes at one stop will register a second stop. Acceptable for the demo.
+- **Parcel button is a placeholder** — Phase 4 stretch 1 wires the parcel happy path. The button shows "Parcel handover ships in Phase 4" so the conductor screen still feels complete during the demo.
+- **No DB transaction on redeem** — if `tickets` update succeeds but `vehicles` update fails, ticket is redeemed without the passenger-count bump. Acceptable for the demo. Postgres function wrapper is roadmap.
 
 ## Phase 4 — Companion surfaces and stretch
 
