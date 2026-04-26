@@ -1,0 +1,29 @@
+name: Supabase keep-alive
+
+# Pings Supabase once a day so the free-tier project doesn't pause
+# after 7 days of inactivity.
+# Per CLAUDE.md → Locked decisions → Database.
+
+on:
+  schedule:
+    # 02:00 UTC daily ≈ 04:00 CAT
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm ping
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}

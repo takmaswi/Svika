@@ -1,0 +1,246 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "description": "Seed data for the Svika kombi network. Routes, transfer points, and trip plans verified against Google Maps and Waze data for Harare, Zimbabwe.",
+    "currency": "USD",
+    "fare_model": "Per-segment fares to support dynamic updates as fuel prices change. Each route also carries a default_fare_usd as the all-the-way-end-to-end price.",
+    "stop_id_conventions": "Stop points are shared across routes when they describe the same physical location. Avondale Shops appears on both route_marketsq_avondale and route_westgate_copa_segment under id sp_avondale_shops."
+  },
+  "routes": [
+    {
+      "id": "route_heights_rezende",
+      "name": "Mt Pleasant Heights to Rezende Rank",
+      "endpoint_start": { "name": "Bannockburn Rd North Terminus", "lat": -17.74980, "lng": 31.04250 },
+      "endpoint_end": { "name": "Rezende Rank (CBD)", "lat": -17.83250, "lng": 31.04940 },
+      "direction_summary": "Starts at Bannockburn Road North Terminus. Heads south on Bannockburn, becoming The Chase, then Second Street (Sam Nujoma). Continues south, passing the University of Zimbabwe and the NSSA Building on the right. At Samora Machel Avenue, turns right (west). At Julius Nyerere Way, turns left (south). At Jason Moyo Avenue, turns right (west). The entrance to Rezende Rank is immediately on the right.",
+      "polyline": [
+        [-17.74980, 31.04250],
+        [-17.76855, 31.04825],
+        [-17.78465, 31.05154],
+        [-17.79360, 31.05280],
+        [-17.82850, 31.05750],
+        [-17.82890, 31.05050],
+        [-17.83290, 31.05070],
+        [-17.83310, 31.04920],
+        [-17.83250, 31.04940]
+      ],
+      "stop_points": [
+        { "id": "sp_heights_start_north", "name": "Bannockburn Rd North Terminus", "lat": -17.74980, "lng": 31.04250, "is_terminal": true, "is_rank": false },
+        { "id": "sp_uz_gate", "name": "University of Zimbabwe Main Gate (The Chase)", "lat": -17.78465, "lng": 31.05154, "is_terminal": false, "is_rank": false },
+        { "id": "sp_second_lomagundi", "name": "Second St at Lomagundi Rd Intersection", "lat": -17.79360, "lng": 31.05280, "is_terminal": false, "is_rank": false },
+        { "id": "sp_rezende_rank", "name": "Rezende Rank", "lat": -17.83250, "lng": 31.04940, "is_terminal": true, "is_rank": true }
+      ],
+      "fare_segments": [
+        { "from_stop_id": "sp_heights_start_north", "to_stop_id": "sp_uz_gate", "fare_usd": 1.00 },
+        { "from_stop_id": "sp_heights_start_north", "to_stop_id": "sp_second_lomagundi", "fare_usd": 1.00 },
+        { "from_stop_id": "sp_heights_start_north", "to_stop_id": "sp_rezende_rank", "fare_usd": 1.50 },
+        { "from_stop_id": "sp_uz_gate", "to_stop_id": "sp_second_lomagundi", "fare_usd": 0.50 },
+        { "from_stop_id": "sp_uz_gate", "to_stop_id": "sp_rezende_rank", "fare_usd": 1.00 },
+        { "from_stop_id": "sp_second_lomagundi", "to_stop_id": "sp_rezende_rank", "fare_usd": 1.00 }
+      ],
+      "default_fare_usd": 1.50,
+      "typical_duration_minutes": 38,
+      "confidence": "high",
+      "notes": "Fare is dynamic, varies with fuel price changes. CBD approach verified via Waze: Second Street to Samora Machel (right), to Julius Nyerere (left), to Jason Moyo (right), immediate right into Rezende."
+    },
+    {
+      "id": "route_marketsq_avondale",
+      "name": "Market Square Rank to Avondale Shops",
+      "endpoint_start": { "name": "Market Square Rank (CBD)", "lat": -17.83575, "lng": 31.03992 },
+      "endpoint_end": { "name": "Avondale Shops (King George Rd)", "lat": -17.80321, "lng": 31.03702 },
+      "direction_summary": "Departs Market Square Rank onto Harare Street heading north. Turns left onto Jason Moyo Avenue, then right onto Rotten Row. Turns left onto Samora Machel Avenue West, then right onto Prince Edward Street heading north. Passes Kensington Shops. At Argyle Road turns right, then immediately left onto King George Road to terminate at Avondale Shops.",
+      "polyline": [
+        [-17.83575, 31.03992],
+        [-17.83350, 31.03960],
+        [-17.83380, 31.03650],
+        [-17.82900, 31.03580],
+        [-17.82920, 31.03350],
+        [-17.81650, 31.03580],
+        [-17.80600, 31.03400],
+        [-17.80610, 31.03650],
+        [-17.80321, 31.03702]
+      ],
+      "stop_points": [
+        { "id": "sp_marketsq_rank", "name": "Market Square Rank", "lat": -17.83575, "lng": 31.03992, "is_terminal": true, "is_rank": true },
+        { "id": "sp_pe_kensington", "name": "Prince Edward St (Kensington Shops)", "lat": -17.81650, "lng": 31.03580, "is_terminal": false, "is_rank": false },
+        { "id": "sp_pe_cork", "name": "Prince Edward St at Cork Rd Junction", "lat": -17.80750, "lng": 31.03450, "is_terminal": false, "is_rank": false },
+        { "id": "sp_avondale_shops", "name": "Avondale Shops (King George Rd)", "lat": -17.80321, "lng": 31.03702, "is_terminal": true, "is_rank": false }
+      ],
+      "fare_segments": [
+        { "from_stop_id": "sp_marketsq_rank", "to_stop_id": "sp_pe_kensington", "fare_usd": 0.50 },
+        { "from_stop_id": "sp_marketsq_rank", "to_stop_id": "sp_pe_cork", "fare_usd": 1.00 },
+        { "from_stop_id": "sp_marketsq_rank", "to_stop_id": "sp_avondale_shops", "fare_usd": 1.00 },
+        { "from_stop_id": "sp_pe_kensington", "to_stop_id": "sp_avondale_shops", "fare_usd": 0.50 }
+      ],
+      "default_fare_usd": 1.00,
+      "typical_duration_minutes": 22,
+      "confidence": "high",
+      "notes": "Fare is dynamic. CBD egress via Rotten Row to Prince Edward Street verified via Waze."
+    },
+    {
+      "id": "route_fourthst_borrowdale",
+      "name": "Fourth Street Rank to Sam Levy's Village",
+      "endpoint_start": { "name": "Fourth Street Rank (Simon Muzenda Terminus)", "lat": -17.83290, "lng": 31.05630 },
+      "endpoint_end": { "name": "Sam Levy's Village Bus Stop (Borrowdale Rd)", "lat": -17.77580, "lng": 31.08580 },
+      "direction_summary": "Departs Fourth Street Rank heading north. Merges onto Seventh Street, which becomes Borrowdale Road. Continues north on Borrowdale Road, passing the Borrowdale Racecourse on the left. Drop-off is at the layby bus stop on Borrowdale Road just before the main entrance to Sam Levy's Village.",
+      "polyline": [
+        [-17.83290, 31.05630],
+        [-17.82850, 31.05750],
+        [-17.81500, 31.06500],
+        [-17.79500, 31.07800],
+        [-17.77580, 31.08580]
+      ],
+      "stop_points": [
+        { "id": "sp_fourthst_rank", "name": "Fourth Street Rank", "lat": -17.83290, "lng": 31.05630, "is_terminal": true, "is_rank": true },
+        { "id": "sp_samlevys", "name": "Sam Levy's Village Bus Stop", "lat": -17.77580, "lng": 31.08580, "is_terminal": true, "is_rank": false }
+      ],
+      "fare_segments": [
+        { "from_stop_id": "sp_fourthst_rank", "to_stop_id": "sp_samlevys", "fare_usd": 1.50 }
+      ],
+      "default_fare_usd": 1.50,
+      "typical_duration_minutes": 25,
+      "confidence": "high",
+      "notes": "Fare is dynamic. Standard Borrowdale arterial route."
+    },
+    {
+      "id": "route_westgate_copa_segment",
+      "name": "Westgate to Copacabana (Avondale Segment)",
+      "endpoint_start": { "name": "Lomagundi Rd at King George turn", "lat": -17.79380, "lng": 31.04850 },
+      "endpoint_end": { "name": "Avondale Shops (King George Rd)", "lat": -17.80321, "lng": 31.03702 },
+      "direction_summary": "Modelled segment of the inbound Westgate to Copacabana route. From the pickup point near the Lomagundi/King George intersection, heads southwest down King George Road, dropping passengers at Avondale Shops. The full Westgate-Copacabana route extends beyond this segment in both directions; only the Lomagundi-to-Avondale segment is modelled here for the demo.",
+      "polyline": [
+        [-17.79380, 31.04850],
+        [-17.79550, 31.04650],
+        [-17.80321, 31.03702]
+      ],
+      "stop_points": [
+        { "id": "sp_lomagundi_kinggeorge_pickup", "name": "King George Rd just off Lomagundi Rd", "lat": -17.79390, "lng": 31.04840, "is_terminal": false, "is_rank": false },
+        { "id": "sp_avondale_shops", "name": "Avondale Shops (King George Rd)", "lat": -17.80321, "lng": 31.03702, "is_terminal": true, "is_rank": false }
+      ],
+      "fare_segments": [
+        { "from_stop_id": "sp_lomagundi_kinggeorge_pickup", "to_stop_id": "sp_avondale_shops", "fare_usd": 0.50 }
+      ],
+      "default_fare_usd": 0.50,
+      "typical_duration_minutes": 5,
+      "confidence": "high",
+      "notes": "Fare is dynamic. Modelled as a segment of the longer Westgate-Copacabana route, used here for the walking-transfer connection."
+    }
+  ],
+  "transfer_points": [
+    {
+      "id": "transfer_rezende_to_fourthst",
+      "type": "rank_to_rank_walk",
+      "from_stop_id": "sp_rezende_rank",
+      "to_stop_id": "sp_fourthst_rank",
+      "walking_distance_meters": 750,
+      "walking_duration_minutes": 10,
+      "walking_polyline": [
+        [-17.83250, 31.04940],
+        [-17.83250, 31.05300],
+        [-17.83290, 31.05630]
+      ],
+      "confidence": "high",
+      "notes": "Walk east across the CBD from Rezende to Fourth Street Rank."
+    },
+    {
+      "id": "transfer_rezende_to_marketsq",
+      "type": "rank_to_rank_walk",
+      "from_stop_id": "sp_rezende_rank",
+      "to_stop_id": "sp_marketsq_rank",
+      "walking_distance_meters": 1100,
+      "walking_duration_minutes": 15,
+      "walking_polyline": [
+        [-17.83250, 31.04940],
+        [-17.83450, 31.04950],
+        [-17.83575, 31.03992]
+      ],
+      "confidence": "high",
+      "notes": "Heavy foot traffic walk west across the CBD between two major ranks."
+    },
+    {
+      "id": "transfer_lomagundi_walk",
+      "type": "walking_junction",
+      "from_stop_id": "sp_second_lomagundi",
+      "to_stop_id": "sp_lomagundi_kinggeorge_pickup",
+      "walking_distance_meters": 450,
+      "walking_duration_minutes": 6,
+      "walking_polyline": [
+        [-17.79360, 31.05280],
+        [-17.79380, 31.04850],
+        [-17.79390, 31.04840]
+      ],
+      "confidence": "high",
+      "notes": "Tribal-knowledge walking transfer along Lomagundi Road from the Second Street corner to the King George Road corner. Connects the Heights kombi to inbound Avondale-bound kombis without requiring a full ride into the CBD."
+    }
+  ],
+  "trip_plans": [
+    {
+      "origin_stop_id": "sp_heights_start_north",
+      "destination_stop_id": "sp_avondale_shops",
+      "options": [
+        {
+          "label": "Lomagundi walking transfer (fastest)",
+          "legs": [
+            { "type": "kombi", "route_id": "route_heights_rezende", "board_at_stop_id": "sp_heights_start_north", "alight_at_stop_id": "sp_second_lomagundi", "fare_usd": 1.00, "duration_minutes": 20 },
+            { "type": "walk", "transfer_id": "transfer_lomagundi_walk", "duration_minutes": 6 },
+            { "type": "kombi", "route_id": "route_westgate_copa_segment", "board_at_stop_id": "sp_lomagundi_kinggeorge_pickup", "alight_at_stop_id": "sp_avondale_shops", "fare_usd": 0.50, "duration_minutes": 5 }
+          ],
+          "total_fare_usd": 1.50,
+          "total_duration_minutes": 31,
+          "total_walking_minutes": 6,
+          "confidence": "high",
+          "notes": "Tribal-knowledge walking transfer. Faster and cheaper than the rank-transfer alternative, but requires six minutes of mid-route walking."
+        },
+        {
+          "label": "CBD rank transfer (slowest)",
+          "legs": [
+            { "type": "kombi", "route_id": "route_heights_rezende", "board_at_stop_id": "sp_heights_start_north", "alight_at_stop_id": "sp_rezende_rank", "fare_usd": 1.50, "duration_minutes": 38 },
+            { "type": "walk", "transfer_id": "transfer_rezende_to_marketsq", "duration_minutes": 15 },
+            { "type": "kombi", "route_id": "route_marketsq_avondale", "board_at_stop_id": "sp_marketsq_rank", "alight_at_stop_id": "sp_avondale_shops", "fare_usd": 1.00, "duration_minutes": 22 }
+          ],
+          "total_fare_usd": 2.50,
+          "total_duration_minutes": 75,
+          "total_walking_minutes": 15,
+          "confidence": "high",
+          "notes": "Fallback for when the Lomagundi walking transfer is not preferred (heavy rain, after dark, mobility limitations). Reliable but inefficient."
+        }
+      ]
+    },
+    {
+      "origin_stop_id": "sp_heights_start_north",
+      "destination_stop_id": "sp_uz_gate",
+      "options": [
+        {
+          "label": "Direct mid-route drop",
+          "legs": [
+            { "type": "kombi", "route_id": "route_heights_rezende", "board_at_stop_id": "sp_heights_start_north", "alight_at_stop_id": "sp_uz_gate", "fare_usd": 1.00, "duration_minutes": 15 }
+          ],
+          "total_fare_usd": 1.00,
+          "total_duration_minutes": 15,
+          "total_walking_minutes": 0,
+          "confidence": "high",
+          "notes": "Single kombi, mid-route drop at the University of Zimbabwe main gate."
+        }
+      ]
+    },
+    {
+      "origin_stop_id": "sp_heights_start_north",
+      "destination_stop_id": "sp_samlevys",
+      "options": [
+        {
+          "label": "CBD rank transfer at Rezende to Fourth Street",
+          "legs": [
+            { "type": "kombi", "route_id": "route_heights_rezende", "board_at_stop_id": "sp_heights_start_north", "alight_at_stop_id": "sp_rezende_rank", "fare_usd": 1.50, "duration_minutes": 38 },
+            { "type": "walk", "transfer_id": "transfer_rezende_to_fourthst", "duration_minutes": 10 },
+            { "type": "kombi", "route_id": "route_fourthst_borrowdale", "board_at_stop_id": "sp_fourthst_rank", "alight_at_stop_id": "sp_samlevys", "fare_usd": 1.50, "duration_minutes": 25 }
+          ],
+          "total_fare_usd": 3.00,
+          "total_duration_minutes": 73,
+          "total_walking_minutes": 10,
+          "confidence": "high",
+          "notes": "Standard suburb-to-suburb journey via the CBD ranks. Demonstrates the rank-transfer pattern for the third trip in the demo."
+        }
+      ]
+    }
+  ]
+}

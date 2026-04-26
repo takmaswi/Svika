@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build artifacts
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# Env files (only .env.example and .env.local.example are tracked)
+.env
+.env.*
+!.env.example
+!.env.local.example
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test artifacts
+playwright-report/
+test-results/
+.playwright-mcp/
+
+# Supabase local
+supabase/.branches/
+supabase/.temp/
+
+# Stray screenshots from other projects (review before deleting)
+audit-*.png
+best-bud-*.png
+mobile-*.png
+v1-*.png v2-*.png v3-*.png v4-*.png v5-*.png v6-*.png v7-*.png
+
+# Cowork session artifacts
+.claude/sessions/

@@ -1,0 +1,68 @@
+%% Svika system architecture
+%% Renders with any Mermaid-aware viewer.
+
+graph TB
+    subgraph clients["Client surfaces (one Next.js app, four route groups)"]
+        passenger["/  passenger app<br/>Tendai, Rudo"]
+        conductor["/hwindi  conductor screen<br/>Farai"]
+        fleet["/fleet  fleet owner dashboard<br/>Baba Tino"]
+        wa["/wa  mocked WhatsApp companion"]
+    end
+
+    subgraph backend["Supabase project (free tier)"]
+        db[("PostgreSQL + PostGIS<br/>tables: users, routes, stop_points,<br/>fare_segments, transfer_points,<br/>vehicles, tickets, trips, transfers,<br/>kombi_pings, audit_narratives")]
+        realtime["Realtime channels<br/>kombi positions<br/>ticket state changes"]
+        api["Auto-generated REST API<br/>+ server functions"]
+    end
+
+    subgraph map["Map provider"]
+        mapbox["Mapbox GL JavaScript<br/>route polylines<br/>stop markers<br/>moving kombi markers"]
+    end
+
+    subgraph ai["Artificial intelligence layer"]
+        client_module["aiClient module<br/>understand(input)<br/>narrate(stats)"]
+        ollama["Ollama (local)<br/>Gemma 4 E2B<br/>default provider"]
+        gemini["Gemini API (cloud)<br/>fallback when AI_PROVIDER=gemini"]
+    end
+
+    subgraph sim["Simulation runner"]
+        runner["Position runner<br/>advances each kombi<br/>every 2 seconds"]
+    end
+
+    %% Client to backend
+    passenger -->|read & write| api
+    conductor -->|read & write| api
+    fleet -->|read & write| api
+    wa -->|read & write| api
+
+    %% Realtime subscriptions
+    passenger -.->|subscribe| realtime
+    conductor -.->|subscribe| realtime
+    fleet -.->|subscribe| realtime
+
+    %% Map usage
+    passenger -->|render map| mapbox
+    conductor -->|small map| mapbox
+    fleet -->|map view| mapbox
+
+    %% AI usage
+    passenger -->|understand request| client_module
+    fleet -->|narrate audit| client_module
+    wa -->|understand command| client_module
+    client_module -->|local first| ollama
+    client_module -->|fallback| gemini
+
+    %% Backend connections
+    api --- db
+    realtime --- db
+
+    %% Simulation
+    runner -->|writes positions| db
+
+    %% Styling
+    classDef teal fill:#0A4B5C,stroke:#0A4B5C,color:#F2EDE6
+    classDef rust fill:#D9622A,stroke:#D9622A,color:#F2EDE6
+    classDef stone fill:#F2EDE6,stroke:#0A4B5C,color:#0A4B5C
+    class clients,backend,map,ai,sim stone
+    class passenger,conductor,fleet,wa teal
+    class ollama,gemini,client_module rust

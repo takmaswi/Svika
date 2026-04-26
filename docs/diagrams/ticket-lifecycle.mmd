@@ -1,0 +1,47 @@
+%% Svika ticket lifecycle
+%% Shows one ticket from purchase through transfer through redemption.
+
+sequenceDiagram
+    autonumber
+    participant Tendai as Tendai (passenger)
+    participant App as Passenger app
+    participant DB as Supabase database
+    participant Rudo as Rudo (recipient)
+    participant Farai as Farai (conductor)
+    participant Cond as Conductor screen
+
+    %% Purchase
+    Tendai->>App: Plan trip Heights to Avondale
+    App->>DB: Read trip plans for sp_heights_start_north to sp_avondale_shops
+    DB-->>App: Two options (Lomagundi walk, CBD rank)
+    Tendai->>App: Buy option A ($1.50)
+    App->>DB: create trip + 2 tickets
+    DB-->>App: Ticket 482 (status=issued, holder=Tendai), Ticket 619 (status=issued, holder=Tendai, dimmed)
+    App-->>Tendai: Wallet shows both tickets
+
+    %% Transfer
+    Tendai->>App: Tap share on ticket 482
+    App-->>Tendai: System share sheet opens (WhatsApp)
+    Tendai->>Rudo: Sends Svika ticket link via WhatsApp
+    Note over App,DB: Status moves to transferred_pending
+    App->>DB: Update ticket 482 status=transferred_pending
+    Rudo->>App: Open link with ?as=rudo&claim=482
+    App->>DB: Claim ticket 482 (set holder=Rudo, status=held)
+    DB-->>App: Confirmed
+    App-->>Rudo: Wallet shows ticket 482 as held
+    App-->>Tendai: Wallet shows ticket 482 as Transferred to Rudo
+
+    %% Redemption
+    Rudo->>Farai: Says "four-eight-two" on boarding
+    Farai->>Cond: Tap Code, type 482, confirm
+    Cond->>DB: redeem(access_code=482, vehicle=ZH 4821)
+    DB->>DB: Verify ticket 482 status in (issued, held), match route
+    DB->>DB: status = redeemed, vehicle_id = ZH 4821, redeemed_at = now
+    DB->>DB: increment vehicles.current_passenger_count
+    DB-->>Cond: Success: $1.00 cleared, 12 of 15 seats
+    Cond-->>Farai: Green confirmation flash
+
+    %% Completion
+    Note over DB: Kombi advances along route
+    DB->>DB: Position passes alight_at_stop_id
+    DB->>DB: status = completed, completed_at = now

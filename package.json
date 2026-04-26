@@ -1,0 +1,58 @@
+{
+  "name": "svika",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Digital tickets, real revenue, same kombi. Harare's informal kombi network, digitised.",
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json,css}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,md,json,css}\"",
+    "test:e2e": "playwright test",
+    "test:e2e:smoke": "playwright test --project=smoke",
+    "test:e2e:ui": "playwright test --ui",
+    "db:migrate": "supabase db push",
+    "db:reset": "supabase db reset",
+    "db:seed": "tsx seed/loader.ts",
+    "db:types": "supabase gen types typescript --local > lib/supabase/types.ts",
+    "ai:spike": "tsx scripts/gemma-shona-spike.ts",
+    "ai:verify": "tsx --env-file=.env.local scripts/gemini-verify.ts",
+    "ping": "tsx scripts/ping-supabase.ts",
+    "sim:start": "tsx scripts/sim-runner.ts"
+  },
+  "dependencies": {
+    "@google/genai": "^1.0.0",
+    "@supabase/ssr": "^0.5.2",
+    "@supabase/supabase-js": "^2.45.0",
+    "mapbox-gl": "^3.8.0",
+    "next": "^16.2.0",
+    "ollama": "^0.5.11",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@tailwindcss/postcss": "^4.1.0",
+    "@types/mapbox-gl": "^3.4.0",
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "eslint": "^9.18.0",
+    "eslint-config-next": "^16.2.0",
+    "postcss": "^8.5.0",
+    "prettier": "^3.4.0",
+    "supabase": "^2.0.0",
+    "tailwindcss": "^4.1.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
