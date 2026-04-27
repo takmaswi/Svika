@@ -18,7 +18,7 @@ Screenshot: `scripts\rehearsal-stage-1.png`
 
 Sheet text:
 ```
-×FFarai · Conductor— · Toyota Hiace · cream→Walk to your kombi at Bannockburn Rd North TerminusDrop off: Second St at Lomagundi Rd IntersectionShow 163$1.00 paid · $1.50 trip total
+×FFarai · Conductor— · Toyota Hiace · cream→Walk to your kombi at Bannockburn Rd North TerminusDrop off: Second St at Lomagundi Rd IntersectionShow 543$1.00 paid · $1.50 trip total
 ```
 
 Layer probe:
@@ -58,11 +58,11 @@ Layer probe:
         "==",
         [
           "get",
-          "is_assigned"
+          "vehicle_id"
         ],
-        true
+        "__none__"
       ],
-      "circleOpacity": 0.3643208200770147
+      "circleOpacity": 0.3595444560705142
     }
   ],
   "walkingFeatures": 1,
@@ -76,7 +76,7 @@ Screenshot: `scripts\rehearsal-stage-2.png`
 
 Sheet text:
 ```
-×FFarai · ConductorZH 4821 · Toyota Hiace · cream•On your way to Second St at Lomagundi Rd IntersectionArriving in 20 minDrop off: Second St at Lomagundi Rd IntersectionShow 163$1.00 paid · $1.50 trip total
+×FFarai · ConductorZH 4821 · Toyota Hiace · cream•On your way to Second St at Lomagundi Rd IntersectionArriving in 20 minDrop off: Second St at Lomagundi Rd IntersectionShow 543$1.00 paid · $1.50 trip total
 ```
 
 Layer probe:
@@ -122,7 +122,7 @@ Layer probe:
         ],
         "ZH 4821"
       ],
-      "circleOpacity": 0.445497874519056
+      "circleOpacity": 0.4094328975688938
     }
   ],
   "walkingFeatures": 1,
@@ -136,7 +136,7 @@ Screenshot: `scripts\rehearsal-stage-3.png`
 
 Sheet text:
 ```
-×FFarai · ConductorZH 4821 · Toyota Hiace · cream•On your way to Second St at Lomagundi Rd IntersectionArriving in 10 minDrop off: Second St at Lomagundi Rd IntersectionShow 163$1.00 paid · $1.50 trip total
+×FFarai · ConductorZH 4821 · Toyota Hiace · cream•On your way to Second St at Lomagundi Rd IntersectionArriving in 10 minDrop off: Second St at Lomagundi Rd IntersectionShow 543$1.00 paid · $1.50 trip total
 ```
 
 Layer probe:
@@ -182,7 +182,7 @@ Layer probe:
         ],
         "ZH 4821"
       ],
-      "circleOpacity": 0.4130513457212719
+      "circleOpacity": 0.3077542665910964
     }
   ],
   "walkingFeatures": 1,
@@ -196,7 +196,7 @@ Screenshot: `scripts\rehearsal-stage-4.png`
 
 Sheet text:
 ```
-×FFarai · Conductor— · Toyota Hiace · cream←Walk west on Lomagundi RoadFrom: Second St at Lomagundi Rd Intersection (just alighted)To: King George Rd just off Lomagundi Rd (board next)6 min · 450 mDrop off: Avondale Shops (King George Rd)Show 162$0.50 paid · $1.50 trip total
+×FFarai · Conductor— · Toyota Hiace · cream←Walk west on Lomagundi RoadFrom: Second St at Lomagundi Rd Intersection (just alighted)To: King George Rd just off Lomagundi Rd (board next)6 min · 450 mDrop off: Avondale Shops (King George Rd)Show 859$0.50 paid · $1.50 trip total
 ```
 
 Layer probe:
@@ -240,9 +240,9 @@ Layer probe:
           "get",
           "vehicle_id"
         ],
-        "ZH 4821"
+        "__none__"
       ],
-      "circleOpacity": 0.3524729515281394
+      "circleOpacity": 0.2115040924229492
     }
   ],
   "walkingFeatures": 1,
@@ -256,7 +256,7 @@ Screenshot: `scripts\rehearsal-stage-5.png`
 
 Sheet text:
 ```
-×FFarai · ConductorZH 5101 · Toyota Hiace · cream•On your way to Avondale Shops (King George Rd)Arriving in 5 minDrop off: Avondale Shops (King George Rd)Show 162$0.50 paid · $1.50 trip total
+×FFarai · ConductorZH 5101 · Toyota Hiace · cream•On your way to Avondale Shops (King George Rd)Arriving in 5 minDrop off: Avondale Shops (King George Rd)Show 859$0.50 paid · $1.50 trip total
 ```
 
 Layer probe:
@@ -279,7 +279,7 @@ Layer probe:
         [
           "literal",
           [
-            "route_heights_rezende"
+            "route_westgate_copa_segment"
           ]
         ]
       ],
@@ -302,7 +302,7 @@ Layer probe:
         ],
         "ZH 5101"
       ],
-      "circleOpacity": 0.22417278142709474
+      "circleOpacity": 0.3494433143875686
     }
   ],
   "walkingFeatures": 1,
@@ -360,7 +360,7 @@ Layer probe:
         ],
         "__none__"
       ],
-      "circleOpacity": 0.2102411906663418
+      "circleOpacity": 0.4478435520094826
     }
   ],
   "walkingFeatures": 1,

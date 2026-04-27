@@ -549,7 +549,11 @@ async function main(): Promise<void> {
   await ensureBuilt(client);
   const { takundaId } = await resolveTakundaAndDrain(client);
 
-  const browser = await chromium.launch({ headless: true });
+  // Mapbox GL v3 + the Phase 4.5 SVG icon has a chromium-headless quirk
+  // where page.screenshot() captures a transparent canvas even though the
+  // WebGL paint happened. Run headed so the rehearsal evidence reflects
+  // what a real passenger sees on prod.
+  const browser = await chromium.launch({ headless: false });
   const ctx = await browser.newContext({
     viewport: { width: 412, height: 915 },
     userAgent:

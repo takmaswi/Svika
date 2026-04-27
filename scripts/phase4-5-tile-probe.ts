@@ -16,7 +16,13 @@ import { chromium } from "@playwright/test";
 const BASE = "https://svika.vercel.app";
 
 async function main(): Promise<void> {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+    // The default `headless: true` uses old chromium headless and has had
+    // intermittent WebGL paint failures with Mapbox GL v3. The "shell" mode
+    // routes through chrome's headless-shell which is closer to a real
+    // browser's render path.
+    headless: false,
+  });
   const ctx = await browser.newContext({
     viewport: { width: 390, height: 844 },
     userAgent:
@@ -26,6 +32,14 @@ async function main(): Promise<void> {
   const consoleMsgs: string[] = [];
   page.on("console", (m) => consoleMsgs.push(`[${m.type()}] ${m.text()}`));
   page.on("pageerror", (e) => consoleMsgs.push(`[pageerror] ${e.message}`));
+
+  const tileRequests: Array<{ url: string; status: number }> = [];
+  page.on("response", (resp) => {
+    const url = resp.url();
+    if (url.includes("api.mapbox.com") || url.includes(".pbf") || url.includes("tiles")) {
+      tileRequests.push({ url: url.slice(0, 140), status: resp.status() });
+    }
+  });
 
   await page.goto(`${BASE}/?as=takunda`, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(
@@ -196,6 +210,9 @@ async function main(): Promise<void> {
     return { cx, cy, layers };
   });
   console.log("[elements]", JSON.stringify(elementProbe, null, 2));
+
+  console.log("[tile requests]", tileRequests.length);
+  for (const t of tileRequests.slice(0, 12)) console.log(`  ${t.status} ${t.url}`);
   console.log("--- console (last 30) ---");
   for (const m of consoleMsgs.slice(-30)) console.log(m);
 

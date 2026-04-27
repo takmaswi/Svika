@@ -126,9 +126,12 @@ async function main(): Promise<void> {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
+  // Headed — Mapbox v3 + chromium headless can capture transparent canvas
+  // even when WebGL paint succeeded (preserveDrawingBuffer=false). Headed
+  // captures the real composited frame so the motion screenshots show
+  // what users see.
   const browser = await chromium.launch({
-    headless: true,
-    // Isolated profile dir so we don't collide with any user chrome.
+    headless: false,
     args: ["--disable-dev-shm-usage"],
   });
   const ctx = await browser.newContext({
