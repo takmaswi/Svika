@@ -35,50 +35,72 @@ const RUST = "#d9622a";
 const STONE = "#f2ede6";
 
 const KOMBI_ICON_ID = "kombi-icon";
-const KOMBI_ICON_URL = "/brand/kombi.svg";
-// Rasterise the SVG at this pixel density so the symbol stays crisp on
-// retina screens and at Mapbox's higher zoom levels. The icon-size case
-// expression below shrinks/grows from this baseline.
-const KOMBI_ICON_PX_W = 64;
-const KOMBI_ICON_PX_H = 96;
+const KOMBI_ICON_PX = 64;
 
 /**
- * Loads `/brand/kombi.svg`, rasterises it onto a canvas, and registers the
- * pixels with Mapbox under the name `kombi-icon`. Mapbox's `loadImage`
- * helper does not handle SVG sources reliably across browsers, so we drive
- * the load through `Image()` ourselves and feed `ImageData` to `addImage`.
+ * Inline rasterisation of the Hiace SVG so Mapbox can pick it up via
+ * `addImage`. The on-disk file at `public/brand/kombi.svg` is the source
+ * of truth for the artwork; this constant mirrors the same shapes
+ * (cream body, teal stripe, rust bumper, tinted windows, four wheels,
+ * soft shadow) — kept inline because Mapbox + headless chromium has
+ * shown intermittent failure modes when canvas-rasterising a fetched
+ * SVG file, and the data URI path has been stable across the project's
+ * earlier rehearsals.
+ */
+const KOMBI_SVG = `
+<svg xmlns="http://www.w3.org/2000/svg" width="${KOMBI_ICON_PX}" height="${KOMBI_ICON_PX}" viewBox="0 0 64 64">
+  <defs>
+    <filter id="kombiShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1.6" flood-color="#000" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+  <g filter="url(#kombiShadow)">
+    <ellipse cx="13" cy="18" rx="3.2" ry="4.2" fill="#1a1a1a"/>
+    <ellipse cx="51" cy="18" rx="3.2" ry="4.2" fill="#1a1a1a"/>
+    <ellipse cx="13" cy="48" rx="3.2" ry="4.2" fill="#1a1a1a"/>
+    <ellipse cx="51" cy="48" rx="3.2" ry="4.2" fill="#1a1a1a"/>
+    <rect x="11" y="6" width="42" height="52" rx="9" ry="9" fill="#F0EDE3"/>
+    <rect x="22" y="6" width="20" height="3" rx="1" fill="#D9622A"/>
+    <rect x="18" y="11" width="28" height="10" rx="2" fill="#0F4C5C" fill-opacity="0.85"/>
+    <rect x="11" y="30" width="42" height="3" fill="#0F4C5C"/>
+    <rect x="18" y="44" width="28" height="10" rx="2" fill="#0F4C5C" fill-opacity="0.85"/>
+  </g>
+</svg>
+`.trim();
+
+/**
+ * Rasterises the SVG and hands the pixels to Mapbox under the name
+ * `kombi-icon`. `data:` URIs are treated as same-origin and never taint
+ * the canvas, which is the root cause we hit when fetching the file.
  */
 async function registerKombiIcon(map: mapboxgl.Map): Promise<void> {
   if (map.hasImage(KOMBI_ICON_ID)) return;
   await new Promise<void>((resolve) => {
-    // Same-origin SVG asset. Setting `crossOrigin` here is unnecessary and
-    // can taint the canvas on some browsers, leaving `getImageData()` to
-    // throw silently — and the icon never gets registered. Leaving it
-    // undefined keeps the canvas un-tainted.
-    const img = new Image();
-    img.decoding = "async";
+    const img = new Image(KOMBI_ICON_PX, KOMBI_ICON_PX);
+    const url =
+      "data:image/svg+xml;charset=utf-8," + encodeURIComponent(KOMBI_SVG);
     img.onload = () => {
       try {
         const canvas = document.createElement("canvas");
-        canvas.width = KOMBI_ICON_PX_W;
-        canvas.height = KOMBI_ICON_PX_H;
+        canvas.width = KOMBI_ICON_PX;
+        canvas.height = KOMBI_ICON_PX;
         const ctx = canvas.getContext("2d");
         if (!ctx) {
           resolve();
           return;
         }
-        ctx.drawImage(img, 0, 0, KOMBI_ICON_PX_W, KOMBI_ICON_PX_H);
-        const data = ctx.getImageData(0, 0, KOMBI_ICON_PX_W, KOMBI_ICON_PX_H);
+        ctx.drawImage(img, 0, 0, KOMBI_ICON_PX, KOMBI_ICON_PX);
+        const data = ctx.getImageData(0, 0, KOMBI_ICON_PX, KOMBI_ICON_PX);
         if (!map.hasImage(KOMBI_ICON_ID)) {
           map.addImage(KOMBI_ICON_ID, data, { pixelRatio: 2 });
         }
       } catch {
-        // best-effort; symbol layer falls back to no-icon if the image is missing
+        // best-effort; symbol layer falls back to no-icon if missing
       }
       resolve();
     };
     img.onerror = () => resolve();
-    img.src = KOMBI_ICON_URL;
+    img.src = url;
   });
 }
 
@@ -554,18 +576,8 @@ export default function PassengerMap({
       // on each tick payload. Active (assigned) kombi renders at full size +
       // opacity; pass-through kombis render at 0.7× and 0.5 alpha so the eye
       // tracks the trip-relevant vehicle first.
-      // Defer the addLayer + registerKombiIcon work to the next tick so the
-      // initial paint can land before we touch the style with addImage.
-      // Mapbox's idle/loaded() machinery treats a freshly-added image as a
-      // pending style operation, and when stacked on top of the source +
-      // layer adds inside the same `load` callback it can leave the style
-      // marked "loading" and the basemap unrendered until something else
-      // forces a repaint.
-      setTimeout(() => {
-        if (!mapRef.current) return;
-        void registerKombiIcon(map).then(() => {
-          if (!mapRef.current) return;
-          if (map.getLayer(KOMBIS_LAYER)) return;
+      void registerKombiIcon(map).then(() => {
+        if (!map.getLayer(KOMBIS_LAYER)) {
           map.addLayer({
             id: KOMBIS_LAYER,
             type: "symbol",
@@ -593,9 +605,8 @@ export default function PassengerMap({
               ],
             },
           });
-          map.triggerRepaint();
-        });
-      }, 0);
+        }
+      });
 
       // Click a route line to highlight it and reveal its named stops.
       map.on("click", ROUTES_LAYER_BASE, handleRouteClick);
