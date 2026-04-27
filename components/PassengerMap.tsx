@@ -51,8 +51,12 @@ const KOMBI_ICON_PX_H = 96;
 async function registerKombiIcon(map: mapboxgl.Map): Promise<void> {
   if (map.hasImage(KOMBI_ICON_ID)) return;
   await new Promise<void>((resolve) => {
+    // Same-origin SVG asset. Setting `crossOrigin` here is unnecessary and
+    // can taint the canvas on some browsers, leaving `getImageData()` to
+    // throw silently — and the icon never gets registered. Leaving it
+    // undefined keeps the canvas un-tainted.
     const img = new Image();
-    img.crossOrigin = "anonymous";
+    img.decoding = "async";
     img.onload = () => {
       try {
         const canvas = document.createElement("canvas");
