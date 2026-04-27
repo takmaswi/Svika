@@ -36,6 +36,7 @@ These exceptions apply only until 2026-04-30 23:59 CAT and revert post-submissio
 | **B2** — full ECC sequence on every feature | TDD downgraded to a single Playwright smoke test per surface, run only at the Phase 5 gate. `/security-scan` still runs on anything touching tickets, transfers, or fares. |
 | **E3** — never commit to `main` directly | Direct commits to `main` permitted with conventional-commit messages (`feat:`, `fix:`, `chore:`, `docs:`). Branch + PR resumes post-submission. |
 | **C1** — Prompt Upgrade with "OK or edit" confirmation | Skip the confirmation. The user has approved upfront for the sprint. |
+| **Local-canonical-demo** (added 2026-04-28) | Local rehearsal (`pnpm dev` + `pnpm sim`) is the canonical demo and the recording surface. Prod (`svika.vercel.app`) is the live URL for judges and the GitHub link, kept green at every phase but never the recording target. A phase is *recording-ready* once local rehearsal is green; *submission-ready* once prod is also green. See "Local is the canonical demo" under the Phase-gate prod-verification discipline below. |
 
 All other global rules apply as written. **C3 Fact Checker is non-negotiable** for every README claim and every pitch-deck line — verify before writing. Never re-introduce stale facts (model availability, free-tier limits, library versions, deprecation dates) without web-search confirmation.
 
@@ -155,7 +156,7 @@ A failure on any command means the task is not done. Fix and re-run before commi
 
 ### Phase-gate prod-verification discipline
 
-**Local green is not "verified".** Every phase-gate verification claim must be backed by a literal `https://svika.vercel.app` response. The Phase 1 and Phase 2 reviews both caught the agent claiming a gate had passed when the local commit had not yet been pushed and Vercel was still serving the previous build.
+**Local green is not "submission-verified".** Every phase-gate *submission* claim must be backed by a literal `https://svika.vercel.app` response. The Phase 1 and Phase 2 reviews both caught the agent claiming a gate had passed when the local commit had not yet been pushed and Vercel was still serving the previous build. The "Local is the canonical demo" amendment below carves out a separate *recording-readiness* track for the visual / IA / passenger-flow work — local can be the truth for that track — but submission readiness still requires prod-curl + marker grep.
 
 Required steps at every phase gate, in order:
 
@@ -173,7 +174,32 @@ Required steps at every phase gate, in order:
 
 5. For phases that change the database (tickets, ledgers, audit narratives), drive the user-visible smoke flow on the live URL — `scripts/phase2-prod-smoke.ts` is the template. Cowork must be able to query the corresponding tables and see the rows your smoke produced.
 
-If the prod URL still serves the previous phase, the gate has not been passed — even if local typecheck, lint, build, and dev-server tests are all green. Push, wait, re-curl, and only then update BUILD-LOG.
+If the prod URL still serves the previous phase, the gate has not been passed for *submission* — even if local typecheck, lint, build, and dev-server tests are all green. Push, wait, re-curl, and only then update BUILD-LOG with the `submission-verified` tag.
+
+### Local is the canonical demo (added 2026-04-28)
+
+The recording happens on the developer's machine with `pnpm dev` (or `pnpm build && pnpm start`) and `scripts/sim-runner.ts` ticking at 2 seconds. **That surface is the canonical demo.** Prod (`svika.vercel.app`) is the live URL for judges and the GitHub link — kept green at every phase but never the recording target. Two reasons this matters: (1) the prod sim heartbeat ticks at 6 s via Supabase pg_cron, slower than the 2 s local feel; (2) Vercel deploy propagation introduces 60–90 s feedback loops that slow iteration during a tight sprint.
+
+Per-phase verification therefore has two tracks:
+
+**Track 1 — Local rehearsal (primary truth for recording-readiness):**
+
+1. `pnpm typecheck && pnpm lint && pnpm build` — all green.
+2. `pnpm dev` running in one terminal, `pnpm sim` running in another.
+3. Drive the full passenger flow end-to-end on `http://localhost:3000/?as=takunda`: book → walk-to-board → boarding via `/hwindi?as=farai` redeem → in-transit → walking transfer → boarding leg 2 → arrived → fleet impact disclosure.
+4. Capture the rehearsal screenshots called for in the phase task in `scripts/phase-{x}-rehearsal-{n}.png`.
+5. Visual check pass — the user reviews each screenshot for visual / UX issues before the phase is considered recording-ready.
+
+**Track 2 — Prod follow (submission-readiness):**
+
+1. `git push origin main` and surface the `..NEW_SHA` line.
+2. Poll `https://svika.vercel.app` until the phase marker appears (per the existing prod-verification protocol above).
+3. Run the prod smoke for that phase.
+4. Capture two prod screenshots.
+
+A phase is **recording-ready** the moment Track 1 passes — even if Track 2 is still propagating. A phase is **submission-verified** only after Track 2 also passes. The BUILD-LOG entry uses one of two tags: `local-rehearsal` (Track 1 only, used between phases when iterating fast) or `local-rehearsal+prod-curl` (both tracks, the canonical end-state).
+
+The agent should default to running Track 1 to completion, surfacing screenshots for the user's visual check, and only then running Track 2. Do not push to prod until the user has confirmed the local rehearsal looks right.
 
 ## Active MCPs (this project only)
 
