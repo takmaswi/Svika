@@ -401,6 +401,7 @@ export default function PassengerShell({
         ) : null}
         {bookingFlash ? (
           <div
+            data-testid="booking-flash"
             className={`mt-2 rounded-2xl px-3 py-2 text-xs ${
               bookingFlash.kind === "ok"
                 ? "bg-white/80 text-svika-teal"
@@ -409,7 +410,10 @@ export default function PassengerShell({
           >
             <p>{bookingFlash.message}</p>
             {bookingFlash.access_codes ? (
-              <p className="mt-0.5 font-mono text-svika-rust">
+              <p
+                className="mt-0.5 font-mono text-svika-rust"
+                data-testid="booking-flash-codes"
+              >
                 {bookingFlash.access_codes.join(" · ")}
               </p>
             ) : null}

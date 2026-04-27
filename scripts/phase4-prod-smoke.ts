@@ -181,10 +181,10 @@ async function main(): Promise<void> {
   );
   await passenger.click('[data-testid="parcel-pay-wallet"]');
   await passenger.click('[data-testid="parcel-submit"]');
-  await passenger.waitForTimeout(2000);
+  await passenger.waitForSelector('[data-testid="booking-flash"]', { timeout: 8000 });
   const parcelFlash = await passenger.evaluate(() => {
-    const node = document.querySelector("header div:has(p)") ?? document.body;
-    return node.textContent?.replace(/\s+/g, " ").trim() ?? "";
+    const node = document.querySelector('[data-testid="booking-flash"]');
+    return node?.textContent?.replace(/\s+/g, " ").trim() ?? "";
   });
   evidence.push({
     step: "5 · parcel sent",
@@ -193,13 +193,12 @@ async function main(): Promise<void> {
   });
 
   // 6 — conductor accept (parcel mode)
-  // Pull the parcel code from the wallet. The flash carries the code in monospace.
+  // Pull the parcel code straight from the booking flash.
   const parcelCode = await passenger.evaluate(() => {
-    const mono = Array.from(document.querySelectorAll(".font-mono.text-2xl"));
-    const tile = mono
-      .map((n) => n.textContent?.trim() ?? "")
-      .filter((t) => /^\d{3}$/.test(t));
-    return tile[0] ?? null;
+    const codeNode = document.querySelector('[data-testid="booking-flash-codes"]');
+    const text = codeNode?.textContent?.trim() ?? "";
+    const match = text.match(/\b(\d{3})\b/);
+    return match?.[1] ?? null;
   });
 
   if (!parcelCode) {
