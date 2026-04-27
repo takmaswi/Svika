@@ -3,7 +3,7 @@
 
 sequenceDiagram
     autonumber
-    participant Tendai as Tendai (passenger)
+    participant Takunda as Takunda (passenger)
     participant App as Passenger app
     participant DB as Supabase database
     participant Rudo as Rudo (recipient)
@@ -11,25 +11,25 @@ sequenceDiagram
     participant Cond as Conductor screen
 
     %% Purchase
-    Tendai->>App: Plan trip Heights to Avondale
+    Takunda->>App: Plan trip Heights to Avondale
     App->>DB: Read trip plans for sp_heights_start_north to sp_avondale_shops
     DB-->>App: Two options (Lomagundi walk, CBD rank)
-    Tendai->>App: Buy option A ($1.50)
+    Takunda->>App: Buy option A ($1.50)
     App->>DB: create trip + 2 tickets
-    DB-->>App: Ticket 482 (status=issued, holder=Tendai), Ticket 619 (status=issued, holder=Tendai, dimmed)
-    App-->>Tendai: Wallet shows both tickets
+    DB-->>App: Ticket 482 (status=issued, holder=Takunda), Ticket 619 (status=issued, holder=Takunda, dimmed)
+    App-->>Takunda: Wallet shows both tickets
 
     %% Transfer
-    Tendai->>App: Tap share on ticket 482
-    App-->>Tendai: System share sheet opens (WhatsApp)
-    Tendai->>Rudo: Sends Svika ticket link via WhatsApp
+    Takunda->>App: Tap share on ticket 482
+    App-->>Takunda: System share sheet opens (WhatsApp)
+    Takunda->>Rudo: Sends Svika ticket link via WhatsApp
     Note over App,DB: Status moves to transferred_pending
     App->>DB: Update ticket 482 status=transferred_pending
     Rudo->>App: Open link with ?as=rudo&claim=482
     App->>DB: Claim ticket 482 (set holder=Rudo, status=held)
     DB-->>App: Confirmed
     App-->>Rudo: Wallet shows ticket 482 as held
-    App-->>Tendai: Wallet shows ticket 482 as Transferred to Rudo
+    App-->>Takunda: Wallet shows ticket 482 as Transferred to Rudo
 
     %% Redemption
     Rudo->>Farai: Says "four-eight-two" on boarding

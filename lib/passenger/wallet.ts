@@ -52,7 +52,7 @@ export async function loadWallet(personaId: string): Promise<WalletTicket[]> {
 
     // Pull anything the persona is involved with — current holder OR original
     // payer. The "outgoing transfer" view of a ticket the persona paid for
-    // but no longer holds is what tells Tendai "Transferred to Rudo".
+    // but no longer holds is what tells Takunda "Transferred to Rudo".
     const { data, error } = await client
       .from("tickets")
       .select(

@@ -1,13 +1,12 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("passenger surface", () => {
-  test("loads with default persona Tendai", async ({ page }) => {
+  test("landing offers Continue as Takunda", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator("h1", { hasText: "Svika" })).toBeVisible();
-    await expect(page.getByText(/Tendai/)).toBeVisible();
+    await expect(page.getByText(/Continue as Takunda/)).toBeVisible();
   });
 
-  test("respects ?as=rudo persona switch", async ({ page }) => {
+  test("respects ?as=rudo direct deep-link", async ({ page }) => {
     await page.goto("/?as=rudo");
     await expect(page.getByText(/Rudo/)).toBeVisible();
   });

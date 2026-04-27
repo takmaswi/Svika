@@ -1,5 +1,6 @@
+import Link from "next/link";
+
 import LandingHero from "@/components/LandingHero";
-import PersonaPicker from "@/components/PersonaPicker";
 import PassengerShell from "@/components/passenger/PassengerShell";
 import { loadPassengerSurface } from "@/lib/passenger/loadPassengerSurface";
 
@@ -8,10 +9,10 @@ const LANDING_HERO_SRC = "/brand/landing-hero.png";
 /**
  * Root dispatcher.
  *
- * - `/` (no query params) → brand landing with hero + persona picker.
+ * - `/` (no query params) → brand landing with hero + single "Continue as
+ *   Takunda" CTA. The other personas exist only as direct-link URLs (Phase 3.8
+ *   single-user narrative pivot — see CLAUDE.md "Locked decisions").
  * - `/?as=<persona>` or `/?claim=<id>` → passenger surface (skips landing).
- *
- * Phase 3.7 visual rebuild — see CLAUDE.md "Surfaces".
  */
 export default async function HomeRoute({
   searchParams,
@@ -26,7 +27,34 @@ export default async function HomeRoute({
     return (
       <main className="flex min-h-dvh flex-col bg-svika-bg">
         <LandingHero imageSrc={LANDING_HERO_SRC} hasImage={true} />
-        <PersonaPicker />
+        <section className="px-5 pb-6 pt-2" aria-label="Continue as Takunda">
+          <Link
+            href="/?as=takunda"
+            prefetch={false}
+            className="svika-animate-fade-up flex w-full items-center justify-center gap-2 rounded-2xl bg-svika-rust px-4 text-white shadow-sm transition-transform active:scale-[0.99]"
+            style={{
+              minHeight: "56px",
+              fontSize: "16px",
+              fontWeight: 600,
+              animationDelay: "200ms",
+            }}
+            data-testid="landing-continue-takunda"
+          >
+            Continue as Takunda
+            <span aria-hidden style={{ fontSize: "18px" }}>→</span>
+          </Link>
+          <p className="mt-3 text-[12px] leading-snug text-svika-mute">
+            Want to see the system from another seat? Visit{" "}
+            <Link href="/hwindi" className="underline" prefetch={false}>
+              /hwindi
+            </Link>{" "}
+            for the conductor screen or{" "}
+            <Link href="/fleet" className="underline" prefetch={false}>
+              /fleet
+            </Link>{" "}
+            for the dashboard.
+          </p>
+        </section>
         <footer className="mt-auto px-5 pb-6 pt-2">
           <p className="text-[11px] text-svika-mute">
             Built for Harare. Designed to integrate with ZUPCO.

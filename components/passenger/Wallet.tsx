@@ -6,7 +6,7 @@ import type { WalletTicket } from "@/lib/passenger/wallet";
 
 const RECIPIENTS = [
   { slug: "rudo", label: "Rudo" },
-  { slug: "tendai", label: "Tendai" },
+  { slug: "takunda", label: "Takunda" },
 ] as const;
 
 interface WalletProps {

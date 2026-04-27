@@ -2,10 +2,10 @@
  * Phase 3.5 rehearsal — drives the full six-stage Journey UX against
  * https://svika.vercel.app and captures evidence at each stage.
  *
- *   1.  Drain Tendai's wallet (mark every issued/held/redeemed Tendai-held
+ *   1.  Drain Takunda's wallet (mark every issued/held/redeemed Takunda-held
  *       ticket as `completed` so the active-journey loader sees a clean slate).
- *   2.  Top Tendai's credit balance to $5.00.
- *   3.  Open `/?as=tendai`, click the "Heights to Avondale" preset, buy the
+ *   2.  Top Takunda's credit balance to $5.00.
+ *   3.  Open `/?as=takunda`, click the "Heights to Avondale" preset, buy the
  *       fastest plan ($1.50, two legs).
  *   4.  Resolve the trip's tickets in sequence, pin a vehicle per leg
  *       (ZH 4821 on `route_heights_rezende`, ZH 5101 on
@@ -259,51 +259,51 @@ async function waitForKind(
   }
 }
 
-async function resolveTendaiAndDrain(
+async function resolveTakundaAndDrain(
   client: SupabaseClient<Database>,
-): Promise<{ tendaiId: string; rudoId: string }> {
-  log("0. resolve Tendai + Rudo, drain wallet, top up to $5");
+): Promise<{ takundaId: string; rudoId: string }> {
+  log("0. resolve Takunda + Rudo, drain wallet, top up to $5");
   const { data: users, error } = await client
     .from("users")
     .select("id, name")
-    .in("name", ["Tendai", "Rudo"]);
+    .in("name", ["Takunda", "Rudo"]);
   if (error || !users) throw new Error("Could not resolve users: " + error?.message);
-  const tendaiId = users.find((u) => u.name === "Tendai")?.id;
+  const takundaId = users.find((u) => u.name === "Takunda")?.id;
   const rudoId = users.find((u) => u.name === "Rudo")?.id;
-  if (!tendaiId || !rudoId) throw new Error("Tendai or Rudo missing");
-  console.log(`    tendai=${tendaiId} rudo=${rudoId}`);
+  if (!takundaId || !rudoId) throw new Error("Takunda or Rudo missing");
+  console.log(`    takunda=${takundaId} rudo=${rudoId}`);
 
-  // Drain: anything Tendai still holds in {issued, held, redeemed} → completed.
+  // Drain: anything Takunda still holds in {issued, held, redeemed} → completed.
   const { data: drained, error: drainErr } = await client
     .from("tickets")
     .update({ status: "completed", completed_at: new Date().toISOString() })
-    .eq("current_holder_user_id", tendaiId)
+    .eq("current_holder_user_id", takundaId)
     .in("status", ["issued", "held", "redeemed"])
     .select("id");
   if (drainErr) throw new Error("drain failed: " + drainErr.message);
   console.log(`    drained ${drained?.length ?? 0} active tickets`);
 
-  // Top up Tendai to a clean $5.00 so a $1.50 buy doesn't dip into chance.
+  // Top up Takunda to a clean $5.00 so a $1.50 buy doesn't dip into chance.
   const { error: topUpErr } = await client
     .from("users")
     .update({ credit_balance_usd: 5 })
-    .eq("id", tendaiId);
+    .eq("id", takundaId);
   if (topUpErr) throw new Error("topup failed: " + topUpErr.message);
-  console.log("    tendai balance set to $5.00");
+  console.log("    takunda balance set to $5.00");
 
   // Confirm post-state.
   const { data: post, error: postErr } = await client
     .from("tickets")
     .select("id, status")
-    .eq("current_holder_user_id", tendaiId)
+    .eq("current_holder_user_id", takundaId)
     .in("status", ["issued", "held", "redeemed"]);
   if (postErr) throw new Error("post-check failed: " + postErr.message);
   console.log(`    post-drain active tickets: ${post?.length ?? 0}`);
   if ((post?.length ?? 0) > 0) {
-    throw new Error("drain did not clear all active Tendai tickets");
+    throw new Error("drain did not clear all active Takunda tickets");
   }
 
-  return { tendaiId, rudoId };
+  return { takundaId, rudoId };
 }
 
 interface ResolvedLeg {
@@ -317,12 +317,12 @@ interface ResolvedLeg {
 
 async function resolveLatestTripLegs(
   client: SupabaseClient<Database>,
-  tendaiId: string,
+  takundaId: string,
 ): Promise<{ trip_id: string; legs: ResolvedLeg[] }> {
   const { data: tripData, error: tripErr } = await client
     .from("trips")
     .select("id")
-    .eq("originating_user_id", tendaiId)
+    .eq("originating_user_id", takundaId)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -413,12 +413,12 @@ interface DbBookingResult {
  */
 async function bookViaDb(
   client: SupabaseClient<Database>,
-  tendaiId: string,
+  takundaId: string,
 ): Promise<DbBookingResult> {
   const { data: tripData, error: tripErr } = await client
     .from("trips")
     .insert({
-      originating_user_id: tendaiId,
+      originating_user_id: takundaId,
       origin_stop_id: ORIGIN_STOP,
       destination_stop_id: DEST_STOP,
       selected_option_label: PLAN_LABEL,
@@ -446,8 +446,8 @@ async function bookViaDb(
           board_at_stop_id: board,
           alight_at_stop_id: alight,
           fare_usd: fare,
-          originating_user_id: tendaiId,
-          current_holder_user_id: tendaiId,
+          originating_user_id: takundaId,
+          current_holder_user_id: takundaId,
           status: "issued",
           kind: "passenger",
         })
@@ -475,13 +475,13 @@ async function bookViaDb(
   const { data: userRow } = await client
     .from("users")
     .select("credit_balance_usd")
-    .eq("id", tendaiId)
+    .eq("id", takundaId)
     .maybeSingle();
   const current = Number(userRow?.credit_balance_usd ?? 5);
   await client
     .from("users")
     .update({ credit_balance_usd: Number((current - PLAN_TOTAL_FARE).toFixed(2)) })
-    .eq("id", tendaiId);
+    .eq("id", takundaId);
 
   return {
     trip_id,
@@ -514,7 +514,7 @@ async function redeemTicket(
   client: SupabaseClient<Database>,
   leg: ResolvedLeg,
   vehicleId: string,
-  tendaiId: string,
+  takundaId: string,
 ): Promise<void> {
   const redeemedAt = new Date().toISOString();
   await client
@@ -529,7 +529,7 @@ async function redeemTicket(
     ticket_id: leg.ticket_id,
     vehicle_id: vehicleId,
     route_id: leg.route_id,
-    current_holder_user_id: tendaiId,
+    current_holder_user_id: takundaId,
     redeemed_at: redeemedAt,
   });
 }
@@ -547,7 +547,7 @@ async function main(): Promise<void> {
   });
 
   await ensureBuilt(client);
-  const { tendaiId } = await resolveTendaiAndDrain(client);
+  const { takundaId } = await resolveTakundaAndDrain(client);
 
   const browser = await chromium.launch({ headless: true });
   const ctx = await browser.newContext({
@@ -563,12 +563,12 @@ async function main(): Promise<void> {
   });
 
   log("1. book Heights → Avondale (Lomagundi walking-transfer) directly via DB");
-  const booking = await bookViaDb(client, tendaiId);
+  const booking = await bookViaDb(client, takundaId);
   console.log(`    trip=${booking.trip_id}`);
   console.log(`    leg1 code=${booking.leg1_code} leg2 code=${booking.leg2_code}`);
 
-  log("2. open /?as=tendai — Journey sheet should already be active");
-  await page.goto(`${BASE}/?as=tendai`, { waitUntil: "domcontentloaded" });
+  log("2. open /?as=takunda — Journey sheet should already be active");
+  await page.goto(`${BASE}/?as=takunda`, { waitUntil: "domcontentloaded" });
   await page.waitForSelector('[data-testid="journey-sheet"]', { timeout: 30_000 });
 
   // Pre-seed kombi position cache so the assigned-vehicle halo + ETA chip have
@@ -580,7 +580,7 @@ async function main(): Promise<void> {
   await page.waitForTimeout(400);
 
   log("3. resolve trip + leg tickets");
-  const { trip_id, legs } = await resolveLatestTripLegs(client, tendaiId);
+  const { trip_id, legs } = await resolveLatestTripLegs(client, takundaId);
   if (legs.length !== 2) {
     throw new Error(`expected 2 legs in the new trip, got ${legs.length}`);
   }
@@ -607,7 +607,7 @@ async function main(): Promise<void> {
     STOPS.heights_north[0],
     STOPS.heights_north[1],
   );
-  await redeemTicket(client, leg1, LEG1_VEHICLE, tendaiId);
+  await redeemTicket(client, leg1, LEG1_VEHICLE, takundaId);
   await waitForKind(
     page,
     (k) => k === "boarding" || k === "in-transit",
@@ -645,7 +645,7 @@ async function main(): Promise<void> {
     STOPS.lomagundi_kg[0],
     STOPS.lomagundi_kg[1],
   );
-  await redeemTicket(client, leg2, LEG2_VEHICLE, tendaiId);
+  await redeemTicket(client, leg2, LEG2_VEHICLE, takundaId);
   // Once leg 2 redeems, the active stage should advance to boarding-leg-2
   // (flash window ~1.1s) and then settle into in-transit on leg 2 (idx=5).
   await waitForKind(
@@ -680,7 +680,7 @@ function writeReport(items: StageEvidence[]): void {
   lines.push("# Phase 3.5 rehearsal — raw per-stage evidence");
   lines.push("");
   lines.push(
-    "Auto-generated by `scripts/phase3-5-rehearsal.ts`. The editorial summary lives in `docs/PHASE-3-5-REHEARSAL.md`. This file is the dump of sheet text and layer state captured at each stage on `https://svika.vercel.app/?as=tendai`.",
+    "Auto-generated by `scripts/phase3-5-rehearsal.ts`. The editorial summary lives in `docs/PHASE-3-5-REHEARSAL.md`. This file is the dump of sheet text and layer state captured at each stage on `https://svika.vercel.app/?as=takunda`.",
   );
   lines.push("");
   lines.push("Vehicles used:");

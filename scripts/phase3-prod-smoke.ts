@@ -3,7 +3,7 @@
  * conductor and fleet surfaces end-to-end.
  *
  *   farai → assign ZH 4821 (if not already assigned)
- *         → enter access code 724 (Tendai's still-issued Heights→Rezende ticket)
+ *         → enter access code 724 (Takunda's still-issued Heights→Rezende ticket)
  *         → expect "Cleared 724" feedback + passenger count bump.
  *
  *   baba_tino → /fleet → audit panel renders bilingual narrative

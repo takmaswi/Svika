@@ -5,7 +5,7 @@
  * server code.
  */
 
-export type PersonaSlug = "tendai" | "rudo" | "farai" | "baba_tino";
+export type PersonaSlug = "takunda" | "rudo" | "farai" | "baba_tino";
 
 export interface PersonaMeta {
   slug: PersonaSlug;
@@ -18,12 +18,12 @@ export interface PersonaMeta {
 
 export const PERSONA_META: ReadonlyArray<PersonaMeta> = [
   {
-    slug: "tendai",
-    name: "Tendai",
+    slug: "takunda",
+    name: "Takunda",
     initial: "T",
     role_label: "Passenger",
-    surface_label: "/?as=tendai",
-    surface_url: "/?as=tendai",
+    surface_label: "/?as=takunda",
+    surface_url: "/?as=takunda",
   },
   {
     slug: "rudo",

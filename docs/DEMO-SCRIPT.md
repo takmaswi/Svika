@@ -10,12 +10,14 @@ Direct. Local. No hype words. Voiceover in plain English. Shona phrases appear o
 
 ## Cast
 
-| Character | Role | Phone or screen |
+There is one user. The story follows him end to end. The other characters appear as inserts, screenshots, and propagated effects on his screen — never as persona switches the viewer has to follow.
+
+| Character | Role | Surface |
 |---|---|---|
-| Tendai | Passenger | Phone, mobile-first web on `/` |
-| Rudo | Passenger (cousin) | Phone, mobile-first web on `/` |
-| Farai | Conductor on kombi `ZH 4821` | Phone, fullscreen on `/hwindi` |
-| Baba Tino | Fleet owner | Laptop, desktop browser on `/fleet` |
+| **Takunda** | Hero passenger — the only person who navigates the app on camera | Phone, mobile-first web on `/?as=takunda` |
+| Rudo | Takunda's cousin, transfer recipient | Appears as a still recipient screenshot when Takunda shares a ticket |
+| Farai | Conductor on kombi `ZH 4821` | Cutaway insert from `/hwindi`; never reached by switching from Takunda's phone |
+| Baba Tino | Fleet owner | Cutaway insert from `/fleet`; the fleet-impact mini-card surfaces inside Takunda's trip-complete sheet |
 
 ## Cold open — 0:00 to 0:20 — the pain
 
@@ -27,23 +29,23 @@ Visuals: a single still or short clip of a real Harare kombi rank with the audio
 
 End the cold open on a Mosi-oa-Tunya teal title card: **Svika**.
 
-## Scene 1 — 0:20 to 0:50 — Tendai plans the trip
+## Scene 1 — 0:20 to 0:55 — Takunda plans the trip
 
-Visuals: phone screen recording of `/?as=tendai`. The map shows the four kombi routes faintly, with kombi markers moving in real time.
+Visuals: phone screen recording of `/?as=takunda`. The brand-teal landing card has already filled the gap — Takunda is past the front door. The empty-state hero greets him by name: *"Where to, Takunda?"* The map underneath shows the four kombi routes faintly, with kombi markers moving in real time.
 
 On-screen action:
-- Tendai taps the search bar.
-- She types or dictates: *"Ndirikuda kuenda Avondale, ndiri kuMt Pleasant Heights"* — Shona for "I want to go to Avondale from Mt Pleasant Heights."
+- Takunda taps the search bar.
+- He types or dictates: *"Ndirikuda kuenda Avondale, ndiri kuMt Pleasant Heights"* — Shona for "I want to go to Avondale from Mt Pleasant Heights."
 - A small banner appears: *"Understood by Gemma 4 E2B running on this device."*
 - Two trip cards slide up: the Lomagundi walking transfer (31 minutes, $1.50) and the CBD rank transfer (75 minutes, $2.50). Each card shows a small map with the route highlighted.
 - A short bilingual line under each card explains the trade-off: *"Faster but six minutes of walking"* and *"Slower but no street walking."*
 
 Voiceover:
-> *"Tendai is at Mt Pleasant Heights. She is going to Avondale. There is no kombi that goes there directly. The trip planner knows two ways — a tribal-knowledge walking transfer at Lomagundi corner, or the slow ride into the city and back out. The artificial intelligence understanding her Shona is running on the laptop, not on a server somewhere."*
+> *"Takunda is at Mt Pleasant Heights. He is going to Avondale. There is no kombi that goes there directly. The trip planner knows two ways — a tribal-knowledge walking transfer at Lomagundi corner, or the slow ride into the city and back out. The artificial intelligence understanding his Shona is running on the laptop, not on a server somewhere."*
 
-## Scene 2 — 0:50 to 1:15 — Tendai buys two tickets
+## Scene 2 — 0:55 to 1:20 — Takunda buys two tickets and shares the first
 
-She picks the walking-transfer plan. Taps **Buy trip — $1.50**.
+He picks the walking-transfer plan. Taps **Buy trip — $1.50**.
 
 A wallet drawer opens. Two tickets appear:
 - Ticket **482** — Heights kombi, valid for boarding at Bannockburn, alighting at Second/Lomagundi.
@@ -51,53 +53,47 @@ A wallet drawer opens. Two tickets appear:
 
 The second ticket is dimmed with a small label: *"Activates after Leg 1."*
 
-Voiceover:
-> *"Two access codes. One trip. Both paid up front. Both deductible from her credit balance. No cash, no change, no fight."*
-
-## Scene 3 — 1:15 to 1:35 — Tendai sends ticket 482 to Rudo
-
-Tendai realises she does not need the trip after all — Rudo does. She taps the share button on ticket 482. The system share sheet opens. She picks WhatsApp.
-
-A pre-filled message: *"Svika ticket 482 — Heights to Lomagundi corner — for you."*
-
-Cut to Rudo's phone. The link opens. The Svika app loads with `?as=rudo`. The ticket appears in Rudo's wallet. Tendai's wallet now shows the ticket as *"Transferred to Rudo."*
+A short beat — Takunda realises his cousin Rudo needs the first leg too. He taps **Share / transfer** on a separate spare ticket and picks Rudo. The system share sheet opens; cut briefly to a still **screenshot inset** of a WhatsApp message landing on Rudo's phone with the claim link. We do not switch personas on screen.
 
 Voiceover:
-> *"Plans change. Tickets do not have to. Rudo now holds Tendai's first leg — same access code, different person. Only Rudo can use it now."*
+> *"Two access codes. One trip. Paid up front, deductible from his wallet. And tickets transfer — Takunda just sent a spare to his cousin Rudo over WhatsApp. Same code, different person, no cash, no change, no fight."*
 
-## Scene 4 — 1:35 to 2:05 — Rudo boards, Farai clears the fare
+## Scene 3 — 1:20 to 1:45 — Takunda boards, the fare clears on his screen
 
-Cut to Farai's phone. The conductor screen on `/hwindi?as=farai`. Big buttons. A small map at the top shows kombi `ZH 4821` moving along the Heights route.
+Takunda walks up to the kombi at the Bannockburn stop. Cut briefly to a **conductor cutaway insert** — Farai's `/hwindi` keypad fills the corner of the frame for two seconds — Farai taps *4*, *8*, *2*, confirm. We never leave Takunda's narrative; the insert is a side card, not a navigation.
 
-Rudo walks up to the kombi at the Bannockburn stop. Says *"four-eight-two."* Farai taps the **Code** button, types *482*, taps confirm.
+We return to Takunda's phone. A glass toast slides in from the top of his screen:
 
-The screen flashes with the brand sunset rust accent: *"+1 boarded. $1.00 cleared. 12 of 15 seats."*
+> **Fare cleared by Farai · ZH 4821 · seat 9 of 15**
 
-A second tap shows a Vainona Spar walk-on paying cash. Farai taps **Cash**, taps **$1**, confirms. Now 13 of 15.
+The toast auto-dismisses. The Journey sheet at the bottom of his screen flips to *"On board · heading to Second & Lomagundi."*
 
 Voiceover:
-> *"Farai's screen is fast. Big buttons, big numbers, no menus. Every fare cleared — digital or cash — is logged against this kombi. Cash boardings are visibly marked so the audit can tell them apart later."*
+> *"Takunda does not switch screens. He does not refresh anything. The conductor's keypad on the other side of the kombi door reaches his phone in real time."*
 
-## Scene 5 — 2:05 to 2:25 — the walking transfer and Avondale arrival
+## Scene 4 — 1:45 to 2:10 — the walking transfer and the second leg
 
-Quick cut sequence:
-- Rudo's phone. The map shows him alighting at Second/Lomagundi. The dashed walking polyline appears, with a banner *"Walk six minutes west to King George corner."*
-- Walking footage or a simple dot-on-map animation showing Rudo moving along Lomagundi.
-- Ticket 619 lights up: *"Activated."*
-- Cut to a different conductor on the King George kombi. Rudo says *"six-one-nine."* The fare clears.
-- Rudo arrives at Avondale Shops. Ticket history shows: *"Heights to Avondale, two legs, $1.50, 31 minutes."*
+The map zooms into the Lomagundi corner. The dashed walking polyline appears between the two stops, with a heading like *"Walk six minutes west to King George corner."* As Takunda walks, the rust dot tracks along the polyline.
+
+He boards the second kombi. The same toast pattern fires again — *"Fare cleared · ZH 5101 · seat 7 of 15"* — and the journey sheet flips to *"On board · heading to Avondale Shops."*
 
 Voiceover:
 > *"Six minutes of walking. One transfer. Both fares paid up front, both cleared digitally. Avondale, in half the time of the alternative."*
 
-## Scene 6 — 2:25 to 2:45 — Baba Tino's dashboard
+## Scene 5 — 2:10 to 2:45 — Avondale, and where the money landed
 
-Cut to a desktop browser on `/fleet?as=baba_tino`. The Mosi-oa-Tunya palette in full effect. A small fleet of two kombis listed. Click on `ZH 4821`.
+The map fits the trip and eases back to the network bounds. The journey sheet collapses into a small *"You've arrived · 31 min · $1.50"* card.
 
-The dashboard shows:
-- Today: 19 digital fares logged, 12 cash walk-ons, 3 parcels delivered, 41 stops made
-- A revenue ledger ($34.00 logged today)
-- The **Ghost Trip audit** panel — a card with bilingual text generated by Gemma:
+Underneath the arrival line, a quiet new row appears:
+
+> *"Your $1.50 just landed in Baba Tino's ledger ›"*
+
+Takunda taps the disclosure. The mini-card expands inline:
+
+> **$34.00 today · 19 digital fares · 8 cash boardings**
+> See full fleet dashboard →
+
+Cut briefly to a **fleet cutaway insert** — `/fleet?as=baba_tino` opens in a small picture-in-picture corner showing the **Ghost Trip audit** card with bilingual text generated by Gemma:
 
 **English:**
 > *"ZH 4821 stopped 41 times along the Mt Pleasant–Rezende route today. 31 of those stops resulted in a logged fare. The remaining 10 stops show no fare entry. At average route fares, this represents an estimated revenue gap of $10.00. Most unlogged stops occurred between 14:00 and 16:00 along Second Street."*
@@ -105,12 +101,12 @@ The dashboard shows:
 **Shona:**
 > *"Nhasi kombi ZH 4821 yakamira ka41 panzira yeMt Pleasant kuRezende. 31 chete pakati pekumira uku ndipo pakanyorwa mari. 10 hapana mari yakaiswa. Pamutengo wedhora rimwe pamvura, pane mari yakashaikwa inosvika madhora gumi. Kushaikwa uku kwakawanda pakati pe2 ne4 zuva, panzira yeSecond Street."*
 
-Below the narrative, a small card: *"Estimated ZIMRA liability this month: $74.50."*
+A small card: *"Estimated ZIMRA liability this month: $74.50."*
 
 Voiceover:
-> *"For Baba Tino, this is the first time anyone has shown him where his money goes. In English for the bank. In Shona for his mother."*
+> *"This is the first time anyone has shown Baba Tino where his money goes. In English for the bank. In Shona for his mother. And Takunda did not have to leave his arrival screen to know his fare landed there."*
 
-## Scene 7 — 2:45 to 3:00 — the close and the roadmap tail
+## Scene 6 — 2:45 to 3:00 — the close and the roadmap tail
 
 The screen returns to the brand teal. Wordmark **Svika**. A short title:
 

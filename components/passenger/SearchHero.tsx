@@ -7,9 +7,11 @@ import SearchBar from "./SearchBar";
 
 /**
  * Pre-trip hero — shown when no journey is active and no plans are loaded.
- * Big "Where to, Tendai?" headline + a single search input + three preset
+ * Big "Where to, Takunda?" headline + a single search input + three preset
  * destination cards. Tapping a preset bypasses the search and loads its plan
  * directly via the same `findPlansAction` path that handles typed queries.
+ *
+ * Note: Phase 3.7 replaced this with EmptyHero. Kept here for reference.
  */
 
 interface SearchHeroProps {

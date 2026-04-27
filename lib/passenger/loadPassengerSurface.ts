@@ -28,7 +28,7 @@ export async function loadPassengerSurface(args: {
   asParam?: string;
   claimParam?: string;
 }): Promise<PassengerSurfaceData> {
-  const personaSlug = (args.asParam ?? "tendai").toLowerCase();
+  const personaSlug = (args.asParam ?? "takunda").toLowerCase();
   const persona = await resolvePersona(personaSlug, "passenger");
   const [network, tickets, journey, liveStats] = await Promise.all([
     loadNetwork(),

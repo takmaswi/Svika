@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import FleetImpactCard from "@/components/passenger/FleetImpactCard";
 import { createClient } from "@/lib/supabase/client";
 import {
   SIM_CHANNEL,
@@ -266,6 +267,7 @@ export default function Journey({
               Plan another
             </button>
           </div>
+          <FleetImpactCard fareUsd={journey.total_fare_usd} />
         </div>
       </div>
     );

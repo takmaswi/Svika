@@ -10,7 +10,7 @@ import type { Intent } from "@/lib/ai/types";
 import type { PaymentMethod, TicketRow, TripRow } from "@/lib/supabase/types";
 import { PG_UNIQUE_VIOLATION, randomAccessCode } from "./access-code";
 
-const RECIPIENT_SLUGS = ["tendai", "rudo", "farai", "baba_tino"] as const;
+const RECIPIENT_SLUGS = ["takunda", "rudo", "farai", "baba_tino"] as const;
 type RecipientSlug = (typeof RECIPIENT_SLUGS)[number];
 
 function isRecipientSlug(value: string): value is RecipientSlug {

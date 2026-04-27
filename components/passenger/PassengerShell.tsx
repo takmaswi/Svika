@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 
 import PassengerMap from "@/components/PassengerMap";
 import EmptyHero from "@/components/passenger/EmptyHero";
+import FareClearedToast, {
+  type FareClearedToastState,
+} from "@/components/passenger/FareClearedToast";
 import Journey from "@/components/passenger/Journey";
 import PaymentChoiceSheet from "@/components/passenger/PaymentChoiceSheet";
-import PersonaActionSheet from "@/components/passenger/PersonaActionSheet";
 import PlanList from "@/components/passenger/PlanList";
 import TopUpSheet from "@/components/passenger/TopUpSheet";
 import Wallet from "@/components/passenger/Wallet";
@@ -23,9 +25,16 @@ import type { ActiveJourney, JourneyStage } from "@/lib/passenger/journey-types"
 import type { LiveStats } from "@/lib/passenger/liveStats";
 import type { NetworkPayload } from "@/lib/network/loadNetwork";
 import { findPersonaMeta } from "@/lib/personas-meta";
+import { fetchFareClearedContextAction } from "@/lib/passenger/fare-cleared";
 import type { WalletTicket } from "@/lib/passenger/wallet";
 import type { Persona } from "@/lib/personas";
 import type { PaymentMethod } from "@/lib/supabase/types";
+import { createClient } from "@/lib/supabase/client";
+import {
+  SIM_CHANNEL,
+  TICKET_REDEEMED_EVENT,
+  type TicketRedeemedPayload,
+} from "@/lib/sim/simRunner";
 import type { TripPlan } from "@/lib/trip-planner";
 
 interface PassengerShellProps {
@@ -72,7 +81,6 @@ export default function PassengerShell({
   const router = useRouter();
   const tickets = initialTickets;
   const [walletOpen, setWalletOpen] = useState(false);
-  const [personaSheetOpen, setPersonaSheetOpen] = useState(false);
   const [plans, setPlans] = useState<PlansState | null>(null);
   const [searchBusy, setSearchBusy] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -84,7 +92,10 @@ export default function PassengerShell({
   const [claimFlash, setClaimFlash] = useState<ClaimFlash | null>(null);
   const [stage, setStage] = useState<JourneyStage | null>(null);
   const [dismissedTripId, setDismissedTripId] = useState<string | null>(null);
+  const [fareClearedToast, setFareClearedToast] =
+    useState<FareClearedToastState | null>(null);
   const claimedRef = useRef<string | null>(null);
+  const lastToastSigRef = useRef<string | null>(null);
 
   // The server-rendered persona balance is the source of truth. After
   // bookTripAction or topUpAction call revalidatePath, router.refresh pulls
@@ -97,6 +108,50 @@ export default function PassengerShell({
     if (dismissedTripId === initialJourney.trip_id) return null;
     return initialJourney;
   }, [initialJourney, dismissedTripId]);
+
+  // Listen for the conductor's redeem broadcast and surface a "Fare cleared
+  // by Farai" glass toast on the passenger surface itself, so Takunda sees
+  // the consequence of the conductor's keypad without having to navigate.
+  // Only fires for tickets the persona currently holds.
+  useEffect(() => {
+    const personaId = persona.id;
+    const supabase = createClient();
+    const channel = supabase.channel(SIM_CHANNEL, {
+      config: { broadcast: { self: false, ack: false } },
+    });
+    channel.on("broadcast", { event: TICKET_REDEEMED_EVENT }, (msg) => {
+      const payload = msg.payload as TicketRedeemedPayload | undefined;
+      if (!payload) return;
+      if (payload.current_holder_user_id !== personaId) return;
+      const sig = `${payload.ticket_id}@${payload.redeemed_at}`;
+      if (lastToastSigRef.current === sig) return;
+      lastToastSigRef.current = sig;
+      void (async () => {
+        const ctx = await fetchFareClearedContextAction({
+          vehicle_id: payload.vehicle_id,
+        });
+        if (!ctx.ok) return;
+        setFareClearedToast({
+          conductor_name: ctx.conductor_name,
+          vehicle_id: ctx.vehicle_id,
+          seat: ctx.passenger_count,
+          capacity: ctx.capacity_seats,
+          shown_at: Date.now(),
+        });
+      })();
+    });
+    channel.subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [persona.id]);
+
+  // Dismiss the toast 4s after it appears.
+  useEffect(() => {
+    if (!fareClearedToast) return;
+    const timer = setTimeout(() => setFareClearedToast(null), 4000);
+    return () => clearTimeout(timer);
+  }, [fareClearedToast]);
 
   // Auto-claim when arriving via /?as=<recipient>&claim=<id>.
   useEffect(() => {
@@ -254,15 +309,9 @@ export default function PassengerShell({
     return { ok: true };
   }, [journey, personaSlug, router]);
 
-  function handlePersonaPick(_slug: string, url: string) {
-    setPersonaSheetOpen(false);
-    router.push(url);
-  }
-
   const balanceLabel = walletBalance.toFixed(2);
   const activeCount = tickets.filter((t) => !t.is_outgoing_transfer).length;
   const showHero = !journey && !plans;
-  const showSwitcher = process.env.NEXT_PUBLIC_DEMO_MODE !== "false";
   const personaMeta = findPersonaMeta(personaSlug);
   const initial = personaMeta?.initial ?? persona.name.charAt(0).toUpperCase();
 
@@ -276,12 +325,9 @@ export default function PassengerShell({
     <main className="flex min-h-dvh flex-col bg-svika-bg">
       <header className="z-20 border-b border-svika-line bg-svika-bg/85 px-4 py-3 backdrop-blur">
         <div className="flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={() => showSwitcher && setPersonaSheetOpen(true)}
-            disabled={!showSwitcher}
-            className="flex items-center gap-2 rounded-full px-1 py-1 text-left transition-colors hover:bg-white/40 disabled:cursor-default"
-            aria-label="Switch persona"
+          <div
+            className="flex items-center gap-2 rounded-full px-1 py-1"
+            aria-label={`Signed in as ${persona.name}`}
             data-testid="persona-chip"
           >
             <span
@@ -305,7 +351,7 @@ export default function PassengerShell({
                 ${balanceLabel} · wallet
               </span>
             </span>
-          </button>
+          </div>
 
           <div className="flex items-center gap-2">
             <span
@@ -466,11 +512,9 @@ export default function PassengerShell({
         onClose={() => setTopUpOpen(false)}
       />
 
-      <PersonaActionSheet
-        open={personaSheetOpen}
-        currentSlug={personaSlug}
-        onPick={handlePersonaPick}
-        onClose={() => setPersonaSheetOpen(false)}
+      <FareClearedToast
+        state={fareClearedToast}
+        onDismiss={() => setFareClearedToast(null)}
       />
 
       <Wallet

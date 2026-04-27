@@ -13,7 +13,7 @@
  *   - kombi_pings       (one initial ping per vehicle at the polyline start,
  *                        only if the vehicle has no pings yet)
  *
- * Demo users (Tendai, Rudo, Farai, Baba Tino) are seeded by SQL migration
+ * Demo users (Takunda, Rudo, Farai, Baba Tino) are seeded by SQL migration
  * 0003 — they exist before this script runs. We just resolve their IDs.
  *
  * Run with: pnpm db:seed

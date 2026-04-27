@@ -8,7 +8,7 @@ Svika is one Next.js application with four route groups, one Supabase project as
 
 | Route | User | Device target | Tier |
 |---|---|---|---|
-| `/` | Passenger (Tendai, Rudo) | Mobile-first web | Tier 1 |
+| `/` | Passenger (Takunda; Rudo via shared claim link only) | Mobile-first web | Tier 1 |
 | `/hwindi` | Conductor (Farai) | Phone, fullscreen, big tap targets | Tier 1 |
 | `/fleet` | Fleet owner (Baba Tino) | Desktop laptop | Tier 1 |
 | `/wa` | WhatsApp companion (mocked) | Mobile-first web styled like WhatsApp | Tier 1 (basic), Tier 2 (richer commands) |
@@ -72,7 +72,7 @@ A single thin module wraps both providers behind an `aiClient.understand(input)`
 
 ## Authentication
 
-No real authentication for the hackathon. Personas are selected via a query parameter (`/?as=tendai`, `/hwindi?as=farai`, `/fleet?as=baba_tino`). Demo accounts are pre-seeded. This saves a full phase of work and is appropriate for the demo.
+No real authentication for the hackathon. Personas are selected via a query parameter (`/?as=takunda`, `/hwindi?as=farai`, `/fleet?as=baba_tino`). Demo accounts are pre-seeded. From Phase 3.8 the user-facing UI only offers Takunda — the other URLs work as direct deep-links during recording but are never surfaced as switches. This saves a full phase of work and is appropriate for the demo.
 
 In the roadmap, real authentication moves to Supabase magic-link or one-time SMS code via the carrier-menu system.
 

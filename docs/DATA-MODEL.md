@@ -18,7 +18,7 @@ Represents passengers, conductors, and fleet owners. Demo accounts are pre-seede
 | Column | Type | Notes |
 |---|---|---|
 | `id` | uuid (primary key) | |
-| `name` | text | "Tendai", "Rudo", "Farai", "Baba Tino" |
+| `name` | text | "Takunda", "Rudo", "Farai", "Baba Tino" |
 | `phone` | text | International format, used for the WhatsApp transfer flow |
 | `role` | text | One of `passenger`, `conductor`, `fleet_owner` |
 | `credit_balance_usd` | numeric | Pre-loaded for the demo |
@@ -251,7 +251,7 @@ The seed loader reads `seed/network.json` and inserts:
 - All fare segments
 - All transfer points
 - Two seeded vehicles per route
-- Pre-loaded user accounts: Tendai ($5 credit), Rudo ($2 credit), Farai (conductor on `ZH 4821`), Baba Tino (fleet owner)
+- Pre-loaded user accounts: Takunda ($5 credit), Rudo ($2 credit), Farai (conductor on `ZH 4821`), Baba Tino (fleet owner)
 - A small set of seeded historical tickets and pings for the dashboard's first paint
 
 The seed loader is idempotent — running it twice does not duplicate data.

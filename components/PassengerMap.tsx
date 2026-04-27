@@ -754,11 +754,6 @@ export default function PassengerMap({
         </aside>
       ) : null}
 
-      {!selected && !journey ? (
-        <div className="pointer-events-none absolute bottom-3 left-3 rounded-md bg-svika-stone/90 px-2 py-1 text-xs text-svika-mute shadow-sm backdrop-blur">
-          Tap a route line to see its stops
-        </div>
-      ) : null}
     </div>
   );
 }

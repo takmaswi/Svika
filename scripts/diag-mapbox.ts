@@ -6,7 +6,7 @@
 
 import { chromium } from "@playwright/test";
 
-const URL = process.env.SVIKA_URL ?? "https://svika.vercel.app/?as=tendai";
+const URL = process.env.SVIKA_URL ?? "https://svika.vercel.app/?as=takunda";
 
 interface Hit {
   status: number;

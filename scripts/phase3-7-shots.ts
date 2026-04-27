@@ -35,7 +35,7 @@ async function main(): Promise<void> {
   console.log("[ok] 01-landing.png");
 
   // 2. Passenger empty state.
-  await page.goto(`${BASE}/?as=tendai`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${BASE}/?as=takunda`, { waitUntil: "domcontentloaded" });
   await page.waitForSelector('[data-testid="passenger-empty-hero"]');
   await page.waitForTimeout(1100);
   await page.screenshot({

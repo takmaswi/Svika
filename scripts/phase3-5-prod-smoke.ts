@@ -2,19 +2,19 @@
  * Phase 3.5 production smoke — drives the real https://svika.vercel.app
  * passenger surface through the Journey UX.
  *
- *   tendai → search 'Heights to Avondale' → buy fastest plan ($1.50)
+ *   takunda → search 'Heights to Avondale' → buy fastest plan ($1.50)
  *          → close wallet → expect Journey bottom sheet at stage 1 of 6
  *          → screenshot stage 1
  *
  *   farai (in a second tab) → assign ZH 4821 → enter leg-1 access code
  *
- *   tendai → expect sheet to flash 'Boarding · code <leg1>' (stage 2)
+ *   takunda → expect sheet to flash 'Boarding · code <leg1>' (stage 2)
  *          → settle into 'On board · heading to Second & Lomagundi' (stage 3)
  *          → screenshot stage 2 + 3
  *
  *   farai → assign ZH 5101 (route_westgate_copa_segment) → enter leg-2 code
  *
- *   tendai → expect sheet to flash 'Boarding leg 2 · code <leg2>' (stage 5)
+ *   takunda → expect sheet to flash 'Boarding leg 2 · code <leg2>' (stage 5)
  *          → screenshot stage 5
  *
  * The smoke is best-effort on the boarding flash window (1.1s) — if a screenshot
@@ -120,7 +120,7 @@ async function waitForStage(
 
 async function main(): Promise<void> {
   const browser = await chromium.launch({ headless: true });
-  const tendaiCtx = await browser.newContext({
+  const takundaCtx = await browser.newContext({
     viewport: { width: 412, height: 915 },
     userAgent:
       "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121 Mobile Safari/537.36",
@@ -131,19 +131,19 @@ async function main(): Promise<void> {
     userAgent:
       "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121 Mobile Safari/537.36",
   });
-  const tendai = await tendaiCtx.newPage();
+  const takunda = await takundaCtx.newPage();
   const farai = await conductorCtx.newPage();
-  for (const p of [tendai, farai]) {
+  for (const p of [takunda, farai]) {
     p.on("pageerror", (err) => console.error("[page error]", err.message));
     p.on("console", (msg) => {
       if (msg.type() === "error") console.error("[console error]", msg.text());
     });
   }
 
-  // 1. Tendai opens passenger surface, books Heights → Avondale.
-  step("1. tendai opens /?as=tendai");
-  await tendai.goto(`${BASE}/?as=tendai`, { waitUntil: "domcontentloaded" });
-  await tendai.waitForSelector("#trip-search, [data-testid='journey-sheet']", {
+  // 1. Takunda opens passenger surface, books Heights → Avondale.
+  step("1. takunda opens /?as=takunda");
+  await takunda.goto(`${BASE}/?as=takunda`, { waitUntil: "domcontentloaded" });
+  await takunda.waitForSelector("#trip-search, [data-testid='journey-sheet']", {
     timeout: 30_000,
   });
 
@@ -152,19 +152,19 @@ async function main(): Promise<void> {
   // becomes available again. Phase 3.5 collapses the sheet only after stage 6,
   // so for active trips we can't simply book over them — we accept whatever
   // active journey is showing and skip booking.
-  const searchVisible = await tendai
+  const searchVisible = await takunda
     .locator("#trip-search")
     .isVisible()
     .catch(() => false);
   if (!searchVisible) {
-    console.log("    journey already active for tendai — booking step skipped");
-    const stateNow = await readJourneyState(tendai);
+    console.log("    journey already active for takunda — booking step skipped");
+    const stateNow = await readJourneyState(takunda);
     console.log(`    current stage: ${JSON.stringify(stateNow)}`);
-    await tendai.screenshot({ path: "phase35-stage-existing.png" });
+    await takunda.screenshot({ path: "phase35-stage-existing.png" });
     console.log("    captured phase35-stage-existing.png");
 
     // Pull the active leg's code from the sheet so the conductor can redeem it.
-    const activeCode = await tendai.evaluate(() => {
+    const activeCode = await takunda.evaluate(() => {
       const sheet = document.querySelector('[data-testid="journey-sheet"]');
       const text = sheet?.textContent ?? "";
       const matches = text.match(/code\s+(\d{3})/);
@@ -184,12 +184,12 @@ async function main(): Promise<void> {
       const fb = await readKombiFeedback(farai);
       console.log(`    feedback: ${fb}`);
       const post = await waitForStage(
-        tendai,
+        takunda,
         (k) => k === "boarding" || k === "in-transit" || k === "arrived",
         20_000,
       );
       console.log(`    post-redeem stage: ${JSON.stringify(post)}`);
-      await tendai.screenshot({ path: "phase35-stage-after-redeem.png" });
+      await takunda.screenshot({ path: "phase35-stage-after-redeem.png" });
       console.log("    captured phase35-stage-after-redeem.png");
     } catch (err) {
       console.log(
@@ -200,18 +200,18 @@ async function main(): Promise<void> {
     return;
   }
   // Use a fresh trip — reuse the preset.
-  await tendai.getByRole("button", { name: "Heights to Avondale" }).click();
-  await tendai
+  await takunda.getByRole("button", { name: "Heights to Avondale" }).click();
+  await takunda
     .getByRole("button", { name: /Buy for \$1\.50/ })
     .first()
     .waitFor({ timeout: 30000 });
 
   step("3. buy fastest option ($1.50, two legs)");
-  await tendai.getByRole("button", { name: /Buy for \$1\.50/ }).click();
+  await takunda.getByRole("button", { name: /Buy for \$1\.50/ }).click();
   // Wallet auto-opens with two codes. Pull them so we know which to redeem.
-  await tendai.getByRole("heading", { name: "Wallet" }).waitFor({ timeout: 15000 });
-  await tendai.waitForTimeout(400);
-  const codeNodes = await tendai.locator("aside :text-matches('^\\\\d{3}$')").all();
+  await takunda.getByRole("heading", { name: "Wallet" }).waitFor({ timeout: 15000 });
+  await takunda.waitForTimeout(400);
+  const codeNodes = await takunda.locator("aside :text-matches('^\\\\d{3}$')").all();
   const codes: string[] = [];
   for (const n of codeNodes) codes.push((await n.innerText()).trim());
   console.log(`    access codes: ${JSON.stringify(codes)}`);
@@ -223,10 +223,10 @@ async function main(): Promise<void> {
   console.log(`    leg1=${leg1Code}, leg2=${leg2Code}`);
 
   step("4. close wallet → Journey sheet should be visible");
-  await tendai.getByRole("button", { name: /Close wallet/ }).first().click();
-  await tendai.waitForTimeout(800);
+  await takunda.getByRole("button", { name: /Close wallet/ }).first().click();
+  await takunda.waitForTimeout(800);
   const stage1 = await waitForStage(
-    tendai,
+    takunda,
     (k, i) => k === "walk-to-board" && i === "1",
     20_000,
   );
@@ -234,7 +234,7 @@ async function main(): Promise<void> {
   if (stage1.kind !== "walk-to-board") {
     throw new Error(`expected walk-to-board after booking, got kind=${stage1.kind}`);
   }
-  await tendai.screenshot({ path: "phase35-stage1-walk-to-board.png" });
+  await takunda.screenshot({ path: "phase35-stage1-walk-to-board.png" });
   console.log("    captured phase35-stage1-walk-to-board.png");
 
   // 2. Farai redeems leg 1.
@@ -247,15 +247,15 @@ async function main(): Promise<void> {
     throw new Error(`leg1 redeem failed: ${feedback}`);
   }
 
-  step("6. tendai sheet should advance past walk-to-board");
+  step("6. takunda sheet should advance past walk-to-board");
   // Boarding flash is ~1.1s; we may catch it or the steady in-transit state.
   const stage23 = await waitForStage(
-    tendai,
+    takunda,
     (k) => k === "boarding" || k === "in-transit" || k === "walking-transfer",
     30_000,
   );
   console.log(`    leg1 stage: kind=${stage23.kind} index=${stage23.index}`);
-  await tendai.screenshot({ path: "phase35-stage2or3-after-leg1.png" });
+  await takunda.screenshot({ path: "phase35-stage2or3-after-leg1.png" });
   console.log("    captured phase35-stage2or3-after-leg1.png");
 
   // 3. Farai switches to ZH 5101 and redeems leg 2.
@@ -268,18 +268,18 @@ async function main(): Promise<void> {
     throw new Error(`leg2 redeem failed: ${feedback}`);
   }
 
-  step("8. tendai sheet should reach boarding-leg-2 or in-transit on leg 2");
+  step("8. takunda sheet should reach boarding-leg-2 or in-transit on leg 2");
   const stage5 = await waitForStage(
-    tendai,
+    takunda,
     (k, i) => k === "boarding-leg-2" || (k === "in-transit" && i === "5") || k === "arrived",
     30_000,
   );
   console.log(`    leg2 stage: kind=${stage5.kind} index=${stage5.index}`);
-  await tendai.screenshot({ path: "phase35-stage5or6-after-leg2.png" });
+  await takunda.screenshot({ path: "phase35-stage5or6-after-leg2.png" });
   console.log("    captured phase35-stage5or6-after-leg2.png");
 
   step("9. final journey snapshot");
-  const final = await readJourneyState(tendai);
+  const final = await readJourneyState(takunda);
   console.log(`    final state: ${JSON.stringify(final)}`);
 
   step("DONE — Phase 3.5 prod smoke completed");

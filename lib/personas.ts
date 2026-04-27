@@ -11,10 +11,10 @@ export interface Persona {
 }
 
 const FALLBACKS: Record<string, Persona> = {
-  tendai: {
+  takunda: {
     id: "00000000-0000-0000-0000-000000000001",
-    name: "Tendai",
-    phone: "+263772000001",
+    name: "Takunda",
+    phone: "+263772000010",
     role: "passenger",
     credit_balance_usd: 5,
   },
@@ -42,7 +42,7 @@ const FALLBACKS: Record<string, Persona> = {
 };
 
 const DEFAULTS: Record<Role, string> = {
-  passenger: "tendai",
+  passenger: "takunda",
   conductor: "farai",
   fleet_owner: "baba_tino",
 };

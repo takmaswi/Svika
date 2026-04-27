@@ -35,7 +35,7 @@ The plan below is organised in **phases with gates**, not days. Move through pha
 ### Tasks
 
 - [ ] Write the database migrations from `docs/DATA-MODEL.md`: users, routes, stop_points, route_stops, fare_segments, transfer_points, vehicles, tickets, trips, trip_tickets, transfers, kombi_pings, audit_narratives.
-- [ ] Build the seed loader. Read `seed/network.json`, insert routes, stop points, route stops, fare segments, transfer points. Pre-load Tendai, Rudo, Farai, Baba Tino. Pre-load two vehicles per route.
+- [ ] Build the seed loader. Read `seed/network.json`, insert routes, stop points, route stops, fare segments, transfer points. Pre-load Takunda, Rudo, Farai, Baba Tino. Pre-load two vehicles per route.
 - [ ] Optionally densify the polylines through Mapbox's directions service so they snap perfectly to roads. Keep the original raw polylines as a fallback.
 - [ ] Build the Mapbox shell on the passenger surface. Render route lines, stop markers, and kombi markers.
 - [ ] Build the simulation runner — a script or route handler that advances each vehicle along its polyline every two seconds and writes the new position to the database. Use a Supabase Realtime channel to broadcast updates.
@@ -43,13 +43,13 @@ The plan below is organised in **phases with gates**, not days. Move through pha
 
 ### What "passed" looks like
 
-- Open `/?as=tendai`, see the four routes drawn cleanly.
+- Open `/?as=takunda`, see the four routes drawn cleanly.
 - Click any route, see its named stops.
 - Watch two kombis move smoothly along their routes.
 
 ## Phase 2 — Passenger experience
 
-**Gate to pass:** Tendai can plan a Heights-to-Avondale trip, see two options, choose one, buy two tickets, view them in her wallet, and transfer one to Rudo via a share sheet. Rudo can claim the transferred ticket.
+**Gate to pass:** Takunda can plan a Heights-to-Avondale trip, see two options, choose one, buy two tickets, view them in his wallet, and transfer one to Rudo via a share sheet. Rudo can claim the transferred ticket.
 
 ### Tasks
 
@@ -64,7 +64,7 @@ The plan below is organised in **phases with gates**, not days. Move through pha
 ### What "passed" looks like
 
 - A search for "Avondale from Heights" returns two options.
-- Buying option A creates two access codes in Tendai's wallet.
+- Buying option A creates two access codes in Takunda's wallet.
 - Sharing one to Rudo via WhatsApp works end-to-end on a real phone or simulator.
 - Rudo's wallet shows the ticket as held.
 
@@ -102,7 +102,7 @@ The plan below is organised in **phases with gates**, not days. Move through pha
 
 ### What "passed" looks like
 
-- Typing `balance` in `/wa` returns Tendai's credit balance.
+- Typing `balance` in `/wa` returns Takunda's credit balance.
 - Typing `kombi near me` returns the nearest kombi name and arrival estimate.
 - The parcel send-and-accept flow works end-to-end with seed data.
 - Switching `AI_PROVIDER` between `ollama` and `gemini` produces working narratives in both modes.
@@ -118,7 +118,7 @@ The plan below is organised in **phases with gates**, not days. Move through pha
 - [ ] Render and upload the video to YouTube unlisted, or to whatever the submission form requires.
 - [ ] Write the README. Sections: vision, what's built (Tier 1), what's demonstrated (Tier 2), roadmap (Tier 3), how to run, screenshots, video link.
 - [ ] Build the eight-slide pitch deck following `docs/PITCH-DECK-OUTLINE.md`. Export to PDF.
-- [ ] Final smoke test on a clean browser: clear cookies, open `/?as=tendai`, run through the full passenger flow. Then `/hwindi?as=farai`. Then `/fleet?as=baba_tino`. Then `/wa?as=tendai`. Every flow must work.
+- [ ] Final smoke test on a clean browser: clear cookies, open `/?as=takunda`, run through the full passenger flow. Then `/hwindi?as=farai`. Then `/fleet?as=baba_tino`. Then `/wa?as=takunda`. Every flow must work.
 - [ ] Fill the submission form. Submit. Take a screenshot of the confirmation.
 
 ### What "passed" looks like

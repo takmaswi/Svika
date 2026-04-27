@@ -12,21 +12,22 @@ Svika is the digital layer over this network. Not a replacement, not a competito
 
 ## Who it serves
 
-### Tendai — the passenger
+### Takunda — the passenger (the only persona on camera)
 
-A working professional in Mt Pleasant Heights. Travels by kombi several times a week to the city, to Avondale, to the University of Zimbabwe. Has a smartphone and intermittent data. Knows her own routes from habit, but cannot always plan a trip to a part of the city she does not know.
+A working professional in Mt Pleasant Heights. Travels by kombi several times a week to the city, to Avondale, to the University of Zimbabwe. Has a smartphone and intermittent data. Knows his own routes from habit, but cannot always plan a trip to a part of the city he does not know. From Phase 3.8 onwards he is the only persona the user-facing UI offers — every other character (conductor, fleet owner, transfer recipient) appears as a propagated effect on his screen, not as a destination he switches into.
 
-What she needs:
+What he needs:
 - See where kombis are now
-- Plan a trip from where she is to where she wants to go
+- Plan a trip from where he is to where he wants to go
 - Know the current fare without arguing with a conductor
 - Pay digitally without exact change
 - Send a ticket to a family member when plans change
 - A receipt of every ride
+- See the conductor's clearance and the fleet's revenue land *on his own screen* without changing surfaces
 
-### Rudo — the passenger's cousin
+### Rudo — the transfer recipient
 
-A student. Tendai sometimes pays Rudo's fare. Today Tendai cannot make her trip and Rudo can. Rudo needs to receive a ticket Tendai already paid for and use it.
+Takunda's cousin. A student. Takunda sometimes pays Rudo's fare. When plans change, Rudo needs to receive a ticket Takunda already paid for and use it. Reachable via a shared claim link only — not a persona the user picks during the demo.
 
 What she needs:
 - Receive a ticket via WhatsApp or in-app share

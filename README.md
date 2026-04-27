@@ -60,11 +60,13 @@ pnpm dev
 
 ## Demo personas
 
-- `/?as=tendai` — passenger
-- `/?as=rudo` — passenger
-- `/hwindi?as=farai` — conductor on `ZH 4821`
-- `/fleet?as=baba_tino` — fleet owner
-- `/wa?as=tendai` — WhatsApp companion
+The user-facing flow is **single-user**. Takunda is the only persona the landing page surfaces. The other URLs exist for direct deep-links (used during demo recording) but are not offered as switches in the UI.
+
+- `/?as=takunda` — primary user (passenger). The landing page funnels everyone here.
+- `/?as=rudo` — transfer recipient (cousin); reachable through a shared claim link.
+- `/hwindi?as=farai` — conductor character on `ZH 4821`. Direct URL only.
+- `/fleet?as=baba_tino` — fleet owner character. Direct URL only.
+- `/wa?as=takunda` — WhatsApp companion (mocked).
 
 ## Documentation
 

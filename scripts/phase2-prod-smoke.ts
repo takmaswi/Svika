@@ -2,7 +2,7 @@
  * Phase 2 production smoke — drives the real https://svika.vercel.app surface
  * end-to-end with a fresh chromium profile (no shared user-data-dir).
  *
- *   tendai → search → buy → wallet → transfer to rudo → claim as rudo
+ *   takunda → search → buy → wallet → transfer to rudo → claim as rudo
  *
  * Run: npx tsx scripts/phase2-prod-smoke.ts
  */
@@ -29,8 +29,8 @@ async function main(): Promise<void> {
     if (msg.type() === "error") console.error("[console error]", msg.text());
   });
 
-  step("1. open /?as=tendai");
-  await page.goto(`${BASE}/?as=tendai`, { waitUntil: "domcontentloaded" });
+  step("1. open /?as=takunda");
+  await page.goto(`${BASE}/?as=takunda`, { waitUntil: "domcontentloaded" });
   await page.waitForSelector("#trip-search", { timeout: 15000 });
   console.log("    persona + search bar rendered");
 

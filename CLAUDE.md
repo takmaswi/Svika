@@ -74,11 +74,11 @@ The user runs Claude Code in **Auto Mode** (or `acceptEdits` + hooks fallback) f
 
 | Area | Decision |
 |---|---|
-| Hero user | Passenger (Tendai). Workers: conductor (Farai), fleet owner (Baba Tino). Companion surface: WhatsApp utility. |
+| Hero user | Passenger (Takunda). Conductor (Farai) and fleet owner (Baba Tino) appear as characters in Takunda's flow, not separate persona destinations. Rudo is the cousin who receives a transferred ticket. Companion surface: WhatsApp utility. |
 | Currency | United States Dollars only. No ZiG. |
 | Tickets | Tickets transfer between users. Account balances do not. Avoids fintech licensing. |
 | ZUPCO framing | "Designed to integrate with ZUPCO." Never claim a partnership. |
-| Authentication | No real login. Persona switch via `?as=tendai` query parameter. Pre-seeded demo accounts. |
+| Authentication | No real login. Persona is selected only via the `?as=takunda` query parameter (or `?as=rudo` / `?as=farai` / `?as=baba_tino` for direct deep-links during recording). Pre-seeded demo accounts. As of Phase 3.8 the user-facing UI no longer offers persona switching. |
 | Codebase | One Next.js project. Route groups: `/` passenger, `/hwindi` conductor, `/fleet` owner, `/wa` mocked WhatsApp companion. |
 | RLS | Demo-only service-role bypass during the sprint. Real persona-scoped RLS is roadmap. Spell out in code comments. |
 | Database | Supabase free tier with PostGIS. Daily heartbeat ping to prevent the 7-day pause. |
@@ -164,7 +164,7 @@ Required steps at every phase gate, in order:
 3. Poll prod until the new build is live, e.g.:
 
    ```bash
-   until curl -s https://svika.vercel.app/?as=tendai | grep -q "<phase-marker>"; do sleep 8; done
+   until curl -s https://svika.vercel.app/?as=takunda | grep -q "<phase-marker>"; do sleep 8; done
    ```
 
    `<phase-marker>` is a string that exists only after the new commit ships (Phase 1: a route name from `seed/network.json`; Phase 2: `trip-search`; Phase 3: `hwindi-pin-keypad` or the equivalent — name the marker in the gate task itself).
@@ -199,7 +199,7 @@ Enable only the following. Disable everything else to stay under global B1 budge
 
 | Path | User | Purpose |
 |---|---|---|
-| `/` | Passenger (Tendai) | Live kombi map, trip planner, ticket purchase, ticket wallet, ticket transfer |
+| `/` | Passenger (Takunda) | Live kombi map, trip planner, ticket purchase, ticket wallet, ticket transfer. Conductor and fleet moments propagate into this surface via Realtime — no persona-switching needed during the demo. |
 | `/hwindi` | Conductor (Farai) | Fat-finger conductor screen: PIN entry, +1 cash, parcel accept, route view |
 | `/fleet` | Fleet owner (Baba Tino) | Revenue ledger, Ghost Trip audit narrative, ZIMRA liability card |
 | `/wa` | WhatsApp companion | Mocked WhatsApp chat with three commands powered by Gemma |
