@@ -15,6 +15,17 @@ export interface JourneyStop {
   lng: number;
 }
 
+/**
+ * Receiver-side metadata for a parcel ticket. Set when the underlying ticket
+ * row has `kind = 'parcel'`; carried alongside the kombi leg so the Phase 4.5
+ * Uber-style journey card can swap into its parcel layout without a separate
+ * loader pass.
+ */
+export interface ParcelMetadata {
+  receiver_phone: string;
+  description: string | null;
+}
+
 export interface JourneyKombiLeg {
   kind: "kombi";
   /** 0-based index into trip_tickets.sequence — the leg order across kombi legs. */
@@ -22,6 +33,10 @@ export interface JourneyKombiLeg {
   ticket_id: string;
   access_code: string;
   status: TicketStatus;
+  /** Underlying ticket's `kind` column. Drives the parcel-parity Journey branch. */
+  ticket_kind: "passenger" | "parcel";
+  /** Set only when `ticket_kind === "parcel"`; otherwise null. */
+  parcel: ParcelMetadata | null;
   /** vehicle_id is set when the conductor clears the PIN. */
   vehicle_id: string | null;
   redeemed_at: string | null;
@@ -46,6 +61,13 @@ export interface JourneyWalkLeg {
 export type JourneyLeg = JourneyKombiLeg | JourneyWalkLeg;
 
 export interface ActiveJourney {
+  /**
+   * `passenger` is the standard trip-planner journey (single or multi-leg).
+   * `parcel` is a synthesised single-leg journey produced by the loader when
+   * the persona has an in-flight parcel ticket and no active passenger trip;
+   * the Journey card swaps to the parcel-parity layout in that case.
+   */
+  kind: "passenger" | "parcel";
   trip_id: string;
   trip_label: string;
   origin: JourneyStop;

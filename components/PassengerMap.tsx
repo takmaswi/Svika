@@ -34,53 +34,37 @@ const TEAL = "#0a4b5c";
 const RUST = "#d9622a";
 const STONE = "#f2ede6";
 
-const KOMBI_ICON_ID = "svika-kombi";
-const KOMBI_ICON_PX = 64;
+const KOMBI_ICON_ID = "kombi-icon";
+const KOMBI_ICON_URL = "/brand/kombi.svg";
+// Rasterise the SVG at this pixel density so the symbol stays crisp on
+// retina screens and at Mapbox's higher zoom levels. The icon-size case
+// expression below shrinks/grows from this baseline.
+const KOMBI_ICON_PX_W = 64;
+const KOMBI_ICON_PX_H = 96;
 
 /**
- * Top-down minibus SVG. Front of the bus points up the canvas (north / 0°)
- * so Mapbox `icon-rotate` directly accepts a compass bearing. The body fills
- * with rust; windshield + side windows are teal so the silhouette reads at
- * Citymapper-bus / Uber-car distances.
+ * Loads `/brand/kombi.svg`, rasterises it onto a canvas, and registers the
+ * pixels with Mapbox under the name `kombi-icon`. Mapbox's `loadImage`
+ * helper does not handle SVG sources reliably across browsers, so we drive
+ * the load through `Image()` ourselves and feed `ImageData` to `addImage`.
  */
-const KOMBI_SVG = `
-<svg xmlns="http://www.w3.org/2000/svg" width="${KOMBI_ICON_PX}" height="${KOMBI_ICON_PX}" viewBox="0 0 64 64">
-  <defs>
-    <filter id="kombiShadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="1" stdDeviation="1.4" flood-color="#000" flood-opacity="0.35"/>
-    </filter>
-  </defs>
-  <g filter="url(#kombiShadow)">
-    <rect x="18" y="6" width="28" height="52" rx="9" ry="9" fill="${RUST}" stroke="${STONE}" stroke-width="2.4"/>
-    <rect x="22" y="9" width="20" height="11" rx="3" fill="#0e3845"/>
-    <rect x="22" y="22" width="9" height="9" rx="2" fill="#0e3845"/>
-    <rect x="33" y="22" width="9" height="9" rx="2" fill="#0e3845"/>
-    <rect x="22" y="33" width="9" height="9" rx="2" fill="#0e3845"/>
-    <rect x="33" y="33" width="9" height="9" rx="2" fill="#0e3845"/>
-    <rect x="22" y="48" width="20" height="8" rx="2" fill="#a14820"/>
-    <rect x="28" y="11" width="8" height="3" rx="1" fill="#f9d97a" opacity="0.9"/>
-  </g>
-</svg>
-`.trim();
-
 async function registerKombiIcon(map: mapboxgl.Map): Promise<void> {
   if (map.hasImage(KOMBI_ICON_ID)) return;
   await new Promise<void>((resolve) => {
-    const img = new Image(KOMBI_ICON_PX, KOMBI_ICON_PX);
-    const url =
-      "data:image/svg+xml;charset=utf-8," + encodeURIComponent(KOMBI_SVG);
+    const img = new Image();
+    img.crossOrigin = "anonymous";
     img.onload = () => {
       try {
         const canvas = document.createElement("canvas");
-        canvas.width = KOMBI_ICON_PX;
-        canvas.height = KOMBI_ICON_PX;
+        canvas.width = KOMBI_ICON_PX_W;
+        canvas.height = KOMBI_ICON_PX_H;
         const ctx = canvas.getContext("2d");
         if (!ctx) {
           resolve();
           return;
         }
-        ctx.drawImage(img, 0, 0, KOMBI_ICON_PX, KOMBI_ICON_PX);
-        const data = ctx.getImageData(0, 0, KOMBI_ICON_PX, KOMBI_ICON_PX);
+        ctx.drawImage(img, 0, 0, KOMBI_ICON_PX_W, KOMBI_ICON_PX_H);
+        const data = ctx.getImageData(0, 0, KOMBI_ICON_PX_W, KOMBI_ICON_PX_H);
         if (!map.hasImage(KOMBI_ICON_ID)) {
           map.addImage(KOMBI_ICON_ID, data, { pixelRatio: 2 });
         }
@@ -90,7 +74,7 @@ async function registerKombiIcon(map: mapboxgl.Map): Promise<void> {
       resolve();
     };
     img.onerror = () => resolve();
-    img.src = url;
+    img.src = KOMBI_ICON_URL;
   });
 }
 
@@ -200,6 +184,37 @@ function kombisGeoJSON(
   };
 }
 
+/**
+ * Per-vehicle interpolation buffer. Each broadcast tick (every 2 s) shifts
+ * the previous "next" sample into "prev" and stores the new sample in
+ * "next"; the RAF loop eases between them so on-screen motion runs at the
+ * display refresh rate instead of jumping in 2 s steps.
+ */
+interface InterpEntry {
+  prev: [number, number];
+  next: [number, number];
+  prevBearing: number;
+  nextBearing: number;
+  broadcastAt: number;
+}
+
+const TICK_PERIOD_MS = 1500;
+
+function easeInOut(t: number): number {
+  return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+}
+
+/** Shortest-arc bearing interpolation (handles 359 → 1 wrap). */
+function lerpBearing(prev: number, next: number, t: number): number {
+  let delta = next - prev;
+  if (delta > 180) delta -= 360;
+  else if (delta < -180) delta += 360;
+  let out = prev + delta * t;
+  if (out < 0) out += 360;
+  else if (out >= 360) out -= 360;
+  return out;
+}
+
 function walkingGeoJSON(journey: ActiveJourney | null): GeoJSON.FeatureCollection {
   if (!journey) return { type: "FeatureCollection", features: [] };
   const features: GeoJSON.Feature[] = [];
@@ -227,6 +242,8 @@ export default function PassengerMap({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const positionsRef = useRef<Map<string, KombiTickPayload>>(new Map());
+  /** Lerp buffer fed by Realtime broadcasts, drained by the RAF loop. */
+  const interpRef = useRef<Map<string, InterpEntry>>(new Map());
   const assignedVehicleIdRef = useRef<string | null>(null);
   const journeyRef = useRef<ActiveJourney | null>(journey);
   const stageRef = useRef<JourneyStage | null>(stage);
@@ -256,15 +273,15 @@ export default function PassengerMap({
     repaintActiveLeg(map, journeyRef.current, stage);
   }, [stage]);
 
-  // Refresh the kombi source paint, walking source, and stop emphasis
-  // whenever journey/stage change. Imperative — no map rebuild.
+  // Refresh the walking source and stop emphasis whenever journey/stage
+  // change. The kombi source itself is owned by the RAF interpolation loop —
+  // overwriting it here would replace the eased output with the un-lerped
+  // positions, producing a one-frame jump on every stage transition.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
     const walkingSrc = map.getSource(WALKING_SOURCE) as GeoJSONSource | undefined;
     if (walkingSrc) walkingSrc.setData(walkingGeoJSON(journey));
-    const kombiSrc = map.getSource(KOMBIS_SOURCE) as GeoJSONSource | undefined;
-    if (kombiSrc) kombiSrc.setData(kombisGeoJSON(positionsRef.current, assignedVehicleIdRef.current));
     const stopsSrc = map.getSource(STOPS_SOURCE) as GeoJSONSource | undefined;
     if (stopsSrc) {
       stopsSrc.setData(
@@ -334,7 +351,9 @@ export default function PassengerMap({
           [minLng, minLat],
           [maxLng, maxLat],
         ],
-        { padding: 60, duration: 800, essential: true },
+        // Padding 80 + maxZoom 14.5 keeps street-level basemap legible on
+        // mobile rather than zooming straight into a single roundabout.
+        { padding: 80, maxZoom: 14.5, duration: 800, essential: true },
       );
     }
 
@@ -528,8 +547,8 @@ export default function PassengerMap({
         },
       });
       // Kombi minibus icon, rotated to direction-of-travel via the bearing on
-      // each tick payload. Active (assigned) kombi renders larger and at full
-      // opacity; pass-through kombis render smaller and dimmer so the eye
+      // each tick payload. Active (assigned) kombi renders at full size +
+      // opacity; pass-through kombis render at 0.7× and 0.5 alpha so the eye
       // tracks the trip-relevant vehicle first.
       void registerKombiIcon(map).then(() => {
         if (!map.getLayer(KOMBIS_LAYER)) {
@@ -539,29 +558,24 @@ export default function PassengerMap({
             source: KOMBIS_SOURCE,
             layout: {
               "icon-image": KOMBI_ICON_ID,
-              "icon-rotate": ["coalesce", ["get", "bearing"], 0],
+              "icon-rotate": ["get", "bearing"],
               "icon-rotation-alignment": "map",
               "icon-allow-overlap": true,
               "icon-ignore-placement": true,
               "icon-anchor": "center",
               "icon-size": [
-                "interpolate",
-                ["linear"],
-                ["zoom"],
-                10,
-                ["case", ["==", ["get", "is_assigned"], true], 0.55, 0.32],
-                14,
-                ["case", ["==", ["get", "is_assigned"], true], 0.95, 0.55],
-                16,
-                ["case", ["==", ["get", "is_assigned"], true], 1.25, 0.75],
+                "case",
+                ["==", ["get", "is_assigned"], true],
+                1.0,
+                0.7,
               ],
             },
             paint: {
               "icon-opacity": [
                 "case",
                 ["==", ["get", "is_assigned"], true],
-                1,
-                0.55,
+                1.0,
+                0.5,
               ],
             },
           });
@@ -677,8 +691,11 @@ export default function PassengerMap({
     };
   }, []);
 
-  // Subscribe to the sim runner's broadcast channel. Imperatively patch the
-  // GeoJSON source on every tick — never use React state for kombi positions.
+  // Subscribe to the sim runner's broadcast channel. The handler does NOT
+  // write the GeoJSON source itself — it only pushes the new sample into the
+  // per-vehicle interpolation buffer. The RAF loop below drains the buffer
+  // every animation frame, easing each kombi between its previous and next
+  // sample so the eye sees ~60 fps motion instead of a 2 s teleport.
   useEffect(() => {
     const supabase = createClient();
     const channel = supabase.channel(SIM_CHANNEL, {
@@ -688,17 +705,69 @@ export default function PassengerMap({
     channel.on("broadcast", { event: SIM_EVENT }, (msg) => {
       const ticks = (msg.payload as { ticks?: KombiTickPayload[] } | undefined)?.ticks;
       if (!Array.isArray(ticks)) return;
-      for (const t of ticks) positionsRef.current.set(t.vehicle_id, t);
-      const map = mapRef.current;
-      if (!map || !map.isStyleLoaded()) return;
-      const src = map.getSource(KOMBIS_SOURCE) as GeoJSONSource | undefined;
-      if (src) src.setData(kombisGeoJSON(positionsRef.current, assignedVehicleIdRef.current));
+      const at = performance.now();
+      for (const t of ticks) {
+        const existing = interpRef.current.get(t.vehicle_id);
+        const prev = existing?.next ?? [t.lng, t.lat];
+        const prevBearing =
+          existing?.nextBearing ?? (typeof t.bearing === "number" ? t.bearing : 0);
+        interpRef.current.set(t.vehicle_id, {
+          prev,
+          next: [t.lng, t.lat],
+          prevBearing,
+          nextBearing: typeof t.bearing === "number" ? t.bearing : prevBearing,
+          broadcastAt: at,
+        });
+        positionsRef.current.set(t.vehicle_id, t);
+      }
     });
 
     channel.subscribe();
 
     return () => {
       void supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // RAF interpolation loop. Reads the lerp buffer + the source-of-truth
+  // routeId/direction from `positionsRef`, builds an eased GeoJSON, and
+  // hands it to the kombis source. The `pending` flag skips frames if a
+  // previous setData hasn't returned yet (defensive — Mapbox's setData is
+  // synchronous today, but if a future version makes it async this stays
+  // smooth instead of stacking up draws).
+  useEffect(() => {
+    let raf = 0;
+    let pending = false;
+    function frame(): void {
+      raf = requestAnimationFrame(frame);
+      if (pending) return;
+      const map = mapRef.current;
+      if (!map || !map.isStyleLoaded()) return;
+      const src = map.getSource(KOMBIS_SOURCE) as GeoJSONSource | undefined;
+      if (!src) return;
+      const now = performance.now();
+      const lerped = new Map<string, KombiTickPayload>();
+      for (const [id, entry] of interpRef.current.entries()) {
+        const t = Math.max(0, Math.min(1, (now - entry.broadcastAt) / TICK_PERIOD_MS));
+        const eased = easeInOut(t);
+        const lng = entry.prev[0] + (entry.next[0] - entry.prev[0]) * eased;
+        const lat = entry.prev[1] + (entry.next[1] - entry.prev[1]) * eased;
+        const bearing = lerpBearing(entry.prevBearing, entry.nextBearing, eased);
+        const orig = positionsRef.current.get(id);
+        if (!orig) continue;
+        lerped.set(id, { ...orig, lat, lng, bearing });
+      }
+      pending = true;
+      try {
+        src.setData(kombisGeoJSON(lerped, assignedVehicleIdRef.current));
+      } catch {
+        // map closed mid-frame
+      }
+      pending = false;
+    }
+    raf = requestAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(raf);
     };
   }, []);
 

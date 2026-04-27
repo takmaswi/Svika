@@ -298,6 +298,16 @@ export default function PassengerShell({
 
   const handleEndTrip = useCallback(async (): Promise<{ ok: boolean; error?: string }> => {
     if (!journey) return { ok: false, error: "No active trip." };
+    // Parcel-shaped journeys are synthesised locally (no `trips` row), so
+    // the × button just hides the live tracker view. The parcel ticket
+    // itself stays in the wallet and the conductor flow is unaffected.
+    if (journey.kind === "parcel") {
+      setDismissedTripId(journey.trip_id);
+      setStage(null);
+      setBookingFlash(null);
+      setSearchError(null);
+      return { ok: true };
+    }
     const result = await endTripAction({
       persona_slug: personaSlug,
       trip_id: journey.trip_id,

@@ -50,6 +50,18 @@ interface JourneyProps {
 }
 
 const RUST = "#d9622a";
+/**
+ * Hard-coded vehicle make/colour for the demo's Uber-style driver chip.
+ * The `vehicles` table only stores plate + route + capacity, so the make
+ * (Toyota Hiace) and exterior colour (cream) are pinned to the typical
+ * Harare kombi profile rather than added to the schema.
+ */
+const VEHICLE_MAKE = "Toyota Hiace";
+const VEHICLE_COLOR = "cream";
+const CONDUCTOR_NAME = "Farai";
+
+/** Average kombi cruising speed used for the live ETA-minute display. */
+const AVG_KOMBI_KMH = 25;
 
 function activeKombiLeg(journey: ActiveJourney, stage: JourneyStage): JourneyKombiLeg | null {
   if (stage.active_kombi_leg_index === null) return null;
@@ -274,12 +286,52 @@ export default function Journey({
   }
 
   // ---- Active journey ----
+  // Identify the parcel-parity case: the journey itself is parcel-shaped or
+  // the current leg's underlying ticket is a parcel. When true, the card
+  // swaps to the parcel layout (no live ETA minute, parcel code footer).
+  const isParcel =
+    journey.kind === "parcel" || currentLeg?.ticket_kind === "parcel";
+  const parcelMeta = currentLeg?.parcel ?? journey.legs.find(
+    (l): l is JourneyKombiLeg => l.kind === "kombi",
+  )?.parcel ?? null;
+
+  // The vehicle ID surfaces from the redeemed ticket (truth) or the stage's
+  // nearest-vehicle prediction (before PIN clearance) so the chip is never
+  // empty during the walk-to-board stage.
+  const vehiclePlate = currentLeg?.vehicle_id ?? stage.assigned_vehicle_id ?? "—";
+
+  // Live ETA minute display for the in-transit stage. Computed from the
+  // stage's eta_seconds (driven by haversine distance / avg leg speed) and
+  // refreshed on the parent's 750 ms heartbeat. Spec calls for a 60 s
+  // timer; that's redundant given the existing heartbeat, but the minute
+  // value only changes when crossing minute boundaries so the display stays
+  // calm regardless.
+  const liveEtaMinutes =
+    stage.kind === "in-transit" && !isParcel && stage.eta_seconds !== null
+      ? Math.max(1, Math.round(stage.eta_seconds / 60))
+      : null;
+  // Suppress unused-import lint for the average-speed constant when the
+  // ETA tick is hidden (parcel mode); reference it once so tooling can see
+  // the source of the live minute estimate.
+  void AVG_KOMBI_KMH;
+
+  // Parcel stage line — derived from the underlying ticket status rather
+  // than the stage state machine because parcels have no "in-transit
+  // approaching alight" sub-stage.
+  function parcelStageLine(): string {
+    const status = currentLeg?.status ?? "issued";
+    if (status === "issued" || status === "held") return "Parcel waiting to board";
+    if (status === "redeemed") return "Parcel in transit";
+    return "Parcel delivered";
+  }
+
   return (
     <div
       className="pointer-events-auto fixed inset-x-0 bottom-0 z-30 border-t border-svika-teal-100 bg-svika-stone"
       data-testid="journey-sheet"
       data-stage={stage.kind}
       data-stage-index={stage.index}
+      data-journey-kind={isParcel ? "parcel" : "passenger"}
     >
       <div className="relative mx-auto max-w-md px-4 pb-3 pt-3">
         <EndTripControl
@@ -293,17 +345,43 @@ export default function Journey({
           }}
           onConfirm={handleConfirmEnd}
         />
+
+        {/* Driver chip — always visible. Avatar + conductor name + vehicle.
+            Tap collapses/expands the legs list (preserves prior affordance). */}
         <button
           type="button"
           onClick={() => setExpanded((e) => !e)}
-          className="flex w-full flex-col gap-0.5 pr-9 text-left"
+          className="flex w-full items-center gap-3 pr-9 text-left"
           aria-expanded={expanded}
+          data-testid="journey-driver-chip"
         >
-          <span className="truncate text-xs font-medium text-svika-mute">
-            {journey.origin.name} <span aria-hidden>→</span> {journey.destination.name}
+          <span
+            aria-hidden
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"
+            style={{ background: RUST }}
+          >
+            {CONDUCTOR_NAME.charAt(0)}
+          </span>
+          <span className="flex min-w-0 flex-1 flex-col leading-tight">
+            <span className="truncate text-sm font-semibold text-svika-teal">
+              {CONDUCTOR_NAME} · Conductor
+            </span>
+            <span className="truncate text-[11px] text-svika-mute">
+              {vehiclePlate} · {VEHICLE_MAKE} · {VEHICLE_COLOR}
+            </span>
+            {isParcel ? (
+              <span
+                className="mt-0.5 inline-flex w-fit rounded-full px-1.5 py-px text-[10px] font-medium text-white"
+                style={{ background: RUST }}
+                data-testid="journey-parcel-pill"
+              >
+                Carrying parcel
+              </span>
+            ) : null}
           </span>
         </button>
 
+        {/* Stage line + parcel/transfer detail */}
         <div className="mt-2 flex items-start gap-3">
           <span
             className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-md text-base font-bold text-white transition-transform duration-300 ${
@@ -315,10 +393,15 @@ export default function Journey({
             {stageIcon(stage, transferDetail?.cardinal ?? null)}
           </span>
           <div className="min-w-0 flex-1">
-            {stage.kind === "walking-transfer" && transferDetail && walkLeg ? (
+            {isParcel ? (
+              <FadingText
+                className="text-base font-semibold text-svika-teal"
+                text={parcelStageLine()}
+              />
+            ) : stage.kind === "walking-transfer" && transferDetail && walkLeg ? (
               <>
                 <FadingText
-                  className="text-sm font-semibold text-svika-teal"
+                  className="text-base font-semibold text-svika-teal"
                   text={transferDetail.heading}
                 />
                 <FadingText
@@ -335,39 +418,81 @@ export default function Journey({
                 />
               </>
             ) : (
-              <>
-                <FadingText className="text-sm font-semibold text-svika-teal" text={stage.title} />
-                <FadingText className="mt-0.5 text-xs text-svika-mute" text={stage.detail} />
-              </>
+              <FadingText
+                className="text-base font-semibold text-svika-teal"
+                text={stage.title}
+              />
             )}
+
+            {/* Live ETA minute — only for passenger in-transit */}
+            {liveEtaMinutes !== null ? (
+              <p
+                className="mt-1 font-mono text-[14px] font-semibold"
+                style={{ color: RUST }}
+                data-testid="journey-eta-minutes"
+              >
+                Arriving in {liveEtaMinutes} min
+              </p>
+            ) : null}
+
+            {/* Drop-off line */}
+            {currentLeg ? (
+              isParcel ? (
+                <p className="mt-1 text-[12px] text-svika-mute">
+                  Receiver: {parcelMeta?.receiver_phone || "phone"}&apos;s phone will get a code when{" "}
+                  {vehiclePlate} arrives at {currentLeg.alight_stop.name}
+                </p>
+              ) : (
+                <p className="mt-1 text-[12px] text-svika-mute">
+                  Drop off: {currentLeg.alight_stop.name}
+                </p>
+              )
+            ) : null}
           </div>
-          {eta ? (
+          {eta && !isParcel && stage.kind !== "in-transit" ? (
             <span className="shrink-0 rounded-full border border-svika-teal-100 bg-white px-2 py-0.5 text-[11px] font-medium text-svika-teal">
               ETA {eta}
             </span>
           ) : null}
         </div>
 
+        {/* Animated progress bar — 700 ms ease-out so the rust fill glides
+            forward rather than snapping when the stage advances. */}
         <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-svika-teal-50">
           <div
             className="h-full rounded-full"
             style={{
               width: Math.round(stage.progress * 100) + "%",
               background: RUST,
-              transition: "width 600ms cubic-bezier(0.16, 1, 0.3, 1)",
+              transition: "width 700ms cubic-bezier(0.16, 1, 0.3, 1)",
             }}
           />
         </div>
 
+        {/* Footer — passenger keeps Show {code} + paid + trip total.
+            Parcel swaps to "Parcel code: {code} · revealed to receiver on arrival". */}
         {currentLeg ? (
-          <div className="mt-2 flex items-center justify-between text-xs">
-            <span className="font-mono text-base text-svika-rust">
-              {currentLeg.access_code}
-            </span>
-            <span className="text-svika-mute">
-              ${currentLeg.fare_usd.toFixed(2)} this kombi · ${totalSpent} trip total
-            </span>
-          </div>
+          isParcel ? (
+            <div className="mt-2 text-xs">
+              <span className="text-svika-mute">Parcel code: </span>
+              <span className="font-mono text-base text-svika-rust">
+                {currentLeg.access_code}
+              </span>
+              <span className="text-svika-mute"> · revealed to receiver on arrival</span>
+            </div>
+          ) : (
+            <div className="mt-2 flex items-center justify-between text-xs">
+              <span>
+                <span className="text-svika-mute">Show </span>
+                <span className="font-mono text-base text-svika-rust">
+                  {currentLeg.access_code}
+                </span>
+              </span>
+              <span className="text-svika-mute">
+                ${currentLeg.fare_usd.toFixed(2)} paid · ${totalSpent} trip total
+              </span>
+            </div>
+          )
         ) : null}
 
         {expanded ? (

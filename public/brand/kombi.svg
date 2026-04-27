@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="48" viewBox="0 0 32 48">
+  <defs>
+    <filter id="kombi-shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
+      <feOffset dx="0" dy="1"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.16"/></feComponentTransfer>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <g filter="url(#kombi-shadow)">
+    <ellipse cx="5.6" cy="11" rx="2.4" ry="3.2" fill="#1a1a1a"/>
+    <ellipse cx="26.4" cy="11" rx="2.4" ry="3.2" fill="#1a1a1a"/>
+    <ellipse cx="5.6" cy="37" rx="2.4" ry="3.2" fill="#1a1a1a"/>
+    <ellipse cx="26.4" cy="37" rx="2.4" ry="3.2" fill="#1a1a1a"/>
+    <rect x="4.5" y="3" width="23" height="42" rx="6" ry="6" fill="#F0EDE3"/>
+    <rect x="11" y="3" width="10" height="2.4" rx="1" fill="#D9622A"/>
+    <rect x="9" y="6.5" width="14" height="6" rx="1.6" fill="#0F4C5C" fill-opacity="0.85"/>
+    <rect x="4.5" y="22.6" width="23" height="2" fill="#0F4C5C"/>
+    <rect x="9" y="35.5" width="14" height="6" rx="1.6" fill="#0F4C5C" fill-opacity="0.85"/>
+  </g>
+</svg>

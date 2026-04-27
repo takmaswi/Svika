@@ -155,6 +155,14 @@ export async function loadActiveJourney(
             ticket_id: ticket.id,
             access_code: ticket.access_code,
             status: ticket.status,
+            ticket_kind: ticket.kind,
+            parcel:
+              ticket.kind === "parcel"
+                ? {
+                    receiver_phone: ticket.parcel_receiver_phone ?? "",
+                    description: ticket.parcel_description ?? null,
+                  }
+                : null,
             vehicle_id: ticket.vehicle_id,
             redeemed_at: ticket.redeemed_at,
             route_id: leg.route_id,
@@ -193,6 +201,7 @@ export async function loadActiveJourney(
       if (!origin || !destination) continue;
 
       return {
+        kind: "passenger",
         trip_id: trip.id,
         trip_label: trip.selected_option_label,
         origin,
@@ -205,8 +214,72 @@ export async function loadActiveJourney(
       };
     }
 
-    return null;
+    // ---- Parcel fallback ---------------------------------------------------
+    // Phase 4.5 — when the persona has no active passenger trip but is
+    // tracking an in-flight parcel they sent, surface it as a synthesised
+    // single-leg journey so the Uber-style card can swap into its parcel
+    // layout. Wallet still shows the same parcel; this just adds the live
+    // tracker overlay. Skips parcels routed for stops we cannot resolve.
+    return loadActiveParcelJourney(personaId);
   } catch {
     return null;
   }
+}
+
+async function loadActiveParcelJourney(
+  personaId: string,
+): Promise<ActiveJourney | null> {
+  const client = await createServerClient();
+  const { data, error } = await client
+    .from("tickets")
+    .select("*")
+    .eq("originating_user_id", personaId)
+    .eq("kind", "parcel")
+    .in("status", ["issued", "held", "redeemed"])
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error || !data) return null;
+  const ticket = data as TicketRow;
+  const board = stopById.get(ticket.board_at_stop_id);
+  const alight = stopById.get(ticket.alight_at_stop_id);
+  if (!board || !alight) return null;
+
+  const leg: JourneyKombiLeg = {
+    kind: "kombi",
+    ticket_sequence: 0,
+    ticket_id: ticket.id,
+    access_code: ticket.access_code,
+    status: ticket.status,
+    ticket_kind: "parcel",
+    parcel: {
+      receiver_phone: ticket.parcel_receiver_phone ?? "",
+      description: ticket.parcel_description ?? null,
+    },
+    vehicle_id: ticket.vehicle_id,
+    redeemed_at: ticket.redeemed_at,
+    route_id: ticket.route_id,
+    route_name: routeNameById.get(ticket.route_id) ?? ticket.route_id,
+    board_stop: board,
+    alight_stop: alight,
+    fare_usd: Number(ticket.fare_usd),
+    // Parcels do not carry a duration estimate on the ticket; reuse the route's
+    // typical duration as a coarse upper bound for the progress bar share.
+    duration_minutes: 20,
+  };
+
+  return {
+    kind: "parcel",
+    // Synthesised id — Journey/PassengerShell route end-trip locally for
+    // parcels (see parcel branch comment in PassengerShell.handleEndTrip).
+    trip_id: "parcel:" + ticket.id,
+    trip_label: "Parcel via " + (routeNameById.get(ticket.route_id) ?? ticket.route_id),
+    origin: board,
+    destination: alight,
+    total_fare_usd: Number(ticket.fare_usd),
+    total_duration_minutes: 20,
+    total_walking_minutes: 0,
+    legs: [leg],
+    created_at: ticket.created_at,
+  };
 }
