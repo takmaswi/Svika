@@ -111,6 +111,8 @@ export type TicketStatus =
   | "expired"
   | "cash_walkin";
 
+export type PaymentMethod = "wallet" | "cash";
+
 export type TicketRow = {
   id: string;
   access_code: string;
@@ -123,11 +125,19 @@ export type TicketRow = {
   vehicle_id: string | null;
   status: TicketStatus;
   kind: "passenger" | "parcel";
+  payment_method: PaymentMethod;
   parcel_receiver_phone: string | null;
   parcel_description: string | null;
   created_at: string;
   redeemed_at: string | null;
   completed_at: string | null;
+};
+
+export type TopUpRow = {
+  id: string;
+  user_id: string;
+  amount_usd: number;
+  created_at: string;
 };
 
 export type TripRow = {
@@ -186,6 +196,7 @@ export type Database = {
       vehicles: Table<VehicleRow>;
       kombi_pings: Table<KombiPingRow>;
       tickets: Table<TicketRow>;
+      top_ups: Table<TopUpRow>;
       trips: Table<TripRow>;
       trip_tickets: Table<TripTicketRow>;
       transfers: Table<TransferRow>;

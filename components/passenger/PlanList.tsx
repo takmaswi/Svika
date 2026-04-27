@@ -5,7 +5,7 @@ import type { TripPlan } from "@/lib/trip-planner";
 interface PlanListProps {
   options: TripPlan[];
   busyOption: string | null;
-  onChoose: (option: TripPlan) => Promise<void>;
+  onChoose: (option: TripPlan) => void;
   onClose: () => void;
 }
 
@@ -79,7 +79,9 @@ export default function PlanList({ options, busyOption, onChoose, onClose }: Pla
               disabled={busy || busyOption !== null}
               className="w-full rounded-md bg-svika-rust px-3 py-2 text-sm font-medium text-white shadow-sm transition-opacity disabled:opacity-50"
             >
-              {busy ? "Buying..." : `Buy for $${option.total_fare_usd.toFixed(2)}`}
+              {busy
+                ? "Buying..."
+                : `Buy for $${option.total_fare_usd.toFixed(2)}`}
             </button>
           </article>
         );

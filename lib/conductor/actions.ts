@@ -72,6 +72,7 @@ export interface RedeemResult {
   passenger_count: number;
   board_at_stop_id: string;
   alight_at_stop_id: string;
+  payment_method: "wallet" | "cash";
 }
 
 export async function redeemTicketAction(input: {
@@ -175,6 +176,7 @@ export async function redeemTicketAction(input: {
       passenger_count: newPassengerCount,
       board_at_stop_id: ticket.board_at_stop_id,
       alight_at_stop_id: ticket.alight_at_stop_id,
+      payment_method: ticket.payment_method ?? "wallet",
     };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Redeem failed." };

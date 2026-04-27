@@ -4,21 +4,28 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import PassengerMap from "@/components/PassengerMap";
+import EmptyHero from "@/components/passenger/EmptyHero";
 import Journey from "@/components/passenger/Journey";
+import PaymentChoiceSheet from "@/components/passenger/PaymentChoiceSheet";
+import PersonaActionSheet from "@/components/passenger/PersonaActionSheet";
 import PlanList from "@/components/passenger/PlanList";
-import SearchHero from "@/components/passenger/SearchHero";
+import TopUpSheet from "@/components/passenger/TopUpSheet";
 import Wallet from "@/components/passenger/Wallet";
 import {
   bookTripAction,
   claimTicketAction,
   endTripAction,
   findPlansAction,
+  topUpAction,
   transferTicketAction,
 } from "@/lib/passenger/actions";
 import type { ActiveJourney, JourneyStage } from "@/lib/passenger/journey-types";
+import type { LiveStats } from "@/lib/passenger/liveStats";
 import type { NetworkPayload } from "@/lib/network/loadNetwork";
+import { findPersonaMeta } from "@/lib/personas-meta";
 import type { WalletTicket } from "@/lib/passenger/wallet";
 import type { Persona } from "@/lib/personas";
+import type { PaymentMethod } from "@/lib/supabase/types";
 import type { TripPlan } from "@/lib/trip-planner";
 
 interface PassengerShellProps {
@@ -29,6 +36,7 @@ interface PassengerShellProps {
   initialTickets: WalletTicket[];
   initialJourney: ActiveJourney | null;
   pendingClaim: string | null;
+  liveStats: LiveStats;
 }
 
 interface PlansState {
@@ -49,6 +57,8 @@ interface ClaimFlash {
   message: string;
 }
 
+const DEFAULT_CAPACITY = 15;
+
 export default function PassengerShell({
   persona,
   personaSlug,
@@ -57,19 +67,30 @@ export default function PassengerShell({
   initialTickets,
   initialJourney,
   pendingClaim,
+  liveStats,
 }: PassengerShellProps) {
   const router = useRouter();
   const tickets = initialTickets;
   const [walletOpen, setWalletOpen] = useState(false);
+  const [personaSheetOpen, setPersonaSheetOpen] = useState(false);
   const [plans, setPlans] = useState<PlansState | null>(null);
   const [searchBusy, setSearchBusy] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [bookingFlash, setBookingFlash] = useState<BookingFlash | null>(null);
-  const [busyOption, setBusyOption] = useState<string | null>(null);
+  const [busyMethod, setBusyMethod] = useState<PaymentMethod | null>(null);
+  const [pickedOption, setPickedOption] = useState<TripPlan | null>(null);
+  const [topUpOpen, setTopUpOpen] = useState(false);
+  const [topUpBusy, setTopUpBusy] = useState(false);
   const [claimFlash, setClaimFlash] = useState<ClaimFlash | null>(null);
   const [stage, setStage] = useState<JourneyStage | null>(null);
   const [dismissedTripId, setDismissedTripId] = useState<string | null>(null);
   const claimedRef = useRef<string | null>(null);
+
+  // The server-rendered persona balance is the source of truth. After
+  // bookTripAction or topUpAction call revalidatePath, router.refresh pulls
+  // the new value through the persona prop on the next paint. No local
+  // mirror needed.
+  const walletBalance = persona.credit_balance_usd;
 
   const journey = useMemo<ActiveJourney | null>(() => {
     if (!initialJourney) return null;
@@ -123,36 +144,59 @@ export default function PassengerShell({
     });
   }
 
-  async function handleChoose(option: TripPlan) {
+  function handleChoose(option: TripPlan) {
+    setPickedOption(option);
+    setBookingFlash(null);
+  }
+
+  async function handleBook(option: TripPlan, method: PaymentMethod) {
     if (!plans) return;
-    setBusyOption(option.label);
+    setBusyMethod(method);
     setBookingFlash(null);
     const result = await bookTripAction({
       persona_slug: personaSlug,
       origin_stop_id: plans.origin_stop_id,
       destination_stop_id: plans.destination_stop_id,
       option,
+      payment_method: method,
     });
-    setBusyOption(null);
+    setBusyMethod(null);
     if (!result.ok) {
       setBookingFlash({ kind: "err", message: result.error });
       return;
     }
+    const codeLabel = result.access_codes.join(" · ");
+    const okMessage =
+      method === "cash"
+        ? `Seat reserved. Pay $${option.total_fare_usd.toFixed(2)} cash on board · code ${codeLabel}.`
+        : result.access_codes.length === 1
+          ? "Ticket purchased. Show the code to your hwindi."
+          : `${result.access_codes.length} tickets purchased, one for each kombi.`;
     setBookingFlash({
       kind: "ok",
-      message:
-        result.access_codes.length === 1
-          ? "Ticket purchased. Show the code to your hwindi."
-          : `${result.access_codes.length} tickets purchased, one for each kombi.`,
+      message: okMessage,
       access_codes: result.access_codes,
     });
     setPlans(null);
+    setPickedOption(null);
     setDismissedTripId(null);
-    // Auto-open the wallet so the Phase 2 demo flow (codes visible + transfer
-    // affordance) still works. The Journey sheet will surface once the server
-    // refresh pulls in the new active trip and renders behind the drawer.
     setWalletOpen(true);
     router.refresh();
+  }
+
+  async function handleTopUp(amount: number) {
+    setTopUpBusy(true);
+    const result = await topUpAction({
+      persona_slug: personaSlug,
+      amount_usd: amount,
+    });
+    setTopUpBusy(false);
+    if (result.ok) {
+      setTopUpOpen(false);
+      router.refresh();
+    } else {
+      setBookingFlash({ kind: "err", message: result.error });
+    }
   }
 
   async function handleTransfer(ticketId: string, recipientSlug: string) {
@@ -174,9 +218,6 @@ export default function PassengerShell({
 
   const handleLifecycleEvent = useCallback(
     (event: "redeemed" | "arrived") => {
-      // On redeem: refresh from server so the Journey sheet sees the new
-      // ticket status and can advance the stage.
-      // On arrival: nothing extra — the sheet collapses to summary itself.
       if (event === "redeemed") {
         router.refresh();
       }
@@ -213,33 +254,83 @@ export default function PassengerShell({
     return { ok: true };
   }, [journey, personaSlug, router]);
 
-  const balance = persona.credit_balance_usd.toFixed(2);
+  function handlePersonaPick(_slug: string, url: string) {
+    setPersonaSheetOpen(false);
+    router.push(url);
+  }
+
+  const balanceLabel = walletBalance.toFixed(2);
   const activeCount = tickets.filter((t) => !t.is_outgoing_transfer).length;
   const showHero = !journey && !plans;
   const showSwitcher = process.env.NEXT_PUBLIC_DEMO_MODE !== "false";
+  const personaMeta = findPersonaMeta(personaSlug);
+  const initial = personaMeta?.initial ?? persona.name.charAt(0).toUpperCase();
+
+  // Surface a featured-tile route label when prompting for payment.
+  const routeLabel = useMemo(() => {
+    if (!pickedOption) return "";
+    return pickedOption.label;
+  }, [pickedOption]);
 
   return (
-    <main className="flex min-h-dvh flex-col">
-      <header className="z-20 border-b border-svika-teal-100 bg-svika-stone/95 px-4 py-3 backdrop-blur">
+    <main className="flex min-h-dvh flex-col bg-svika-bg">
+      <header className="z-20 border-b border-svika-line bg-svika-bg/85 px-4 py-3 backdrop-blur">
         <div className="flex items-center justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-semibold text-svika-teal">Svika</h1>
-            <p className="text-xs text-svika-mute">
-              {persona.name} · ${balance}
-            </p>
-          </div>
+          <button
+            type="button"
+            onClick={() => showSwitcher && setPersonaSheetOpen(true)}
+            disabled={!showSwitcher}
+            className="flex items-center gap-2 rounded-full px-1 py-1 text-left transition-colors hover:bg-white/40 disabled:cursor-default"
+            aria-label="Switch persona"
+            data-testid="persona-chip"
+          >
+            <span
+              aria-hidden
+              className="flex h-7 w-7 items-center justify-center rounded-full bg-svika-teal text-white"
+              style={{ fontSize: "12px", fontWeight: 600 }}
+            >
+              {initial}
+            </span>
+            <span className="flex flex-col leading-tight">
+              <span
+                className="text-svika-teal"
+                style={{ fontSize: "13px", fontWeight: 500 }}
+              >
+                {persona.name}
+              </span>
+              <span
+                className="text-svika-mute"
+                style={{ fontSize: "10px" }}
+              >
+                ${balanceLabel} · wallet
+              </span>
+            </span>
+          </button>
+
           <div className="flex items-center gap-2">
-            {showSwitcher ? (
-              <PersonaSwitcher current={personaSlug} onChange={(slug) => router.push(personaRoute(slug))} />
-            ) : null}
+            <span
+              className="svika-glass flex items-center gap-1.5 px-2.5 py-1"
+              data-testid="live-pill"
+              style={{ borderRadius: "999px" }}
+            >
+              <span aria-hidden className="svika-pulse-dot" />
+              <span
+                className="text-svika-teal"
+                style={{ fontSize: "10px", fontWeight: 500 }}
+              >
+                {liveStats.active_vehicle_count} on the road
+              </span>
+            </span>
             <button
               type="button"
               onClick={() => setWalletOpen(true)}
-              className="rounded-md border border-svika-teal-100 bg-white px-3 py-1.5 text-sm font-medium text-svika-teal shadow-sm"
+              className="svika-glass relative px-3 py-1.5 text-sm text-svika-teal"
+              style={{ borderRadius: "999px", fontWeight: 500 }}
+              data-testid="wallet-open"
             >
               Wallet
               {activeCount > 0 ? (
-                <span className="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-svika-rust px-1.5 text-xs font-semibold text-white">
+                <span className="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-svika-rust px-1.5 text-[11px] font-semibold text-white">
                   {activeCount}
                 </span>
               ) : null}
@@ -247,14 +338,16 @@ export default function PassengerShell({
           </div>
         </div>
         {searchError ? (
-          <p className="mt-2 rounded bg-white px-2 py-1 text-xs text-svika-rust">{searchError}</p>
+          <p className="mt-2 rounded-2xl bg-white/80 px-3 py-2 text-xs text-svika-rust">
+            {searchError}
+          </p>
         ) : null}
         {bookingFlash ? (
           <div
-            className={`mt-2 rounded px-2 py-1 text-xs ${
+            className={`mt-2 rounded-2xl px-3 py-2 text-xs ${
               bookingFlash.kind === "ok"
-                ? "bg-white text-svika-teal"
-                : "bg-white text-svika-rust"
+                ? "bg-white/80 text-svika-teal"
+                : "bg-white/80 text-svika-rust"
             }`}
           >
             <p>{bookingFlash.message}</p>
@@ -267,10 +360,10 @@ export default function PassengerShell({
         ) : null}
         {claimFlash ? (
           <div
-            className={`mt-2 rounded px-2 py-1 text-xs ${
+            className={`mt-2 rounded-2xl px-3 py-2 text-xs ${
               claimFlash.kind === "ok"
-                ? "bg-white text-svika-teal"
-                : "bg-white text-svika-rust"
+                ? "bg-white/80 text-svika-teal"
+                : "bg-white/80 text-svika-rust"
             }`}
           >
             {claimFlash.message}
@@ -287,8 +380,10 @@ export default function PassengerShell({
       </header>
 
       {showHero ? (
-        <SearchHero
+        <EmptyHero
           personaName={persona.name}
+          walletBalanceUsd={walletBalance}
+          nextHeightsMinutes={liveStats.next_heights_minutes}
           onSubmit={handleSearch}
           busy={searchBusy}
         />
@@ -296,12 +391,25 @@ export default function PassengerShell({
 
       <section className="relative flex-1">
         {mapboxToken ? (
-          <PassengerMap
-            network={network}
-            mapboxToken={mapboxToken}
-            journey={journey}
-            stage={stage}
-          />
+          <div
+            className="relative h-full w-full"
+            style={{ opacity: 0.92 }}
+          >
+            <PassengerMap
+              network={network}
+              mapboxToken={mapboxToken}
+              journey={journey}
+              stage={stage}
+            />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0"
+              style={{
+                background:
+                  "linear-gradient(180deg, rgba(250,250,249,0.4) 0%, rgba(250,250,249,0) 35%)",
+              }}
+            />
+          </div>
         ) : (
           <div className="flex h-full items-center justify-center px-4 text-center text-sm text-svika-mute">
             NEXT_PUBLIC_MAPBOX_TOKEN missing — set it in .env.local to render the map.
@@ -309,12 +417,15 @@ export default function PassengerShell({
         )}
 
         {!journey && plans ? (
-          <div className="pointer-events-auto absolute bottom-3 left-3 right-3 z-10 max-h-[60vh] overflow-y-auto rounded-lg bg-svika-stone/95 p-3 shadow-lg backdrop-blur">
+          <div className="pointer-events-auto absolute bottom-3 left-3 right-3 z-10 max-h-[60vh] overflow-y-auto svika-glass-strong p-3">
             <PlanList
               options={plans.options}
-              busyOption={busyOption}
+              busyOption={busyMethod ? pickedOption?.label ?? null : null}
               onChoose={handleChoose}
-              onClose={() => setPlans(null)}
+              onClose={() => {
+                setPlans(null);
+                setPickedOption(null);
+              }}
             />
           </div>
         ) : null}
@@ -330,6 +441,38 @@ export default function PassengerShell({
         />
       ) : null}
 
+      <PaymentChoiceSheet
+        open={pickedOption !== null && !topUpOpen}
+        option={pickedOption}
+        routeLabel={routeLabel}
+        walletBalance={walletBalance}
+        seatsTaken={null}
+        capacity={DEFAULT_CAPACITY}
+        busyMethod={busyMethod}
+        onWallet={() => pickedOption && handleBook(pickedOption, "wallet")}
+        onCash={() => pickedOption && handleBook(pickedOption, "cash")}
+        onTopUp={() => setTopUpOpen(true)}
+        onClose={() => {
+          if (busyMethod === null) setPickedOption(null);
+        }}
+      />
+
+      <TopUpSheet
+        open={topUpOpen}
+        walletBalance={walletBalance}
+        fareUsd={pickedOption?.total_fare_usd ?? 0}
+        busy={topUpBusy}
+        onTopUp={handleTopUp}
+        onClose={() => setTopUpOpen(false)}
+      />
+
+      <PersonaActionSheet
+        open={personaSheetOpen}
+        currentSlug={personaSlug}
+        onPick={handlePersonaPick}
+        onClose={() => setPersonaSheetOpen(false)}
+      />
+
       <Wallet
         open={walletOpen}
         onClose={() => setWalletOpen(false)}
@@ -338,52 +481,5 @@ export default function PassengerShell({
         onTransfer={handleTransfer}
       />
     </main>
-  );
-}
-
-const PERSONA_OPTIONS = [
-  { slug: "tendai", label: "as Tendai" },
-  { slug: "rudo", label: "as Rudo" },
-  { slug: "farai", label: "as Farai" },
-  { slug: "baba_tino", label: "as Baba Tino" },
-] as const;
-
-function personaRoute(slug: string): string {
-  switch (slug) {
-    case "tendai":
-      return "/?as=tendai";
-    case "rudo":
-      return "/?as=rudo";
-    case "farai":
-      return "/hwindi?as=farai";
-    case "baba_tino":
-      return "/fleet?as=baba_tino";
-    default:
-      return "/";
-  }
-}
-
-interface PersonaSwitcherProps {
-  current: string;
-  onChange: (slug: string) => void;
-}
-
-function PersonaSwitcher({ current, onChange }: PersonaSwitcherProps) {
-  return (
-    <label className="flex items-center">
-      <span className="sr-only">Switch persona</span>
-      <select
-        value={current}
-        onChange={(e) => onChange(e.target.value)}
-        className="rounded-md border border-svika-teal-100 bg-white px-2 py-1.5 text-sm font-medium text-svika-teal shadow-sm focus:outline-none focus:ring-2 focus:ring-svika-rust"
-        data-testid="persona-switcher"
-      >
-        {PERSONA_OPTIONS.map((p) => (
-          <option key={p.slug} value={p.slug}>
-            {p.label}
-          </option>
-        ))}
-      </select>
-    </label>
   );
 }

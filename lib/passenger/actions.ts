@@ -7,7 +7,7 @@ import { resolvePersona } from "@/lib/personas";
 import { planTrip, type TripPlan } from "@/lib/trip-planner";
 import { createServerClient } from "@/lib/supabase/server";
 import type { Intent } from "@/lib/ai/types";
-import type { TicketRow, TripRow } from "@/lib/supabase/types";
+import type { PaymentMethod, TicketRow, TripRow } from "@/lib/supabase/types";
 import { PG_UNIQUE_VIOLATION, randomAccessCode } from "./access-code";
 
 const RECIPIENT_SLUGS = ["tendai", "rudo", "farai", "baba_tino"] as const;
@@ -81,6 +81,7 @@ interface BookTripInput {
   origin_stop_id: string;
   destination_stop_id: string;
   option: TripPlan;
+  payment_method: PaymentMethod;
 }
 
 const ACCESS_CODE_RETRIES = 12;
@@ -109,7 +110,8 @@ export async function bookTripAction(input: BookTripInput): Promise<BookTripResu
   if (persona.role !== "passenger") {
     return { ok: false, error: "Only passengers can buy trips." };
   }
-  if (persona.credit_balance_usd < input.option.total_fare_usd) {
+  const paymentMethod: PaymentMethod = input.payment_method ?? "wallet";
+  if (paymentMethod === "wallet" && persona.credit_balance_usd < input.option.total_fare_usd) {
     return { ok: false, error: "Not enough credit. Top up to continue." };
   }
 
@@ -151,6 +153,7 @@ export async function bookTripAction(input: BookTripInput): Promise<BookTripResu
         current_holder_user_id: persona.id,
         status: "issued",
         kind: "passenger",
+        payment_method: paymentMethod,
       });
       ticketIds.push(ticket.id);
       accessCodes.push(ticket.access_code);
@@ -168,21 +171,76 @@ export async function bookTripAction(input: BookTripInput): Promise<BookTripResu
       return { ok: false, error: "Trip has no kombi legs to ticket." };
     }
 
-    const newBalance = Number(
-      (persona.credit_balance_usd - input.option.total_fare_usd).toFixed(2),
-    );
-    const { error: balanceError } = await client
-      .from("users")
-      .update({ credit_balance_usd: newBalance })
-      .eq("id", persona.id);
-    if (balanceError) {
-      return { ok: false, error: balanceError.message };
+    if (paymentMethod === "wallet") {
+      const newBalance = Number(
+        (persona.credit_balance_usd - input.option.total_fare_usd).toFixed(2),
+      );
+      const { error: balanceError } = await client
+        .from("users")
+        .update({ credit_balance_usd: newBalance })
+        .eq("id", persona.id);
+      if (balanceError) {
+        return { ok: false, error: balanceError.message };
+      }
     }
 
     revalidatePath("/");
     return { ok: true, trip_id: trip.id, ticket_ids: ticketIds, access_codes: accessCodes };
   } catch (err) {
     return { ok: false, error: err instanceof Error ? err.message : "Booking failed." };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// topUpAction — mocked wallet credit top-up. Logs a row in `top_ups` and
+// increments users.credit_balance_usd. No real fintech is touched.
+// ---------------------------------------------------------------------------
+
+export interface TopUpResult {
+  ok: true;
+  amount_usd: number;
+  new_balance_usd: number;
+}
+
+export async function topUpAction(input: {
+  persona_slug: string;
+  amount_usd: number;
+}): Promise<TopUpResult | ActionError> {
+  const amount = Number(input.amount_usd);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return { ok: false, error: "Top-up amount must be positive." };
+  }
+  const persona = await resolvePersona(input.persona_slug, "passenger");
+  if (persona.role !== "passenger") {
+    return { ok: false, error: "Only passengers can top up." };
+  }
+
+  try {
+    const client = await createServerClient();
+    const newBalance = Number((persona.credit_balance_usd + amount).toFixed(2));
+
+    const { error: updateError } = await client
+      .from("users")
+      .update({ credit_balance_usd: newBalance })
+      .eq("id", persona.id);
+    if (updateError) return { ok: false, error: updateError.message };
+
+    const { error: insertError } = await client
+      .from("top_ups")
+      .insert({ user_id: persona.id, amount_usd: amount });
+    if (insertError) {
+      // Roll the balance back on log-write failure so the demo stays consistent.
+      await client
+        .from("users")
+        .update({ credit_balance_usd: persona.credit_balance_usd })
+        .eq("id", persona.id);
+      return { ok: false, error: insertError.message };
+    }
+
+    revalidatePath("/");
+    return { ok: true, amount_usd: amount, new_balance_usd: newBalance };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Top-up failed." };
   }
 }
 

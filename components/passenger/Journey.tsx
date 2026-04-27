@@ -14,10 +14,16 @@ import {
   deriveJourneyStage,
   type VehicleSnapshot,
 } from "@/lib/passenger/journey-stage";
+import {
+  getTransferDetail,
+  type Cardinal,
+  type TransferDetail,
+} from "@/lib/passenger/transferDetail";
 import type {
   ActiveJourney,
   JourneyKombiLeg,
   JourneyStage,
+  JourneyWalkLeg,
 } from "@/lib/passenger/journey-types";
 
 interface JourneyProps {
@@ -50,11 +56,12 @@ function activeKombiLeg(journey: ActiveJourney, stage: JourneyStage): JourneyKom
   return leg && leg.kind === "kombi" ? leg : null;
 }
 
-function stageIcon(stage: JourneyStage): string {
+function stageIcon(stage: JourneyStage, cardinal: Cardinal | null): string {
   switch (stage.kind) {
     case "walk-to-board":
-    case "walking-transfer":
       return "→";
+    case "walking-transfer":
+      return cardinalArrow(cardinal);
     case "boarding":
     case "boarding-leg-2":
       return "✓";
@@ -65,6 +72,37 @@ function stageIcon(stage: JourneyStage): string {
     default:
       return "•";
   }
+}
+
+function cardinalArrow(cardinal: Cardinal | null): string {
+  switch (cardinal) {
+    case "north":
+      return "↑";
+    case "south":
+      return "↓";
+    case "east":
+      return "→";
+    case "west":
+      return "←";
+    default:
+      return "→";
+  }
+}
+
+function findWalkingTransferLeg(
+  journey: ActiveJourney,
+  stage: JourneyStage,
+): JourneyWalkLeg | null {
+  if (stage.kind !== "walking-transfer") return null;
+  // The active_kombi_leg_index points at the next kombi leg. The walking
+  // transfer is the leg immediately before it.
+  const nextKombiIdx = stage.active_kombi_leg_index;
+  if (nextKombiIdx === null) return null;
+  for (let i = nextKombiIdx - 1; i >= 0; i -= 1) {
+    const leg = journey.legs[i];
+    if (leg && leg.kind === "walk") return leg;
+  }
+  return null;
 }
 
 function formatEta(seconds: number | null): string | null {
@@ -164,6 +202,17 @@ export default function Journey({
 
   const arrived = stage.kind === "arrived";
   const currentLeg = activeKombiLeg(journey, stage);
+  const walkLeg = findWalkingTransferLeg(journey, stage);
+  const transferDetail = useMemo<TransferDetail | null>(() => {
+    if (!walkLeg) return null;
+    return getTransferDetail({
+      from_stop_id: walkLeg.from_stop.id,
+      to_stop_id: walkLeg.to_stop.id,
+      fallback_from: { lat: walkLeg.from_stop.lat, lng: walkLeg.from_stop.lng },
+      fallback_to: { lat: walkLeg.to_stop.lat, lng: walkLeg.to_stop.lng },
+      fallback_walking_duration_minutes: walkLeg.duration_minutes,
+    });
+  }, [walkLeg]);
 
   // Notify parent when stage changes (and on arrival, so the parent can
   // refresh the journey snapshot from the server).
@@ -261,11 +310,34 @@ export default function Journey({
             style={{ background: RUST }}
             aria-hidden
           >
-            {stageIcon(stage)}
+            {stageIcon(stage, transferDetail?.cardinal ?? null)}
           </span>
           <div className="min-w-0 flex-1">
-            <FadingText className="text-sm font-semibold text-svika-teal" text={stage.title} />
-            <FadingText className="mt-0.5 text-xs text-svika-mute" text={stage.detail} />
+            {stage.kind === "walking-transfer" && transferDetail && walkLeg ? (
+              <>
+                <FadingText
+                  className="text-sm font-semibold text-svika-teal"
+                  text={transferDetail.heading}
+                />
+                <FadingText
+                  className="mt-0.5 text-xs text-svika-mute"
+                  text={`From: ${walkLeg.from_stop.name} (${transferDetail.from_note})`}
+                />
+                <FadingText
+                  className="mt-0.5 text-xs text-svika-mute"
+                  text={`To: ${walkLeg.to_stop.name} (${transferDetail.to_note})`}
+                />
+                <FadingText
+                  className="mt-0.5 font-mono text-[11px] text-svika-teal"
+                  text={`${transferDetail.walking_duration_minutes} min · ${transferDetail.walking_distance_meters} m`}
+                />
+              </>
+            ) : (
+              <>
+                <FadingText className="text-sm font-semibold text-svika-teal" text={stage.title} />
+                <FadingText className="mt-0.5 text-xs text-svika-mute" text={stage.detail} />
+              </>
+            )}
           </div>
           {eta ? (
             <span className="shrink-0 rounded-full border border-svika-teal-100 bg-white px-2 py-0.5 text-[11px] font-medium text-svika-teal">

@@ -1,43 +1,51 @@
 @import "tailwindcss";
 
 /* ============================================================================
-   Svika brand tokens — Mosi-oa-Tunya palette
+   Svika brand tokens — Phase 3.7 visual rebuild
+   Mosi-oa-Tunya palette with cooler teal, salmon accent, off-white base.
    Per CLAUDE.md "Locked decisions" → Brand row.
    ========================================================================= */
 @theme {
-  --color-svika-teal: #0a4b5c;
-  --color-svika-teal-50: #e7f0f3;
-  --color-svika-teal-100: #c2d8de;
-  --color-svika-teal-200: #97bbc4;
-  --color-svika-teal-300: #6c9da9;
-  --color-svika-teal-400: #4c8693;
-  --color-svika-teal-500: #2c6f7e;
-  --color-svika-teal-600: #1f5e6e;
-  --color-svika-teal-700: #144e5e;
-  --color-svika-teal-800: #0a4b5c;
-  --color-svika-teal-900: #052832;
+  --color-svika-teal: #0f4c5c;
+  --color-svika-teal-50: #eaf1f3;
+  --color-svika-teal-100: #c8d9de;
+  --color-svika-teal-200: #9bbac3;
+  --color-svika-teal-300: #6e9aa6;
+  --color-svika-teal-400: #4d8493;
+  --color-svika-teal-500: #2d6c7e;
+  --color-svika-teal-600: #1f5a6c;
+  --color-svika-teal-700: #144f5e;
+  --color-svika-teal-800: #0f4c5c;
+  --color-svika-teal-900: #0a3140;
 
   --color-svika-rust: #d9622a;
   --color-svika-rust-light: #f08c5a;
   --color-svika-rust-dark: #a84a1f;
 
+  --color-svika-salmon: #f2733e;
+  --color-svika-salmon-light: #f9a07c;
+
+  --color-svika-bg: #fafaf9;
   --color-svika-stone: #f2ede6;
   --color-svika-stone-dark: #e3dccf;
 
-  --color-svika-ink: #1a1a1a;
-  --color-svika-mute: #6b7280;
+  --color-svika-ink: #0f4c5c;
+  --color-svika-mute: rgba(15, 76, 92, 0.6);
+  --color-svika-line: rgba(15, 76, 92, 0.12);
+
+  --color-live: #16a34a;
 
   --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, monospace;
 
-  --radius-sm: 0.375rem;
-  --radius: 0.625rem;
-  --radius-lg: 1rem;
+  --radius-sm: 0.5rem;
+  --radius: 0.875rem;
+  --radius-lg: 1.375rem;
 }
 
 html,
 body {
-  background-color: var(--color-svika-stone);
+  background-color: var(--color-svika-bg);
   color: var(--color-svika-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -63,9 +71,109 @@ body {
   height: 18px;
   border-radius: 50%;
   background: var(--color-svika-rust);
-  border: 2px solid var(--color-svika-stone);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 4px rgba(15, 76, 92, 0.35);
   cursor: pointer;
+}
+
+/* ----- Glass surfaces — Phase 3.7 -------------------------------------- */
+.svika-glass {
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 0.5px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 4px 24px rgba(15, 76, 92, 0.08);
+  border-radius: 22px;
+}
+
+.svika-glass-strong {
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 0.5px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 0 8px 32px rgba(15, 76, 92, 0.12);
+  border-radius: 22px;
+}
+
+/* Live pulsing dot — header, "X on the road" pill */
+.svika-pulse-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-live);
+  animation: svika-pulse-dot 1.6s ease-in-out infinite;
+}
+
+/* ----- Animations — Phase 3.7 ------------------------------------------- */
+@keyframes svika-pulse-dot {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 0.5;
+  }
+}
+
+@keyframes svika-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes svika-glass-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes svika-sheet-rise {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes svika-image-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.svika-animate-fade-up {
+  animation: svika-fade-up 500ms ease-out both;
+}
+
+.svika-animate-glass-rise {
+  animation: svika-glass-rise 600ms ease-out both;
+}
+
+.svika-animate-sheet-rise {
+  animation: svika-sheet-rise 280ms ease-out both;
+}
+
+.svika-animate-image-fade {
+  animation: svika-image-fade 600ms ease-out both;
 }
 
 /* Journey sheet — cross-fade stage title + detail when text changes */
@@ -75,5 +183,15 @@ body {
   }
   100% {
     opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .svika-animate-fade-up,
+  .svika-animate-glass-rise,
+  .svika-animate-sheet-rise,
+  .svika-animate-image-fade,
+  .svika-pulse-dot {
+    animation: none;
   }
 }

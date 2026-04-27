@@ -12,7 +12,6 @@ import { chromium } from "@playwright/test";
 const BASE = "https://svika.vercel.app";
 
 function step(label: string) {
-  // eslint-disable-next-line no-console
   console.log(`\n[smoke] ${label}`);
 }
 

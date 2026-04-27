@@ -18,6 +18,8 @@ type Feedback = {
   kind: "ok" | "err" | "info";
   text: string;
   meta?: string;
+  payment_method?: "wallet" | "cash";
+  fare_usd?: number;
 };
 
 interface ConductorShellProps {
@@ -91,6 +93,8 @@ export default function ConductorShell({
         kind: "ok",
         text: `Cleared ${result.access_code} · $${result.fare_usd.toFixed(2)}`,
         meta: `Now ${result.passenger_count}/${activeVehicle.capacity_seats} on board.`,
+        payment_method: result.payment_method,
+        fare_usd: result.fare_usd,
       });
       setCode("");
       router.refresh();
@@ -212,8 +216,30 @@ export default function ConductorShell({
                 }`}
                 data-testid="hwindi-feedback"
               >
-                <p className="font-medium">{feedback.text}</p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-medium">{feedback.text}</p>
+                  {feedback.payment_method === "cash" ? (
+                    <span
+                      className="rounded-full bg-svika-salmon px-2 py-0.5 text-[11px] font-medium uppercase tracking-[0.5px] text-white"
+                      data-testid="hwindi-cash-badge"
+                    >
+                      $ Cash
+                    </span>
+                  ) : feedback.payment_method === "wallet" ? (
+                    <span className="rounded-full bg-svika-teal px-2 py-0.5 text-[11px] font-medium uppercase tracking-[0.5px] text-white">
+                      Cleared
+                    </span>
+                  ) : null}
+                </div>
                 {feedback.meta ? <p className="text-xs opacity-80">{feedback.meta}</p> : null}
+                {feedback.payment_method === "cash" && typeof feedback.fare_usd === "number" ? (
+                  <p
+                    className="mt-1 text-xs text-svika-mute"
+                    data-testid="hwindi-cash-collect"
+                  >
+                    Collect ${feedback.fare_usd.toFixed(2)} from passenger
+                  </p>
+                ) : null}
               </div>
             ) : null}
           </section>
