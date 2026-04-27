@@ -462,8 +462,13 @@ export default function PassengerShell({
 
       <section className="relative flex-1">
         {mapboxToken ? (
+          // `absolute inset-0` instead of `h-full w-full`: the section is a
+          // flex item, and percentage heights inside it don't always resolve
+          // (Mapbox would initialise the canvas at 0 height and never
+          // recover, leaving the basemap blank). Pinning the wrapper to the
+          // section's edges sidesteps the percentage-height ambiguity.
           <div
-            className="relative h-full w-full"
+            className="absolute inset-0"
             style={{ opacity: 0.92 }}
           >
             <PassengerMap
@@ -482,7 +487,7 @@ export default function PassengerShell({
             />
           </div>
         ) : (
-          <div className="flex h-full items-center justify-center px-4 text-center text-sm text-svika-mute">
+          <div className="absolute inset-0 flex items-center justify-center px-4 text-center text-sm text-svika-mute">
             NEXT_PUBLIC_MAPBOX_TOKEN missing — set it in .env.local to render the map.
           </div>
         )}
