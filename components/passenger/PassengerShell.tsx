@@ -155,6 +155,15 @@ export default function PassengerShell({
     return () => clearTimeout(timer);
   }, [fareClearedToast]);
 
+  // Phase A — auto-dismiss the post-book confirmation toast so the
+  // journey card has the screen unobstructed once the message has been
+  // read. Errors stay until the user dismisses or re-acts.
+  useEffect(() => {
+    if (!bookingFlash || bookingFlash.kind === "err") return;
+    const timer = setTimeout(() => setBookingFlash(null), 6000);
+    return () => clearTimeout(timer);
+  }, [bookingFlash]);
+
   // Auto-claim when arriving via /?as=<recipient>&claim=<id>.
   useEffect(() => {
     if (!pendingClaim || claimedRef.current === pendingClaim) return;
@@ -237,7 +246,6 @@ export default function PassengerShell({
     setPlans(null);
     setPickedOption(null);
     setDismissedTripId(null);
-    setWalletOpen(true);
     router.refresh();
   }
 
@@ -412,6 +420,7 @@ export default function PassengerShell({
         {bookingFlash ? (
           <div
             data-testid="booking-flash"
+            data-phase-a="post-book-toast"
             className={`mt-2 rounded-2xl px-3 py-2 text-xs ${
               bookingFlash.kind === "ok"
                 ? "bg-white/80 text-svika-teal"

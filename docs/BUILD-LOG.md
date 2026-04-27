@@ -155,3 +155,5 @@ When the agent gets interrupted and restarts, the next session reads this log to
 ## Phase 5 — Demo production and submission
 
 <!-- agent: append entries below as Phase 5 tasks complete -->
+
+2026-04-28 | Phase A | Wallet hijack removed from handleBook; bookingFlash auto-dismisses after 6s; data-phase-a="post-book-toast" added | <hash> | local-rehearsal
