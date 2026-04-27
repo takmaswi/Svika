@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import PassengerMap from "@/components/PassengerMap";
 import Journey from "@/components/passenger/Journey";
 import PlanList from "@/components/passenger/PlanList";
-import SearchBar from "@/components/passenger/SearchBar";
+import SearchHero from "@/components/passenger/SearchHero";
 import Wallet from "@/components/passenger/Wallet";
 import {
   bookTripAction,
@@ -141,8 +141,8 @@ export default function PassengerShell({
       kind: "ok",
       message:
         result.access_codes.length === 1
-          ? "Ticket minted. Show the code to your hwindi."
-          : `${result.access_codes.length} tickets minted, one per leg.`,
+          ? "Ticket purchased. Show the code to your hwindi."
+          : `${result.access_codes.length} tickets purchased, one for each kombi.`,
       access_codes: result.access_codes,
     });
     setPlans(null);
@@ -199,7 +199,7 @@ export default function PassengerShell({
 
   const balance = persona.credit_balance_usd.toFixed(2);
   const activeCount = tickets.filter((t) => !t.is_outgoing_transfer).length;
-  const showSearchUI = !journey;
+  const showHero = !journey && !plans;
 
   return (
     <main className="flex min-h-dvh flex-col">
@@ -224,11 +224,6 @@ export default function PassengerShell({
             ) : null}
           </button>
         </div>
-        {showSearchUI ? (
-          <div className="mt-3">
-            <SearchBar onSubmit={handleSearch} disabled={searchBusy} />
-          </div>
-        ) : null}
         {searchError ? (
           <p className="mt-2 rounded bg-white px-2 py-1 text-xs text-svika-rust">{searchError}</p>
         ) : null}
@@ -269,6 +264,14 @@ export default function PassengerShell({
         ) : null}
       </header>
 
+      {showHero ? (
+        <SearchHero
+          personaName={persona.name}
+          onSubmit={handleSearch}
+          busy={searchBusy}
+        />
+      ) : null}
+
       <section className="relative flex-1">
         {mapboxToken ? (
           <PassengerMap
@@ -283,7 +286,7 @@ export default function PassengerShell({
           </div>
         )}
 
-        {showSearchUI && plans ? (
+        {!journey && plans ? (
           <div className="pointer-events-auto absolute bottom-3 left-3 right-3 z-10 max-h-[60vh] overflow-y-auto rounded-lg bg-svika-stone/95 p-3 shadow-lg backdrop-blur">
             <PlanList
               options={plans.options}

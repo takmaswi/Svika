@@ -44,16 +44,6 @@ function activeKombiLeg(journey: ActiveJourney, stage: JourneyStage): JourneyKom
   return leg && leg.kind === "kombi" ? leg : null;
 }
 
-function legCounter(journey: ActiveJourney, activeIdx: number | null): number {
-  const total = journey.legs.filter((l) => l.kind === "kombi").length;
-  if (activeIdx === null) return total;
-  let count = 0;
-  for (let i = 0; i <= activeIdx && i < journey.legs.length; i += 1) {
-    if (journey.legs[i].kind === "kombi") count += 1;
-  }
-  return Math.max(1, count);
-}
-
 function stageIcon(stage: JourneyStage): string {
   switch (stage.kind) {
     case "walk-to-board":
@@ -178,11 +168,11 @@ export default function Journey({
       >
         <div className="mx-auto flex max-w-md items-center justify-between gap-3 px-4 py-3">
           <div className="flex min-w-0 flex-col">
-            <p className="text-xs uppercase tracking-wide text-svika-mute">
-              Trip complete
+            <p className="text-base font-semibold text-svika-teal">
+              You&apos;ve arrived
             </p>
-            <p className="truncate text-sm font-medium text-svika-teal">
-              {journey.total_duration_minutes} min · ${totalSpent} spent · receipt saved
+            <p className="truncate text-xs text-svika-mute">
+              {journey.total_duration_minutes} min · ${totalSpent}
             </p>
           </div>
           <button
@@ -212,12 +202,8 @@ export default function Journey({
           className="flex w-full flex-col gap-0.5 text-left"
           aria-expanded={expanded}
         >
-          <span className="text-[11px] font-medium uppercase tracking-wide text-svika-mute">
-            Stage {stage.index} of {stage.total} · leg{" "}
-            {legCounter(journey, stage.active_kombi_leg_index)}
-          </span>
-          <span className="truncate text-xs text-svika-mute">
-            {journey.origin.name} → {journey.destination.name}
+          <span className="truncate text-xs font-medium text-svika-mute">
+            {journey.origin.name} <span aria-hidden>→</span> {journey.destination.name}
           </span>
         </button>
 
@@ -259,7 +245,7 @@ export default function Journey({
               {currentLeg.access_code}
             </span>
             <span className="text-svika-mute">
-              ${currentLeg.fare_usd.toFixed(2)} this leg · ${totalSpent} total
+              ${currentLeg.fare_usd.toFixed(2)} this kombi · ${totalSpent} trip total
             </span>
           </div>
         ) : null}

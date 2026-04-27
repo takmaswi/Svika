@@ -24,6 +24,8 @@ import type { Database } from "@/lib/supabase/types";
 
 import {
   advanceVehicle,
+  bearingDegrees,
+  lookAheadPoint,
   pointWkt,
   polylineLengthMeters,
   type VehicleSimState,
@@ -45,6 +47,8 @@ export interface KombiTickPayload {
   lat: number;
   lng: number;
   direction: "outbound" | "inbound";
+  /** Compass bearing (0–359, clockwise from north) — drives icon-rotate. */
+  bearing: number;
   at: string;
 }
 
@@ -173,12 +177,20 @@ export async function startSim(opts: SimRunnerOptions): Promise<SimHandle> {
         tickMs,
       );
       v.state = result.state;
+      const ahead = lookAheadPoint(
+        route.polyline,
+        route.totalMeters,
+        v.state.progressMeters,
+        v.state.direction,
+      );
+      const bearing = bearingDegrees(result.position, ahead);
       payloads.push({
         vehicle_id: v.vehicle_id,
         route_id: v.route_id,
         lat: result.position[0],
         lng: result.position[1],
         direction: v.state.direction,
+        bearing,
         at: now,
       });
       pingInserts.push({

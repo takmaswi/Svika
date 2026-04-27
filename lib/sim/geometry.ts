@@ -108,6 +108,46 @@ export function advanceVehicle(
   };
 }
 
+/**
+ * Compass bearing (degrees clockwise from north) from `from` to `to`.
+ * Used by the simulation to drive icon-rotate on the passenger map so the
+ * minibus SVG faces direction-of-travel.
+ */
+export function bearingDegrees(from: LatLng, to: LatLng): number {
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const toDeg = (rad: number) => (rad * 180) / Math.PI;
+  const [lat1, lng1] = from;
+  const [lat2, lng2] = to;
+  const phi1 = toRad(lat1);
+  const phi2 = toRad(lat2);
+  const dLambda = toRad(lng2 - lng1);
+  const y = Math.sin(dLambda) * Math.cos(phi2);
+  const x =
+    Math.cos(phi1) * Math.sin(phi2) -
+    Math.sin(phi1) * Math.cos(phi2) * Math.cos(dLambda);
+  return (toDeg(Math.atan2(y, x)) + 360) % 360;
+}
+
+/**
+ * Sample a point ~`lookAheadMeters` ahead along the polyline relative to the
+ * current progress and direction. The bearing from the current position to
+ * this look-ahead point gives a stable direction-of-travel even on the first
+ * tick (no prev-position required).
+ */
+export function lookAheadPoint(
+  polyline: ReadonlyArray<LatLng>,
+  totalLengthMeters: number,
+  progressMeters: number,
+  direction: "outbound" | "inbound",
+  lookAheadMeters = 30,
+): LatLng {
+  const target =
+    direction === "outbound"
+      ? Math.min(totalLengthMeters, progressMeters + lookAheadMeters)
+      : Math.max(0, progressMeters - lookAheadMeters);
+  return pointAtDistance(polyline, target);
+}
+
 /** PostGIS WKT for a Point — the loader and runner both call this. */
 export function pointWkt(point: LatLng): string {
   const [lat, lng] = point;

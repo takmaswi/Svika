@@ -126,13 +126,11 @@ function arrivedStage(journey: ActiveJourney, total: number): JourneyStage {
     kind: "arrived",
     index: total,
     total,
-    title: "Arrived · " + journey.destination.name,
+    title: "You've arrived",
     detail:
-      "$" +
-      journey.total_fare_usd.toFixed(2) +
-      " · " +
       journey.total_duration_minutes +
-      " min",
+      " min · $" +
+      journey.total_fare_usd.toFixed(2),
     progress: 1,
     active_kombi_leg_index: null,
     assigned_vehicle_id: null,
@@ -167,8 +165,8 @@ export function deriveJourneyStage(input: StageInputs): JourneyStage {
           kind: "walk-to-board",
           index: 1,
           total,
-          title: "Walk to board · " + leg.board_stop.name,
-          detail: leg.route_name + " · code " + leg.access_code,
+          title: "Walk to your kombi at " + leg.board_stop.name,
+          detail: "Show code " + leg.access_code + " when you board",
           progress: progressForLeg(i, kombi.length, 0.05),
           active_kombi_leg_index: legActiveIdx,
           assigned_vehicle_id: assigned,
@@ -181,8 +179,8 @@ export function deriveJourneyStage(input: StageInputs): JourneyStage {
         kind: "walking-transfer",
         index: 4,
         total,
-        title: "Walking transfer · " + leg.board_stop.name,
-        detail: "Catch " + leg.route_name + " · code " + leg.access_code,
+        title: "Walk to your next kombi at " + leg.board_stop.name,
+        detail: "Show code " + leg.access_code + " when you board",
         progress: progressForLeg(i, kombi.length, 0.05),
         active_kombi_leg_index: legActiveIdx,
         assigned_vehicle_id: assigned,
@@ -222,9 +220,9 @@ export function deriveJourneyStage(input: StageInputs): JourneyStage {
           index: isFirstLeg ? 2 : 5,
           total,
           title: isFirstLeg
-            ? "Boarding · code " + leg.access_code
-            : "Boarding leg 2 · code " + leg.access_code,
-          detail: leg.route_name + " · " + leg.alight_stop.name,
+            ? "You're on board · code " + leg.access_code
+            : "Catch your next kombi · code " + leg.access_code,
+          detail: "Heading to " + leg.alight_stop.name,
           progress: progressForLeg(i, kombi.length, 0.1),
           active_kombi_leg_index: legActiveIdx,
           assigned_vehicle_id: assigned,
@@ -255,8 +253,8 @@ export function deriveJourneyStage(input: StageInputs): JourneyStage {
             kind: "walking-transfer",
             index: 4,
             total,
-            title: "Walking transfer · " + next.board_stop.name,
-            detail: "Catch " + next.route_name + " · code " + next.access_code,
+            title: "Walk to your next kombi at " + next.board_stop.name,
+            detail: "Show code " + next.access_code + " when you board",
             progress: progressForLeg(i, kombi.length, 1),
             active_kombi_leg_index: indexInLegs(journey, next),
             assigned_vehicle_id: pickAssignedVehicle(next, vehicles),
@@ -277,8 +275,8 @@ export function deriveJourneyStage(input: StageInputs): JourneyStage {
         kind: "in-transit",
         index: stageIndex,
         total,
-        title: "On board · heading to " + leg.alight_stop.name,
-        detail: leg.route_name + " · code " + leg.access_code,
+        title: "On your way to " + leg.alight_stop.name,
+        detail: leg.route_name,
         progress: progressForLeg(i, kombi.length, fraction),
         active_kombi_leg_index: legActiveIdx,
         assigned_vehicle_id: assigned,

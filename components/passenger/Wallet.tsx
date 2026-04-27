@@ -19,15 +19,15 @@ interface WalletProps {
 
 function statusLabel(t: WalletTicket): string {
   if (t.is_outgoing_transfer) {
-    return t.status === "transferred_pending" ? "Sent — pending claim" : "Sent";
+    return t.status === "transferred_pending" ? "Sent — waiting to be claimed" : "Sent";
   }
   switch (t.status) {
     case "issued":
       return "Ready to ride";
     case "held":
-      return "Held — ready to ride";
+      return "Ready to ride";
     case "transferred_pending":
-      return "Pending claim";
+      return "Waiting to be claimed";
     case "redeemed":
       return "On board";
     default:
@@ -137,7 +137,7 @@ export default function Wallet({ open, onClose, tickets, personaSlug, onTransfer
         <div className="flex-1 space-y-2 px-3 py-3">
           {tickets.length === 0 ? (
             <p className="px-1 text-sm text-svika-mute">
-              No active tickets. Plan a trip to mint your first ride.
+              No active tickets. Plan a trip to buy your first ride.
             </p>
           ) : (
             tickets.map((t) => {

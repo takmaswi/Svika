@@ -94,6 +94,7 @@ function tickPayload(
   route_id: string,
   lat: number,
   lng: number,
+  bearing = 180,
 ): KombiTickPayload {
   return {
     vehicle_id,
@@ -101,6 +102,7 @@ function tickPayload(
     lat,
     lng,
     direction: "outbound",
+    bearing,
     at: new Date().toISOString(),
   };
 }

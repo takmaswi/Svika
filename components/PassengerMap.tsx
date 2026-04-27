@@ -34,6 +34,66 @@ const TEAL = "#0a4b5c";
 const RUST = "#d9622a";
 const STONE = "#f2ede6";
 
+const KOMBI_ICON_ID = "svika-kombi";
+const KOMBI_ICON_PX = 64;
+
+/**
+ * Top-down minibus SVG. Front of the bus points up the canvas (north / 0°)
+ * so Mapbox `icon-rotate` directly accepts a compass bearing. The body fills
+ * with rust; windshield + side windows are teal so the silhouette reads at
+ * Citymapper-bus / Uber-car distances.
+ */
+const KOMBI_SVG = `
+<svg xmlns="http://www.w3.org/2000/svg" width="${KOMBI_ICON_PX}" height="${KOMBI_ICON_PX}" viewBox="0 0 64 64">
+  <defs>
+    <filter id="kombiShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="1" stdDeviation="1.4" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <g filter="url(#kombiShadow)">
+    <rect x="18" y="6" width="28" height="52" rx="9" ry="9" fill="${RUST}" stroke="${STONE}" stroke-width="2.4"/>
+    <rect x="22" y="9" width="20" height="11" rx="3" fill="#0e3845"/>
+    <rect x="22" y="22" width="9" height="9" rx="2" fill="#0e3845"/>
+    <rect x="33" y="22" width="9" height="9" rx="2" fill="#0e3845"/>
+    <rect x="22" y="33" width="9" height="9" rx="2" fill="#0e3845"/>
+    <rect x="33" y="33" width="9" height="9" rx="2" fill="#0e3845"/>
+    <rect x="22" y="48" width="20" height="8" rx="2" fill="#a14820"/>
+    <rect x="28" y="11" width="8" height="3" rx="1" fill="#f9d97a" opacity="0.9"/>
+  </g>
+</svg>
+`.trim();
+
+async function registerKombiIcon(map: mapboxgl.Map): Promise<void> {
+  if (map.hasImage(KOMBI_ICON_ID)) return;
+  await new Promise<void>((resolve) => {
+    const img = new Image(KOMBI_ICON_PX, KOMBI_ICON_PX);
+    const url =
+      "data:image/svg+xml;charset=utf-8," + encodeURIComponent(KOMBI_SVG);
+    img.onload = () => {
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = KOMBI_ICON_PX;
+        canvas.height = KOMBI_ICON_PX;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          resolve();
+          return;
+        }
+        ctx.drawImage(img, 0, 0, KOMBI_ICON_PX, KOMBI_ICON_PX);
+        const data = ctx.getImageData(0, 0, KOMBI_ICON_PX, KOMBI_ICON_PX);
+        if (!map.hasImage(KOMBI_ICON_ID)) {
+          map.addImage(KOMBI_ICON_ID, data, { pixelRatio: 2 });
+        }
+      } catch {
+        // best-effort; symbol layer falls back to no-icon if the image is missing
+      }
+      resolve();
+    };
+    img.onerror = () => resolve();
+    img.src = url;
+  });
+}
+
 interface PassengerMapProps {
   network: NetworkPayload;
   mapboxToken: string;
@@ -83,7 +143,24 @@ function routesGeoJSON(routes: RouteForMap[]): GeoJSON.FeatureCollection {
   };
 }
 
-function stopsGeoJSON(stops: StopForMap[]): GeoJSON.FeatureCollection {
+function activeStopIdsForJourney(journey: ActiveJourney | null): Set<string> {
+  if (!journey) return new Set();
+  const out = new Set<string>();
+  for (const leg of journey.legs) {
+    if (leg.kind === "kombi") {
+      out.add(leg.board_stop.id);
+      out.add(leg.alight_stop.id);
+    }
+  }
+  out.add(journey.origin.id);
+  out.add(journey.destination.id);
+  return out;
+}
+
+function stopsGeoJSON(
+  stops: StopForMap[],
+  activeStopIds: Set<string>,
+): GeoJSON.FeatureCollection {
   return {
     type: "FeatureCollection",
     features: stops.map((s) => ({
@@ -94,6 +171,8 @@ function stopsGeoJSON(stops: StopForMap[]): GeoJSON.FeatureCollection {
         name: s.name,
         is_rank: s.is_rank,
         is_terminal: s.is_terminal,
+        is_major: s.is_rank || s.is_terminal,
+        is_active: activeStopIds.has(s.id),
       },
       geometry: { type: "Point", coordinates: [s.lng, s.lat] },
     })),
@@ -113,6 +192,7 @@ function kombisGeoJSON(
         vehicle_id: p.vehicle_id,
         route_id: p.route_id,
         direction: p.direction,
+        bearing: typeof p.bearing === "number" ? p.bearing : 0,
         is_assigned: assignedVehicleId === p.vehicle_id,
       },
       geometry: { type: "Point", coordinates: [p.lng, p.lat] },
@@ -176,8 +256,8 @@ export default function PassengerMap({
     repaintActiveLeg(map, journeyRef.current, stage);
   }, [stage]);
 
-  // Refresh the kombi source paint and walking source whenever journey/stage
-  // change without re-rendering the map.
+  // Refresh the kombi source paint, walking source, and stop emphasis
+  // whenever journey/stage change. Imperative — no map rebuild.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !map.isStyleLoaded()) return;
@@ -185,8 +265,113 @@ export default function PassengerMap({
     if (walkingSrc) walkingSrc.setData(walkingGeoJSON(journey));
     const kombiSrc = map.getSource(KOMBIS_SOURCE) as GeoJSONSource | undefined;
     if (kombiSrc) kombiSrc.setData(kombisGeoJSON(positionsRef.current, assignedVehicleIdRef.current));
+    const stopsSrc = map.getSource(STOPS_SOURCE) as GeoJSONSource | undefined;
+    if (stopsSrc) {
+      stopsSrc.setData(
+        stopsGeoJSON(networkRef.current.stops, activeStopIdsForJourney(journey)),
+      );
+    }
     repaintActiveLeg(map, journey, stage);
   }, [journey, stage]);
+
+  // Zoom-to-active-trip — fires once per trip lifecycle, not on every kombi
+  // tick. Bounds wrap [boarding stop, all leg endpoints, walking transfer
+  // points, current vehicle positions, destination] with 60px padding and an
+  // 800ms eased animation. On arrival (or trip end), gracefully eases back
+  // to the full Harare network bounds.
+  const lastFittedTripIdRef = useRef<string | null>(null);
+  const lastArrivedFitRef = useRef<string | null>(null);
+  useEffect(() => {
+    const map: mapboxgl.Map | null = mapRef.current;
+    if (!map) return;
+    // Re-binding under a non-null type so the inner closures don't lose the
+    // narrowing from the early-return null check above.
+    const m: mapboxgl.Map = map;
+
+    const tripId = journey?.trip_id ?? null;
+    const arrivedTripId = stage?.kind === "arrived" && tripId ? tripId : null;
+    const tripChanged = tripId !== lastFittedTripIdRef.current;
+    const justArrived =
+      arrivedTripId !== null && arrivedTripId !== lastArrivedFitRef.current;
+
+    function applyTripBounds(): void {
+      if (!journey) return;
+      const points: Array<[number, number]> = [];
+      const push = (lng: number, lat: number) => points.push([lng, lat]);
+      push(journey.origin.lng, journey.origin.lat);
+      push(journey.destination.lng, journey.destination.lat);
+      for (const leg of journey.legs) {
+        if (leg.kind === "kombi") {
+          push(leg.board_stop.lng, leg.board_stop.lat);
+          push(leg.alight_stop.lng, leg.alight_stop.lat);
+        } else {
+          push(leg.from_stop.lng, leg.from_stop.lat);
+          push(leg.to_stop.lng, leg.to_stop.lat);
+          for (const [lng, lat] of leg.walking_polyline) push(lng, lat);
+        }
+      }
+      // Include any vehicle currently broadcasting on a leg's route — that's
+      // the kombi the rider is heading to or already on.
+      const legRouteIds = new Set(
+        journey.legs.flatMap((l) => (l.kind === "kombi" ? [l.route_id] : [])),
+      );
+      for (const v of positionsRef.current.values()) {
+        if (legRouteIds.has(v.route_id)) push(v.lng, v.lat);
+      }
+      if (points.length === 0) return;
+      let minLng = points[0][0];
+      let maxLng = points[0][0];
+      let minLat = points[0][1];
+      let maxLat = points[0][1];
+      for (const [lng, lat] of points) {
+        if (lng < minLng) minLng = lng;
+        if (lng > maxLng) maxLng = lng;
+        if (lat < minLat) minLat = lat;
+        if (lat > maxLat) maxLat = lat;
+      }
+      m.fitBounds(
+        [
+          [minLng, minLat],
+          [maxLng, maxLat],
+        ],
+        { padding: 60, duration: 800, essential: true },
+      );
+    }
+
+    function applyNetworkBounds(): void {
+      const [sw, ne] = harareBounds(networkRef.current) as [
+        [number, number],
+        [number, number],
+      ];
+      m.fitBounds([sw, ne], { padding: 40, duration: 800, essential: true });
+    }
+
+    function run(): void {
+      if (justArrived) {
+        lastArrivedFitRef.current = arrivedTripId;
+        applyNetworkBounds();
+        return;
+      }
+      if (!tripChanged) return;
+      lastFittedTripIdRef.current = tripId;
+      if (tripId && journey) {
+        applyTripBounds();
+      } else {
+        lastArrivedFitRef.current = null;
+        applyNetworkBounds();
+      }
+    }
+
+    if (m.isStyleLoaded()) {
+      run();
+      return;
+    }
+    const onLoad = () => run();
+    m.once("load", onLoad);
+    return () => {
+      m.off("load", onLoad);
+    };
+  }, [journey, stage?.kind]);
 
   // Build the map exactly once. Subsequent network changes would require a
   // full restyle; for the demo the network is frozen after Phase 1. Reading
@@ -253,16 +438,26 @@ export default function PassengerMap({
         },
       });
 
-      map.addSource(STOPS_SOURCE, { type: "geojson", data: stopsGeoJSON(network.stops) });
+      map.addSource(STOPS_SOURCE, {
+        type: "geojson",
+        data: stopsGeoJSON(network.stops, activeStopIdsForJourney(journeyRef.current)),
+      });
       map.addLayer({
         id: STOPS_LAYER_HALO,
         type: "circle",
         source: STOPS_SOURCE,
         paint: {
-          "circle-radius": ["case", ["get", "is_rank"], 10, ["get", "is_terminal"], 8, 6],
+          // Active boarding/alighting stops in the current trip get a larger
+          // halo so the eye locks onto where the passenger is heading.
+          "circle-radius": [
+            "case",
+            ["get", "is_active"],
+            ["case", ["get", "is_rank"], 13, ["get", "is_terminal"], 11, 9],
+            ["case", ["get", "is_rank"], 10, ["get", "is_terminal"], 8, 6],
+          ],
           "circle-color": STONE,
-          "circle-stroke-color": TEAL,
-          "circle-stroke-width": 2,
+          "circle-stroke-color": ["case", ["get", "is_active"], RUST, TEAL],
+          "circle-stroke-width": ["case", ["get", "is_active"], 2.5, 2],
           "circle-opacity": 0.95,
         },
       });
@@ -271,26 +466,48 @@ export default function PassengerMap({
         type: "circle",
         source: STOPS_SOURCE,
         paint: {
-          "circle-radius": ["case", ["get", "is_rank"], 4, 3],
-          "circle-color": TEAL,
+          "circle-radius": [
+            "case",
+            ["get", "is_active"],
+            ["case", ["get", "is_rank"], 5, 4],
+            ["case", ["get", "is_rank"], 4, 3],
+          ],
+          "circle-color": ["case", ["get", "is_active"], RUST, TEAL],
         },
       });
       map.addLayer({
         id: STOPS_LAYER_LABEL,
         type: "symbol",
         source: STOPS_SOURCE,
+        // Major stops (terminals + ranks) appear from zoom 11; mid-route
+        // stops only at zoom ≥ 13 to keep the basemap legible.
+        minzoom: 11,
+        filter: [
+          "any",
+          ["get", "is_major"],
+          [">=", ["zoom"], 13],
+        ],
         layout: {
           "text-field": ["get", "name"],
-          "text-size": 11,
-          "text-offset": [0, 1.1],
+          "text-size": [
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            11, 10,
+            14, 11.5,
+            16, 13,
+          ],
+          "text-offset": [0, 1.2],
           "text-anchor": "top",
           "text-allow-overlap": false,
           "text-optional": true,
+          "text-padding": 4,
         },
         paint: {
-          "text-color": TEAL,
+          "text-color": ["case", ["get", "is_active"], RUST, TEAL],
           "text-halo-color": STONE,
           "text-halo-width": 1.5,
+          "text-halo-blur": 0.5,
         },
       });
 
@@ -304,28 +521,51 @@ export default function PassengerMap({
         source: KOMBIS_SOURCE,
         filter: ["==", ["get", "is_assigned"], true],
         paint: {
-          "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 12, 14, 18, 16, 22],
+          "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 14, 14, 22, 16, 28],
           "circle-color": RUST,
           "circle-opacity": 0.25,
           "circle-blur": 0.4,
         },
       });
-      map.addLayer({
-        id: KOMBIS_LAYER,
-        type: "circle",
-        source: KOMBIS_SOURCE,
-        paint: {
-          "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 5, 14, 8, 16, 11],
-          "circle-color": RUST,
-          "circle-stroke-color": STONE,
-          "circle-stroke-width": 2,
-          "circle-opacity": [
-            "case",
-            ["==", ["get", "is_assigned"], true],
-            1,
-            0.5,
-          ],
-        },
+      // Kombi minibus icon, rotated to direction-of-travel via the bearing on
+      // each tick payload. Active (assigned) kombi renders larger and at full
+      // opacity; pass-through kombis render smaller and dimmer so the eye
+      // tracks the trip-relevant vehicle first.
+      void registerKombiIcon(map).then(() => {
+        if (!map.getLayer(KOMBIS_LAYER)) {
+          map.addLayer({
+            id: KOMBIS_LAYER,
+            type: "symbol",
+            source: KOMBIS_SOURCE,
+            layout: {
+              "icon-image": KOMBI_ICON_ID,
+              "icon-rotate": ["coalesce", ["get", "bearing"], 0],
+              "icon-rotation-alignment": "map",
+              "icon-allow-overlap": true,
+              "icon-ignore-placement": true,
+              "icon-anchor": "center",
+              "icon-size": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                10,
+                ["case", ["==", ["get", "is_assigned"], true], 0.55, 0.32],
+                14,
+                ["case", ["==", ["get", "is_assigned"], true], 0.95, 0.55],
+                16,
+                ["case", ["==", ["get", "is_assigned"], true], 1.25, 0.75],
+              ],
+            },
+            paint: {
+              "icon-opacity": [
+                "case",
+                ["==", ["get", "is_assigned"], true],
+                1,
+                0.55,
+              ],
+            },
+          });
+        }
       });
 
       // Click a route line to highlight it and reveal its named stops.

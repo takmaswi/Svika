@@ -13,7 +13,7 @@ export default function PlanList({ options, busyOption, onChoose, onClose }: Pla
   if (options.length === 0) {
     return (
       <div className="rounded-md bg-white p-3 text-sm text-svika-mute shadow-sm">
-        No plans for that pair yet. Try Heights to Avondale, Heights to UZ, or Heights to Sam Levy&apos;s.
+        No plans yet for that route. Try Heights to Avondale, Heights to UZ, or Heights to Sam Levy&apos;s.
         <button type="button" onClick={onClose} className="ml-2 text-svika-teal underline">
           Dismiss
         </button>
@@ -25,7 +25,7 @@ export default function PlanList({ options, busyOption, onChoose, onClose }: Pla
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <h3 className="text-xs font-medium uppercase tracking-wide text-svika-mute">
-          {options.length === 1 ? "1 option" : `${options.length} options`}
+          {options.length === 1 ? "1 way to get there" : `${options.length} ways to get there`}
         </h3>
         <button type="button" onClick={onClose} className="text-xs text-svika-mute hover:text-svika-teal">
           Clear
@@ -52,13 +52,13 @@ export default function PlanList({ options, busyOption, onChoose, onClose }: Pla
               {option.legs.map((leg, idx) => (
                 <li key={idx} className="flex items-baseline gap-2">
                   <span
-                    className={`inline-block w-12 rounded-full px-1.5 py-0.5 text-center text-[10px] font-semibold uppercase ${
+                    className={`inline-block w-14 rounded-full px-1.5 py-0.5 text-center text-[10px] font-semibold uppercase ${
                       leg.type === "kombi"
                         ? "bg-svika-teal text-svika-stone"
                         : "bg-svika-stone-dark text-svika-teal"
                     }`}
                   >
-                    {leg.type}
+                    {leg.type === "kombi" ? "kombi" : "walk"}
                   </span>
                   <span className="flex-1">
                     {leg.type === "kombi"

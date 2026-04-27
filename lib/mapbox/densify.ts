@@ -41,7 +41,14 @@ export async function densifyPolyline(
   raw: ReadonlyArray<LatLng>,
   options: { token?: string; signal?: AbortSignal } = {},
 ): Promise<DensifyResult> {
-  const token = options.token ?? process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+  // Prefer the server-only `MAPBOX_SECRET_TOKEN` (sk.) which is scoped to
+  // `directions:read` and unrestricted by URL. Public tokens (pk.) typically
+  // omit `directions:read` and are URL-pinned, so they 401 on the Directions
+  // API even though they happily render basemaps.
+  const token =
+    options.token ??
+    process.env.MAPBOX_SECRET_TOKEN ??
+    process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
   if (!token || raw.length < 2 || raw.length > MAX_WAYPOINTS) {
     return { coordinates: [...raw], source: "raw" };
   }
