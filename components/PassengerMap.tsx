@@ -735,13 +735,19 @@ export default function PassengerMap({
 
   // RAF interpolation loop. Reads the lerp buffer + the source-of-truth
   // routeId/direction from `positionsRef`, builds an eased GeoJSON, and
-  // hands it to the kombis source. The `pending` flag skips frames if a
-  // previous setData hasn't returned yet (defensive — Mapbox's setData is
-  // synchronous today, but if a future version makes it async this stays
-  // smooth instead of stacking up draws).
+  // hands it to the kombis source. Two important guards:
+  //   1. Skip the frame entirely when the buffer is empty — the kombis
+  //      source already holds the last good state, no churn needed.
+  //   2. Skip after a kombi has finished its 1.5 s ease (t === 1) and we
+  //      have already written the snap-to-target frame; otherwise we'd be
+  //      pushing the same FeatureCollection 60×/s, marking the source as
+  //      "loading" continuously and blocking the basemap composite from
+  //      ever reporting `map.loaded()`.
+  // The result: setData fires only while there is real motion to paint.
   useEffect(() => {
     let raf = 0;
     let pending = false;
+    let lastSettledAt = 0;
     function frame(): void {
       raf = requestAnimationFrame(frame);
       if (pending) return;
@@ -749,10 +755,13 @@ export default function PassengerMap({
       if (!map || !map.isStyleLoaded()) return;
       const src = map.getSource(KOMBIS_SOURCE) as GeoJSONSource | undefined;
       if (!src) return;
+      if (interpRef.current.size === 0) return;
       const now = performance.now();
       const lerped = new Map<string, KombiTickPayload>();
+      let stillEasing = false;
       for (const [id, entry] of interpRef.current.entries()) {
         const t = Math.max(0, Math.min(1, (now - entry.broadcastAt) / TICK_PERIOD_MS));
+        if (t < 1) stillEasing = true;
         const eased = easeInOut(t);
         const lng = entry.prev[0] + (entry.next[0] - entry.prev[0]) * eased;
         const lat = entry.prev[1] + (entry.next[1] - entry.prev[1]) * eased;
@@ -761,6 +770,11 @@ export default function PassengerMap({
         if (!orig) continue;
         lerped.set(id, { ...orig, lat, lng, bearing });
       }
+      // Once everything has settled, write one final "snap" frame and then
+      // stop touching the source until the next broadcast arrives.
+      if (!stillEasing && lastSettledAt >= now - 50) return;
+      if (!stillEasing) lastSettledAt = now;
+      else lastSettledAt = 0;
       pending = true;
       try {
         src.setData(kombisGeoJSON(lerped, assignedVehicleIdRef.current));
