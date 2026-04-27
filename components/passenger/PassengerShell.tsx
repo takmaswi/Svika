@@ -11,6 +11,7 @@ import Wallet from "@/components/passenger/Wallet";
 import {
   bookTripAction,
   claimTicketAction,
+  endTripAction,
   findPlansAction,
   transferTicketAction,
 } from "@/lib/passenger/actions";
@@ -197,9 +198,25 @@ export default function PassengerShell({
     router.refresh();
   }, [initialJourney, router]);
 
+  const handleEndTrip = useCallback(async (): Promise<{ ok: boolean; error?: string }> => {
+    if (!journey) return { ok: false, error: "No active trip." };
+    const result = await endTripAction({
+      persona_slug: personaSlug,
+      trip_id: journey.trip_id,
+    });
+    if (!result.ok) return { ok: false, error: result.error };
+    setDismissedTripId(journey.trip_id);
+    setStage(null);
+    setBookingFlash(null);
+    setSearchError(null);
+    router.refresh();
+    return { ok: true };
+  }, [journey, personaSlug, router]);
+
   const balance = persona.credit_balance_usd.toFixed(2);
   const activeCount = tickets.filter((t) => !t.is_outgoing_transfer).length;
   const showHero = !journey && !plans;
+  const showSwitcher = process.env.NEXT_PUBLIC_DEMO_MODE !== "false";
 
   return (
     <main className="flex min-h-dvh flex-col">
@@ -211,18 +228,23 @@ export default function PassengerShell({
               {persona.name} · ${balance}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setWalletOpen(true)}
-            className="rounded-md border border-svika-teal-100 bg-white px-3 py-1.5 text-sm font-medium text-svika-teal shadow-sm"
-          >
-            Wallet
-            {activeCount > 0 ? (
-              <span className="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-svika-rust px-1.5 text-xs font-semibold text-white">
-                {activeCount}
-              </span>
+          <div className="flex items-center gap-2">
+            {showSwitcher ? (
+              <PersonaSwitcher current={personaSlug} onChange={(slug) => router.push(personaRoute(slug))} />
             ) : null}
-          </button>
+            <button
+              type="button"
+              onClick={() => setWalletOpen(true)}
+              className="rounded-md border border-svika-teal-100 bg-white px-3 py-1.5 text-sm font-medium text-svika-teal shadow-sm"
+            >
+              Wallet
+              {activeCount > 0 ? (
+                <span className="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-svika-rust px-1.5 text-xs font-semibold text-white">
+                  {activeCount}
+                </span>
+              ) : null}
+            </button>
+          </div>
         </div>
         {searchError ? (
           <p className="mt-2 rounded bg-white px-2 py-1 text-xs text-svika-rust">{searchError}</p>
@@ -304,6 +326,7 @@ export default function PassengerShell({
           onPlanAnother={handlePlanAnother}
           onLifecycleEvent={handleLifecycleEvent}
           onStageChange={handleStageChange}
+          onEndTrip={handleEndTrip}
         />
       ) : null}
 
@@ -315,5 +338,52 @@ export default function PassengerShell({
         onTransfer={handleTransfer}
       />
     </main>
+  );
+}
+
+const PERSONA_OPTIONS = [
+  { slug: "tendai", label: "as Tendai" },
+  { slug: "rudo", label: "as Rudo" },
+  { slug: "farai", label: "as Farai" },
+  { slug: "baba_tino", label: "as Baba Tino" },
+] as const;
+
+function personaRoute(slug: string): string {
+  switch (slug) {
+    case "tendai":
+      return "/?as=tendai";
+    case "rudo":
+      return "/?as=rudo";
+    case "farai":
+      return "/hwindi?as=farai";
+    case "baba_tino":
+      return "/fleet?as=baba_tino";
+    default:
+      return "/";
+  }
+}
+
+interface PersonaSwitcherProps {
+  current: string;
+  onChange: (slug: string) => void;
+}
+
+function PersonaSwitcher({ current, onChange }: PersonaSwitcherProps) {
+  return (
+    <label className="flex items-center">
+      <span className="sr-only">Switch persona</span>
+      <select
+        value={current}
+        onChange={(e) => onChange(e.target.value)}
+        className="rounded-md border border-svika-teal-100 bg-white px-2 py-1.5 text-sm font-medium text-svika-teal shadow-sm focus:outline-none focus:ring-2 focus:ring-svika-rust"
+        data-testid="persona-switcher"
+      >
+        {PERSONA_OPTIONS.map((p) => (
+          <option key={p.slug} value={p.slug}>
+            {p.label}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }

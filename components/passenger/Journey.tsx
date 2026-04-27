@@ -34,6 +34,12 @@ interface JourneyProps {
    * the active leg, dim other vehicles, and aim the ETA chip at the right stop.
    */
   onStageChange?: (stage: JourneyStage) => void;
+  /**
+   * Called when the passenger confirms ending the trip. Returns ok+optional
+   * error so the sheet can surface failures inline. Tickets are completed
+   * server-side; credit is not refunded (see actions.ts → endTripAction).
+   */
+  onEndTrip: () => Promise<{ ok: boolean; error?: string }>;
 }
 
 const RUST = "#d9622a";
@@ -74,6 +80,7 @@ export default function Journey({
   onPlanAnother,
   onLifecycleEvent,
   onStageChange,
+  onEndTrip,
 }: JourneyProps) {
   const [expanded, setExpanded] = useState(false);
   const [vehicles, setVehicles] = useState<Map<string, VehicleSnapshot>>(
@@ -81,6 +88,21 @@ export default function Journey({
   );
   const [now, setNow] = useState<number>(() => Date.now());
   const lastBroadcastRef = useRef<{ id: string; at: number } | null>(null);
+  const [endConfirming, setEndConfirming] = useState(false);
+  const [endBusy, setEndBusy] = useState(false);
+  const [endError, setEndError] = useState<string | null>(null);
+
+  async function handleConfirmEnd() {
+    setEndBusy(true);
+    setEndError(null);
+    const result = await onEndTrip();
+    setEndBusy(false);
+    if (!result.ok) {
+      setEndError(result.error ?? "Could not end the trip.");
+      return;
+    }
+    setEndConfirming(false);
+  }
 
   // Subscribe once. Every kombi tick triggers a recompute via state update.
   useEffect(() => {
@@ -166,22 +188,35 @@ export default function Journey({
         data-testid="journey-arrived"
         data-stage="arrived"
       >
-        <div className="mx-auto flex max-w-md items-center justify-between gap-3 px-4 py-3">
-          <div className="flex min-w-0 flex-col">
-            <p className="text-base font-semibold text-svika-teal">
-              You&apos;ve arrived
-            </p>
-            <p className="truncate text-xs text-svika-mute">
-              {journey.total_duration_minutes} min · ${totalSpent}
-            </p>
+        <div className="relative mx-auto max-w-md px-4 pb-3 pt-3">
+          <EndTripControl
+            confirming={endConfirming}
+            busy={endBusy}
+            error={endError}
+            onAsk={() => setEndConfirming(true)}
+            onCancel={() => {
+              setEndConfirming(false);
+              setEndError(null);
+            }}
+            onConfirm={handleConfirmEnd}
+          />
+          <div className="flex items-center justify-between gap-3 pr-9">
+            <div className="flex min-w-0 flex-col">
+              <p className="text-base font-semibold text-svika-teal">
+                You&apos;ve arrived
+              </p>
+              <p className="truncate text-xs text-svika-mute">
+                {journey.total_duration_minutes} min · ${totalSpent}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onPlanAnother}
+              className="shrink-0 rounded-md border border-svika-rust px-3 py-1.5 text-xs font-medium text-svika-rust hover:bg-svika-rust hover:text-white"
+            >
+              Plan another
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onPlanAnother}
-            className="shrink-0 rounded-md border border-svika-rust px-3 py-1.5 text-xs font-medium text-svika-rust hover:bg-svika-rust hover:text-white"
-          >
-            Plan another
-          </button>
         </div>
       </div>
     );
@@ -195,11 +230,22 @@ export default function Journey({
       data-stage={stage.kind}
       data-stage-index={stage.index}
     >
-      <div className="mx-auto max-w-md px-4 pb-3 pt-3">
+      <div className="relative mx-auto max-w-md px-4 pb-3 pt-3">
+        <EndTripControl
+          confirming={endConfirming}
+          busy={endBusy}
+          error={endError}
+          onAsk={() => setEndConfirming(true)}
+          onCancel={() => {
+            setEndConfirming(false);
+            setEndError(null);
+          }}
+          onConfirm={handleConfirmEnd}
+        />
         <button
           type="button"
           onClick={() => setExpanded((e) => !e)}
-          className="flex w-full flex-col gap-0.5 text-left"
+          className="flex w-full flex-col gap-0.5 pr-9 text-left"
           aria-expanded={expanded}
         >
           <span className="truncate text-xs font-medium text-svika-mute">
@@ -291,6 +337,69 @@ export default function Journey({
         ) : null}
       </div>
     </div>
+  );
+}
+
+interface EndTripControlProps {
+  confirming: boolean;
+  busy: boolean;
+  error: string | null;
+  onAsk: () => void;
+  onCancel: () => void;
+  onConfirm: () => void;
+}
+
+/**
+ * Always-visible end-trip affordance for the journey sheet. Renders as a
+ * small × in the top-right corner; tapping it opens an inline confirm strip
+ * ("End this trip? Tickets won't be refunded for the demo.") with Cancel /
+ * End buttons. Refund-on-cancel is roadmap.
+ */
+function EndTripControl({
+  confirming,
+  busy,
+  error,
+  onAsk,
+  onCancel,
+  onConfirm,
+}: EndTripControlProps) {
+  if (confirming) {
+    return (
+      <div className="mb-2 rounded-md border border-svika-rust bg-white px-3 py-2 text-xs text-svika-teal">
+        <p>End this trip? Tickets won&apos;t be refunded for the demo.</p>
+        {error ? <p className="mt-1 text-svika-rust">{error}</p> : null}
+        <div className="mt-2 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={busy}
+            className="rounded border border-svika-teal-100 px-2 py-1 text-svika-mute hover:text-svika-teal disabled:opacity-60"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={busy}
+            className="rounded border border-svika-rust bg-svika-rust px-2 py-1 font-medium text-white hover:bg-[#b8501f] disabled:opacity-60"
+            data-testid="journey-end-confirm"
+          >
+            {busy ? "Ending…" : "Yes, end trip"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={onAsk}
+      aria-label="End trip"
+      className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full border border-svika-teal-100 bg-white text-svika-mute shadow-sm hover:text-svika-rust"
+      data-testid="journey-end-ask"
+    >
+      <span aria-hidden className="text-base leading-none">×</span>
+    </button>
   );
 }
 

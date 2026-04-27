@@ -187,6 +187,72 @@ export async function bookTripAction(input: BookTripInput): Promise<BookTripResu
 }
 
 // ---------------------------------------------------------------------------
+// endTripAction — passenger-driven trip cancel.
+//
+// Marks every ticket the persona still holds on this trip as `completed`
+// (status='completed', completed_at=now()). Demo behaviour only: credit is
+// NOT refunded — refund-on-cancel is roadmap, see docs/ROADMAP.md.
+// ---------------------------------------------------------------------------
+
+export interface EndTripResult {
+  ok: true;
+  ended_count: number;
+}
+
+export async function endTripAction(input: {
+  persona_slug: string;
+  trip_id: string;
+}): Promise<EndTripResult | ActionError> {
+  const persona = await resolvePersona(input.persona_slug, "passenger");
+  if (persona.role !== "passenger") {
+    return { ok: false, error: "Only passengers can end a trip." };
+  }
+
+  try {
+    const client = await createServerClient();
+
+    const { data: tripData, error: tripError } = await client
+      .from("trips")
+      .select("id, originating_user_id")
+      .eq("id", input.trip_id)
+      .single();
+    if (tripError || !tripData) {
+      return { ok: false, error: "Trip not found." };
+    }
+    if ((tripData as Pick<TripRow, "id" | "originating_user_id">).originating_user_id !== persona.id) {
+      return { ok: false, error: "Not your trip." };
+    }
+
+    const { data: linksData } = await client
+      .from("trip_tickets")
+      .select("ticket_id")
+      .eq("trip_id", input.trip_id);
+    const ticketIds = ((linksData ?? []) as Array<{ ticket_id: string }>).map(
+      (l) => l.ticket_id,
+    );
+    if (ticketIds.length === 0) {
+      return { ok: true, ended_count: 0 };
+    }
+
+    const { data: updated, error: updateError } = await client
+      .from("tickets")
+      .update({ status: "completed", completed_at: new Date().toISOString() })
+      .in("id", ticketIds)
+      .eq("current_holder_user_id", persona.id)
+      .in("status", ["issued", "held", "redeemed"])
+      .select("id");
+    if (updateError) {
+      return { ok: false, error: updateError.message };
+    }
+
+    revalidatePath("/");
+    return { ok: true, ended_count: ((updated ?? []) as Array<{ id: string }>).length };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "End trip failed." };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // transferTicketAction — flip status to transferred_pending and log it.
 // ---------------------------------------------------------------------------
 
