@@ -241,6 +241,23 @@ export type Database = {
           is_rank: boolean;
         }>;
       };
+      nearest_vehicles_to_point: {
+        Args: {
+          in_lat: number;
+          in_lng: number;
+          in_limit?: number;
+        };
+        Returns: Array<{
+          vehicle_id: string;
+          route_id: string;
+          route_name: string;
+          distance_meters: number;
+          estimated_minutes: number;
+          current_passenger_count: number;
+          capacity_seats: number;
+          last_position_at: string;
+        }>;
+      };
     };
     Enums: { [key: string]: never };
     CompositeTypes: { [key: string]: never };
