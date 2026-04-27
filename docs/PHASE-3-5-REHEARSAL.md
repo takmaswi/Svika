@@ -1,7 +1,11 @@
 # Phase 3.5 Journey UX — production rehearsal
 
-Drove the full six-stage Journey UX against `https://svika.vercel.app/?as=tendai`
-after draining Tendai's wallet and topping up to $5.00. Every screenshot and
+> Note: this rehearsal originally ran pre-Phase 3.8 against the user
+> slug 'tendai'. Post-rename the script and DB now use 'takunda'; the
+> evidence and gates remain valid because the UUID was preserved.
+
+Drove the full six-stage Journey UX against `https://svika.vercel.app/?as=takunda`
+after draining Takunda's wallet and topping up to $5.00. Every screenshot and
 layer probe below was captured from the live production page; no mocks, no
 local overrides. The orchestrator is `scripts/phase3-5-rehearsal.ts` —
 re-runnable any time.
@@ -10,8 +14,8 @@ re-runnable any time.
 
 | Step | Result |
 |---|---|
-| Drained Tendai's active tickets (`UPDATE tickets SET status='completed'`) | 2 tickets cleared |
-| Topped up Tendai (`UPDATE users SET credit_balance_usd=5`) | $5.00 ✅ |
+| Drained Takunda's active tickets (`UPDATE tickets SET status='completed'`) | 2 tickets cleared |
+| Topped up Takunda (`UPDATE users SET credit_balance_usd=5`) | $5.00 ✅ |
 | Booked "Heights to Avondale" → fastest plan ($1.50) via Playwright | 2 tickets minted (one per leg) ✅ |
 | Trip identified | Lomagundi walking-transfer plan, two kombi legs + one walking leg |
 
@@ -111,7 +115,7 @@ caught. Both shipped to prod before the rehearsal completed.
 npx tsx --env-file=.env.local scripts/phase3-5-rehearsal.ts
 ```
 
-Re-runs are idempotent: the script drains Tendai's wallet first, tops her up
+Re-runs are idempotent: the script drains Takunda's wallet first, tops him up
 to $5, books a fresh trip, and writes screenshots back into `scripts/`. The
 report at this path is overwritten each run with the same structure but fresh
 sheet text + layer snapshots.
