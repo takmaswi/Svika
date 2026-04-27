@@ -18,372 +18,7 @@ Screenshot: `scripts\rehearsal-stage-1.png`
 
 Sheet text:
 ```
-Stage 1 of 6 · leg 1Bannockburn Rd North Terminus → Avondale Shops (King George Rd)→Walk to board · Bannockburn Rd North TerminusMt Pleasant Heights to Rezende Rank · code 207ETA 4 min207$1.00 this leg · $1.50 total
-```
-
-Layer probe:
-```json
-{
-  "ok": true,
-  "layers": [
-    {
-      "id": "svika-routes-base",
-      "lineOpacity": 0.22
-    },
-    {
-      "id": "svika-routes-highlight",
-      "filter": [
-        "in",
-        [
-          "get",
-          "id"
-        ],
-        [
-          "literal",
-          [
-            "route_heights_rezende"
-          ]
-        ]
-      ],
-      "lineOpacity": 0.95
-    },
-    {
-      "id": "svika-walking-line",
-      "lineOpacity": 0.85
-    },
-    {
-      "id": "svika-kombis-dot",
-      "circleOpacity": [
-        "case",
-        [
-          "==",
-          [
-            "get",
-            "is_assigned"
-          ],
-          true
-        ],
-        1,
-        0.5
-      ]
-    },
-    {
-      "id": "svika-kombis-halo",
-      "filter": [
-        "==",
-        [
-          "get",
-          "vehicle_id"
-        ],
-        "ZH 4821"
-      ],
-      "circleOpacity": 0.4074230839964342
-    }
-  ],
-  "walkingFeatures": 2,
-  "kombiFeatures": 0
-}
-```
-
-## Stage 2 — Boarding (leg 1)
-
-Screenshot: `scripts\rehearsal-stage-2.png`
-
-Sheet text:
-```
-Stage 3 of 6 · leg 1Bannockburn Rd North Terminus → Avondale Shops (King George Rd)•On board · heading to Second St at Lomagundi Rd IntersectionMt Pleasant Heights to Rezende Rank · code 207ETA 20 min207$1.00 this leg · $1.50 total
-```
-
-Layer probe:
-```json
-{
-  "ok": true,
-  "layers": [
-    {
-      "id": "svika-routes-base",
-      "lineOpacity": 0.22
-    },
-    {
-      "id": "svika-routes-highlight",
-      "filter": [
-        "in",
-        [
-          "get",
-          "id"
-        ],
-        [
-          "literal",
-          [
-            "route_heights_rezende"
-          ]
-        ]
-      ],
-      "lineOpacity": 0.95
-    },
-    {
-      "id": "svika-walking-line",
-      "lineOpacity": 0.85
-    },
-    {
-      "id": "svika-kombis-dot",
-      "circleOpacity": [
-        "case",
-        [
-          "==",
-          [
-            "get",
-            "is_assigned"
-          ],
-          true
-        ],
-        1,
-        0.5
-      ]
-    },
-    {
-      "id": "svika-kombis-halo",
-      "filter": [
-        "==",
-        [
-          "get",
-          "vehicle_id"
-        ],
-        "ZH 4821"
-      ],
-      "circleOpacity": 0.37154987992813177
-    }
-  ],
-  "walkingFeatures": 2,
-  "kombiFeatures": 3
-}
-```
-
-## Stage 3 — In transit (leg 1)
-
-Screenshot: `scripts\rehearsal-stage-3.png`
-
-Sheet text:
-```
-Stage 3 of 6 · leg 1Bannockburn Rd North Terminus → Avondale Shops (King George Rd)•On board · heading to Second St at Lomagundi Rd IntersectionMt Pleasant Heights to Rezende Rank · code 207ETA 10 min207$1.00 this leg · $1.50 total
-```
-
-Layer probe:
-```json
-{
-  "ok": true,
-  "layers": [
-    {
-      "id": "svika-routes-base",
-      "lineOpacity": 0.22
-    },
-    {
-      "id": "svika-routes-highlight",
-      "filter": [
-        "in",
-        [
-          "get",
-          "id"
-        ],
-        [
-          "literal",
-          [
-            "route_heights_rezende"
-          ]
-        ]
-      ],
-      "lineOpacity": 0.95
-    },
-    {
-      "id": "svika-walking-line",
-      "lineOpacity": 0.85
-    },
-    {
-      "id": "svika-kombis-dot",
-      "circleOpacity": [
-        "case",
-        [
-          "==",
-          [
-            "get",
-            "is_assigned"
-          ],
-          true
-        ],
-        1,
-        0.5
-      ]
-    },
-    {
-      "id": "svika-kombis-halo",
-      "filter": [
-        "==",
-        [
-          "get",
-          "vehicle_id"
-        ],
-        "ZH 4821"
-      ],
-      "circleOpacity": 0.27421178723194767
-    }
-  ],
-  "walkingFeatures": 2,
-  "kombiFeatures": 3
-}
-```
-
-## Stage 4 — Walking transfer
-
-Screenshot: `scripts\rehearsal-stage-4.png`
-
-Sheet text:
-```
-Stage 4 of 6 · leg 2Bannockburn Rd North Terminus → Avondale Shops (King George Rd)→Walking transfer · King George Rd just off Lomagundi RdCatch Westgate to Copacabana (Avondale Segment) · code 641641$0.50 this leg · $1.50 total
-```
-
-Layer probe:
-```json
-{
-  "ok": true,
-  "layers": [
-    {
-      "id": "svika-routes-base",
-      "lineOpacity": 0.22
-    },
-    {
-      "id": "svika-routes-highlight",
-      "filter": [
-        "in",
-        [
-          "get",
-          "id"
-        ],
-        [
-          "literal",
-          [
-            "route_westgate_copa_segment"
-          ]
-        ]
-      ],
-      "lineOpacity": 0.95
-    },
-    {
-      "id": "svika-walking-line",
-      "lineOpacity": 0.85
-    },
-    {
-      "id": "svika-kombis-dot",
-      "circleOpacity": [
-        "case",
-        [
-          "==",
-          [
-            "get",
-            "is_assigned"
-          ],
-          true
-        ],
-        1,
-        0.5
-      ]
-    },
-    {
-      "id": "svika-kombis-halo",
-      "filter": [
-        "==",
-        [
-          "get",
-          "vehicle_id"
-        ],
-        "ZH 5101"
-      ],
-      "circleOpacity": 0.2000655596465895
-    }
-  ],
-  "walkingFeatures": 2,
-  "kombiFeatures": 3
-}
-```
-
-## Stage 5 — Boarding (leg 2)
-
-Screenshot: `scripts\rehearsal-stage-5.png`
-
-Sheet text:
-```
-Stage 5 of 6 · leg 2Bannockburn Rd North Terminus → Avondale Shops (King George Rd)•On board · heading to Avondale Shops (King George Rd)Westgate to Copacabana (Avondale Segment) · code 641ETA 5 min641$0.50 this leg · $1.50 total
-```
-
-Layer probe:
-```json
-{
-  "ok": true,
-  "layers": [
-    {
-      "id": "svika-routes-base",
-      "lineOpacity": 0.22
-    },
-    {
-      "id": "svika-routes-highlight",
-      "filter": [
-        "in",
-        [
-          "get",
-          "id"
-        ],
-        [
-          "literal",
-          [
-            "route_westgate_copa_segment"
-          ]
-        ]
-      ],
-      "lineOpacity": 0.95
-    },
-    {
-      "id": "svika-walking-line",
-      "lineOpacity": 0.85
-    },
-    {
-      "id": "svika-kombis-dot",
-      "circleOpacity": [
-        "case",
-        [
-          "==",
-          [
-            "get",
-            "is_assigned"
-          ],
-          true
-        ],
-        1,
-        0.5
-      ]
-    },
-    {
-      "id": "svika-kombis-halo",
-      "filter": [
-        "==",
-        [
-          "get",
-          "vehicle_id"
-        ],
-        "ZH 5101"
-      ],
-      "circleOpacity": 0.3591616243721272
-    }
-  ],
-  "walkingFeatures": 2,
-  "kombiFeatures": 3
-}
-```
-
-## Stage 6 — Arrived
-
-Screenshot: `scripts\rehearsal-stage-6.png`
-
-Sheet text:
-```
-Trip complete31 min · $1.50 spent · receipt savedPlan another
+Bannockburn Rd North Terminus → Avondale Shops (King George Rd)→Walk to your kombi at Bannockburn Rd North TerminusShow code 389 when you board389$1.00 this kombi · $1.50 trip total
 ```
 
 Layer probe:
@@ -415,20 +50,187 @@ Layer probe:
       "lineOpacity": 0.85
     },
     {
-      "id": "svika-kombis-dot",
-      "circleOpacity": [
-        "case",
+      "id": "svika-kombis-dot"
+    },
+    {
+      "id": "svika-kombis-halo",
+      "filter": [
+        "==",
         [
-          "==",
-          [
-            "get",
-            "is_assigned"
-          ],
-          true
+          "get",
+          "is_assigned"
         ],
-        1,
-        0.5
-      ]
+        true
+      ],
+      "circleOpacity": 0.25
+    }
+  ],
+  "walkingFeatures": 1,
+  "kombiFeatures": 0
+}
+```
+
+## Stage 2 — Boarding (leg 1)
+
+Screenshot: `scripts\rehearsal-stage-2.png`
+
+Sheet text:
+```
+Bannockburn Rd North Terminus → Avondale Shops (King George Rd)•On your way to Second St at Lomagundi Rd IntersectionMt Pleasant Heights to Rezende RankETA 20 min389$1.00 this kombi · $1.50 trip total
+```
+
+Layer probe:
+```json
+{
+  "ok": true,
+  "layers": [
+    {
+      "id": "svika-routes-base",
+      "lineOpacity": 0.22
+    },
+    {
+      "id": "svika-routes-highlight",
+      "filter": [
+        "in",
+        [
+          "get",
+          "id"
+        ],
+        [
+          "literal",
+          [
+            "route_heights_rezende"
+          ]
+        ]
+      ],
+      "lineOpacity": 0.95
+    },
+    {
+      "id": "svika-walking-line",
+      "lineOpacity": 0.85
+    },
+    {
+      "id": "svika-kombis-dot"
+    },
+    {
+      "id": "svika-kombis-halo",
+      "filter": [
+        "==",
+        [
+          "get",
+          "vehicle_id"
+        ],
+        "ZH 4821"
+      ],
+      "circleOpacity": 0.4341416224384395
+    }
+  ],
+  "walkingFeatures": 1,
+  "kombiFeatures": 2
+}
+```
+
+## Stage 3 — In transit (leg 1)
+
+Screenshot: `scripts\rehearsal-stage-3.png`
+
+Sheet text:
+```
+Bannockburn Rd North Terminus → Avondale Shops (King George Rd)•On your way to Second St at Lomagundi Rd IntersectionMt Pleasant Heights to Rezende RankETA 10 min389$1.00 this kombi · $1.50 trip total
+```
+
+Layer probe:
+```json
+{
+  "ok": true,
+  "layers": [
+    {
+      "id": "svika-routes-base",
+      "lineOpacity": 0.22
+    },
+    {
+      "id": "svika-routes-highlight",
+      "filter": [
+        "in",
+        [
+          "get",
+          "id"
+        ],
+        [
+          "literal",
+          [
+            "route_heights_rezende"
+          ]
+        ]
+      ],
+      "lineOpacity": 0.95
+    },
+    {
+      "id": "svika-walking-line",
+      "lineOpacity": 0.85
+    },
+    {
+      "id": "svika-kombis-dot"
+    },
+    {
+      "id": "svika-kombis-halo",
+      "filter": [
+        "==",
+        [
+          "get",
+          "vehicle_id"
+        ],
+        "ZH 4821"
+      ],
+      "circleOpacity": 0.3573274187076386
+    }
+  ],
+  "walkingFeatures": 1,
+  "kombiFeatures": 2
+}
+```
+
+## Stage 4 — Walking transfer
+
+Screenshot: `scripts\rehearsal-stage-4.png`
+
+Sheet text:
+```
+Bannockburn Rd North Terminus → Avondale Shops (King George Rd)→Walk to your next kombi at King George Rd just off Lomagundi RdShow code 701 when you board701$0.50 this kombi · $1.50 trip total
+```
+
+Layer probe:
+```json
+{
+  "ok": true,
+  "layers": [
+    {
+      "id": "svika-routes-base",
+      "lineOpacity": 0.22
+    },
+    {
+      "id": "svika-routes-highlight",
+      "filter": [
+        "in",
+        [
+          "get",
+          "id"
+        ],
+        [
+          "literal",
+          [
+            "route_westgate_copa_segment"
+          ]
+        ]
+      ],
+      "lineOpacity": 0.95
+    },
+    {
+      "id": "svika-walking-line",
+      "lineOpacity": 0.85
+    },
+    {
+      "id": "svika-kombis-dot"
     },
     {
       "id": "svika-kombis-halo",
@@ -440,10 +242,128 @@ Layer probe:
         ],
         "__none__"
       ],
-      "circleOpacity": 0.44866978082792264
+      "circleOpacity": 0.23039968808650876
     }
   ],
-  "walkingFeatures": 2,
-  "kombiFeatures": 3
+  "walkingFeatures": 1,
+  "kombiFeatures": 2
+}
+```
+
+## Stage 5 — Boarding (leg 2)
+
+Screenshot: `scripts\rehearsal-stage-5.png`
+
+Sheet text:
+```
+Bannockburn Rd North Terminus → Avondale Shops (King George Rd)•On your way to Avondale Shops (King George Rd)Westgate to Copacabana (Avondale Segment)ETA 5 min701$0.50 this kombi · $1.50 trip total
+```
+
+Layer probe:
+```json
+{
+  "ok": true,
+  "layers": [
+    {
+      "id": "svika-routes-base",
+      "lineOpacity": 0.22
+    },
+    {
+      "id": "svika-routes-highlight",
+      "filter": [
+        "in",
+        [
+          "get",
+          "id"
+        ],
+        [
+          "literal",
+          [
+            "route_westgate_copa_segment"
+          ]
+        ]
+      ],
+      "lineOpacity": 0.95
+    },
+    {
+      "id": "svika-walking-line",
+      "lineOpacity": 0.85
+    },
+    {
+      "id": "svika-kombis-dot"
+    },
+    {
+      "id": "svika-kombis-halo",
+      "filter": [
+        "==",
+        [
+          "get",
+          "vehicle_id"
+        ],
+        "ZH 5101"
+      ],
+      "circleOpacity": 0.3046922480981063
+    }
+  ],
+  "walkingFeatures": 1,
+  "kombiFeatures": 2
+}
+```
+
+## Stage 6 — Arrived
+
+Screenshot: `scripts\rehearsal-stage-6.png`
+
+Sheet text:
+```
+You've arrived31 min · $1.50Plan another
+```
+
+Layer probe:
+```json
+{
+  "ok": true,
+  "layers": [
+    {
+      "id": "svika-routes-base",
+      "lineOpacity": 0.55
+    },
+    {
+      "id": "svika-routes-highlight",
+      "filter": [
+        "in",
+        [
+          "get",
+          "id"
+        ],
+        [
+          "literal",
+          []
+        ]
+      ],
+      "lineOpacity": 0.95
+    },
+    {
+      "id": "svika-walking-line",
+      "lineOpacity": 0.85
+    },
+    {
+      "id": "svika-kombis-dot"
+    },
+    {
+      "id": "svika-kombis-halo",
+      "filter": [
+        "==",
+        [
+          "get",
+          "vehicle_id"
+        ],
+        "__none__"
+      ],
+      "circleOpacity": 0.44309307840226947
+    }
+  ],
+  "walkingFeatures": 1,
+  "kombiFeatures": 2
 }
 ```
