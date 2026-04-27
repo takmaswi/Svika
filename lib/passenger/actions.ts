@@ -383,6 +383,117 @@ export async function transferTicketAction(input: {
 }
 
 // ---------------------------------------------------------------------------
+// bookParcelAction — Phase 4 stretch 1.
+//
+// Mints a `kind='parcel'` ticket for the demo's same-kombi parcel flow.
+// Sender's wallet pays the fare (or cash on-board); conductor accepts on
+// `/hwindi` with the same single 3-digit code as a passenger ticket.
+//
+// Routes: hardcoded to route_heights_rezende — that's the only line on which
+// Farai actually drives in the demo, so the parcel is guaranteed to clear
+// during the recording. Destinations limited to the four stops on that route.
+// ---------------------------------------------------------------------------
+
+const PARCEL_ROUTE_ID = "route_heights_rezende";
+const PARCEL_BOARD_STOP = "sp_heights_start_north";
+const PARCEL_ALLOWED_ALIGHTS = [
+  "sp_uz_gate",
+  "sp_second_lomagundi",
+  "sp_rezende_rank",
+] as const;
+type ParcelAlight = (typeof PARCEL_ALLOWED_ALIGHTS)[number];
+
+function isParcelAlight(value: string): value is ParcelAlight {
+  return (PARCEL_ALLOWED_ALIGHTS as readonly string[]).includes(value);
+}
+
+export interface BookParcelResult {
+  ok: true;
+  ticket_id: string;
+  access_code: string;
+  fare_usd: number;
+}
+
+export async function bookParcelAction(input: {
+  persona_slug: string;
+  alight_at_stop_id: string;
+  receiver_phone: string;
+  description: string;
+  payment_method: PaymentMethod;
+}): Promise<BookParcelResult | ActionError> {
+  const persona = await resolvePersona(input.persona_slug, "passenger");
+  if (persona.role !== "passenger") {
+    return { ok: false, error: "Only passengers can send parcels." };
+  }
+  if (!isParcelAlight(input.alight_at_stop_id)) {
+    return { ok: false, error: "Pick a destination on the Heights → Rezende route." };
+  }
+  const trimmedDesc = input.description.trim();
+  if (trimmedDesc.length < 3) {
+    return { ok: false, error: "Add a short description so the receiver knows what to expect." };
+  }
+  const phone = input.receiver_phone.trim();
+  if (!/^\+\d{6,15}$/.test(phone) && !/^0\d{9,12}$/.test(phone)) {
+    return { ok: false, error: "Phone must be in +263… or 077… form." };
+  }
+
+  try {
+    const client = await createServerClient();
+
+    // Fare from the route's segment table; fall back to default fare if missing.
+    const { data: fareData } = await client
+      .from("fare_segments")
+      .select("fare_usd")
+      .eq("route_id", PARCEL_ROUTE_ID)
+      .eq("from_stop_id", PARCEL_BOARD_STOP)
+      .eq("to_stop_id", input.alight_at_stop_id)
+      .order("effective_from", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const fareUsd = Number(fareData?.fare_usd ?? 1.0);
+
+    if (input.payment_method === "wallet" && persona.credit_balance_usd < fareUsd) {
+      return { ok: false, error: "Not enough credit. Top up to send the parcel." };
+    }
+
+    const ticket = await insertTicketWithUniqueCode(client, {
+      route_id: PARCEL_ROUTE_ID,
+      board_at_stop_id: PARCEL_BOARD_STOP,
+      alight_at_stop_id: input.alight_at_stop_id,
+      fare_usd: fareUsd,
+      originating_user_id: persona.id,
+      current_holder_user_id: persona.id,
+      status: "issued",
+      kind: "parcel",
+      payment_method: input.payment_method,
+      parcel_receiver_phone: phone,
+      parcel_description: trimmedDesc,
+    });
+
+    if (input.payment_method === "wallet") {
+      const newBalance = Number((persona.credit_balance_usd - fareUsd).toFixed(2));
+      const { error: balanceError } = await client
+        .from("users")
+        .update({ credit_balance_usd: newBalance })
+        .eq("id", persona.id);
+      if (balanceError) {
+        return { ok: false, error: balanceError.message };
+      }
+    }
+
+    revalidatePath("/");
+    return {
+      ok: true,
+      ticket_id: ticket.id,
+      access_code: ticket.access_code,
+      fare_usd: fareUsd,
+    };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Parcel booking failed." };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // claimTicketAction — recipient lands on /?as=rudo&claim=<id>; flips to held.
 // ---------------------------------------------------------------------------
 

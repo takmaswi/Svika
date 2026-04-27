@@ -7,6 +7,7 @@ import type { FleetState } from "@/lib/fleet/state";
 import type { Persona } from "@/lib/personas";
 
 import AuditPanel from "./AuditPanel";
+import EmergencyContactsCard from "./EmergencyContactsCard";
 import VehicleCard from "./VehicleCard";
 import ZimraCard from "./ZimraCard";
 
@@ -116,12 +117,15 @@ export default function FleetShell({ persona, state, narratives }: FleetShellPro
             </article>
           )}
         </div>
-        {selectedStats ? (
-          <ZimraCard
-            monthlyEstimateUsd={selectedStats.zimra_liability_estimate_usd}
-            dailyRevenueUsd={selectedStats.total_logged_revenue_usd}
-          />
-        ) : null}
+        <div className="space-y-4">
+          {selectedStats ? (
+            <ZimraCard
+              monthlyEstimateUsd={selectedStats.zimra_liability_estimate_usd}
+              dailyRevenueUsd={selectedStats.total_logged_revenue_usd}
+            />
+          ) : null}
+          <EmergencyContactsCard />
+        </div>
       </section>
     </main>
   );

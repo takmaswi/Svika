@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   assignVehicleAction,
   cashWalkonAction,
+  redeemParcelAction,
   redeemTicketAction,
 } from "@/lib/conductor/actions";
 import type { ConductorState } from "@/lib/conductor/state";
@@ -21,6 +22,8 @@ type Feedback = {
   payment_method?: "wallet" | "cash";
   fare_usd?: number;
 };
+
+type Mode = "passenger" | "parcel";
 
 interface ConductorShellProps {
   persona: Persona;
@@ -47,6 +50,7 @@ export default function ConductorShell({
   const [code, setCode] = useState("");
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [pending, startTransition] = useTransition();
+  const [mode, setMode] = useState<Mode>("passenger");
 
   const activeVehicle = useMemo(
     () => state.vehicles.find((v) => v.id === state.active_vehicle_id) ?? null,
@@ -79,6 +83,28 @@ export default function ConductorShell({
       return;
     }
     setFeedback(null);
+    if (mode === "parcel") {
+      startTransition(async () => {
+        const result = await redeemParcelAction({
+          persona_slug: personaSlug,
+          vehicle_id: activeVehicle.id,
+          access_code: code,
+        });
+        if (!result.ok) {
+          setFeedback({ kind: "err", text: result.error });
+          return;
+        }
+        setFeedback({
+          kind: "ok",
+          text: `Parcel ${result.access_code} accepted · $${result.fare_usd.toFixed(2)}`,
+          meta: `For ${result.receiver_phone} · ${result.description}`,
+        });
+        setCode("");
+        setMode("passenger");
+        router.refresh();
+      });
+      return;
+    }
     startTransition(async () => {
       const result = await redeemTicketAction({
         persona_slug: personaSlug,
@@ -126,9 +152,21 @@ export default function ConductorShell({
   }
 
   function handleParcel() {
+    if (!activeVehicle) {
+      setFeedback({ kind: "err", text: "Pick a kombi first." });
+      return;
+    }
+    if (mode === "parcel") {
+      setMode("passenger");
+      setCode("");
+      setFeedback(null);
+      return;
+    }
+    setMode("parcel");
+    setCode("");
     setFeedback({
       kind: "info",
-      text: "Parcel handover ships in Phase 4.",
+      text: "Parcel mode — type the 3-digit code from the sender.",
     });
   }
 
@@ -244,12 +282,26 @@ export default function ConductorShell({
             ) : null}
           </section>
 
-          <section className="px-4 pt-4" data-testid="hwindi-pin-keypad">
-            <h2 className="text-sm font-medium text-svika-teal">Code</h2>
+          <section
+            className="px-4 pt-4"
+            data-testid="hwindi-pin-keypad"
+            data-mode={mode}
+          >
+            <h2 className="text-sm font-medium text-svika-teal">
+              {mode === "parcel" ? "Parcel code" : "Code"}
+            </h2>
             <p className="mt-1 text-xs text-svika-mute">
-              Type the passenger&apos;s 3-digit code. Tap Enter when full.
+              {mode === "parcel"
+                ? "Type the sender's 3-digit parcel code. Tap Enter to accept."
+                : "Type the passenger's 3-digit code. Tap Enter when full."}
             </p>
-            <div className="mt-3 rounded-lg border border-svika-teal-100 bg-svika-stone p-3">
+            <div
+              className={`mt-3 rounded-lg border p-3 ${
+                mode === "parcel"
+                  ? "border-svika-rust bg-white"
+                  : "border-svika-teal-100 bg-svika-stone"
+              }`}
+            >
               <PinKeypad value={code} onChange={setCode} onSubmit={handleSubmitCode} disabled={pending} />
             </div>
           </section>
@@ -258,7 +310,7 @@ export default function ConductorShell({
             <button
               type="button"
               onClick={handleCash}
-              disabled={pending}
+              disabled={pending || mode === "parcel"}
               className="touch-target rounded-md bg-svika-rust px-4 py-6 text-lg font-semibold text-white disabled:opacity-50"
               data-testid="hwindi-cash"
             >
@@ -268,10 +320,12 @@ export default function ConductorShell({
               type="button"
               onClick={handleParcel}
               disabled={pending}
-              className="touch-target rounded-md bg-svika-teal-600 px-4 py-6 text-lg font-semibold text-white disabled:opacity-50"
+              className={`touch-target rounded-md px-4 py-6 text-lg font-semibold text-white disabled:opacity-50 ${
+                mode === "parcel" ? "bg-svika-rust" : "bg-svika-teal-600"
+              }`}
               data-testid="hwindi-parcel"
             >
-              Parcel
+              {mode === "parcel" ? "Cancel parcel" : "Parcel"}
             </button>
           </section>
 

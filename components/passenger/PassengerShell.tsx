@@ -9,6 +9,7 @@ import FareClearedToast, {
   type FareClearedToastState,
 } from "@/components/passenger/FareClearedToast";
 import Journey from "@/components/passenger/Journey";
+import ParcelSheet from "@/components/passenger/ParcelSheet";
 import PaymentChoiceSheet from "@/components/passenger/PaymentChoiceSheet";
 import PlanList from "@/components/passenger/PlanList";
 import TopUpSheet from "@/components/passenger/TopUpSheet";
@@ -89,6 +90,7 @@ export default function PassengerShell({
   const [pickedOption, setPickedOption] = useState<TripPlan | null>(null);
   const [topUpOpen, setTopUpOpen] = useState(false);
   const [topUpBusy, setTopUpBusy] = useState(false);
+  const [parcelOpen, setParcelOpen] = useState(false);
   const [claimFlash, setClaimFlash] = useState<ClaimFlash | null>(null);
   const [stage, setStage] = useState<JourneyStage | null>(null);
   const [dismissedTripId, setDismissedTripId] = useState<string | null>(null);
@@ -369,6 +371,15 @@ export default function PassengerShell({
             </span>
             <button
               type="button"
+              onClick={() => setParcelOpen(true)}
+              className="svika-glass px-3 py-1.5 text-sm text-svika-teal"
+              style={{ borderRadius: "999px", fontWeight: 500 }}
+              data-testid="parcel-open"
+            >
+              Parcel
+            </button>
+            <button
+              type="button"
               onClick={() => setWalletOpen(true)}
               className="svika-glass relative px-3 py-1.5 text-sm text-svika-teal"
               style={{ borderRadius: "999px", fontWeight: 500 }}
@@ -523,6 +534,23 @@ export default function PassengerShell({
         tickets={tickets}
         personaSlug={personaSlug}
         onTransfer={handleTransfer}
+      />
+
+      <ParcelSheet
+        open={parcelOpen}
+        personaSlug={personaSlug}
+        walletBalance={walletBalance}
+        onClose={() => setParcelOpen(false)}
+        onBooked={(result) => {
+          setParcelOpen(false);
+          setBookingFlash({
+            kind: "ok",
+            message: `Parcel booked for ${result.alight_label} · $${result.fare_usd.toFixed(2)}.`,
+            access_codes: [result.access_code],
+          });
+          setWalletOpen(true);
+          router.refresh();
+        }}
       />
     </main>
   );

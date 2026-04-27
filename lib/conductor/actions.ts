@@ -212,6 +212,109 @@ async function broadcastTicketRedeemed(
 }
 
 // ---------------------------------------------------------------------------
+// redeemParcelAction — Phase 4 stretch 1.
+//
+// Conductor types the 3-digit code on a parcel ticket. We flip status straight
+// to `redeemed` AND set `completed_at` because parcels do not have an in-vehicle
+// arrival lifecycle to wait on — once the conductor accepts, it's on board and
+// the audit ledger considers it delivered for demo purposes.
+// ---------------------------------------------------------------------------
+
+export interface RedeemParcelResult {
+  ok: true;
+  ticket_id: string;
+  access_code: string;
+  fare_usd: number;
+  receiver_phone: string;
+  description: string;
+  alight_at_stop_id: string;
+  passenger_count: number;
+}
+
+export async function redeemParcelAction(input: {
+  persona_slug: string;
+  vehicle_id: string;
+  access_code: string;
+}): Promise<RedeemParcelResult | ActionError> {
+  const code = input.access_code.trim();
+  if (!/^\d{3}$/.test(code)) {
+    return { ok: false, error: "Code must be three digits." };
+  }
+
+  const persona = await resolvePersona(input.persona_slug, "conductor");
+  if (persona.role !== "conductor") {
+    return { ok: false, error: "Only conductors can clear parcels." };
+  }
+
+  try {
+    const client = await createServerClient();
+
+    const { data: ticketData, error: ticketError } = await client
+      .from("tickets")
+      .select("*")
+      .eq("access_code", code)
+      .in("status", ["issued", "held"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (ticketError) return { ok: false, error: ticketError.message };
+    if (!ticketData) {
+      return { ok: false, error: `No active ticket with code ${code}.` };
+    }
+    const ticket = ticketData as TicketRow;
+    if (ticket.kind !== "parcel") {
+      return { ok: false, error: "Code is for a passenger ticket — use the keypad." };
+    }
+
+    const { data: vehicleData } = await client
+      .from("vehicles")
+      .select("*")
+      .eq("id", input.vehicle_id)
+      .maybeSingle();
+    if (!vehicleData) {
+      return { ok: false, error: "Pick a kombi first." };
+    }
+    const vehicle = vehicleData as VehicleRow;
+
+    if (vehicle.route_id !== ticket.route_id) {
+      return {
+        ok: false,
+        error: "Wrong route. This parcel is for a different kombi line.",
+      };
+    }
+
+    const now = new Date().toISOString();
+    const { error: ticketUpdateError } = await client
+      .from("tickets")
+      .update({
+        status: "redeemed",
+        vehicle_id: vehicle.id,
+        redeemed_at: now,
+        completed_at: now,
+      })
+      .eq("id", ticket.id);
+    if (ticketUpdateError) return { ok: false, error: ticketUpdateError.message };
+
+    revalidatePath("/hwindi");
+    revalidatePath("/fleet");
+    revalidatePath("/");
+
+    return {
+      ok: true,
+      ticket_id: ticket.id,
+      access_code: ticket.access_code,
+      fare_usd: Number(ticket.fare_usd),
+      receiver_phone: ticket.parcel_receiver_phone ?? "",
+      description: ticket.parcel_description ?? "",
+      alight_at_stop_id: ticket.alight_at_stop_id,
+      passenger_count: vehicle.current_passenger_count,
+    };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : "Parcel clear failed." };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // cashWalkonAction — +1 cash $1 button. Mints a cash_walkin ticket and
 // immediately marks it completed. No originating user, no transfer history.
 // ---------------------------------------------------------------------------
