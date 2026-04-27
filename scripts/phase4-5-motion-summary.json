@@ -1,0 +1,46 @@
+{
+  "before": {
+    "styleLoaded": false,
+    "hasKombiIcon": true,
+    "kombiFeatures": 0,
+    "kombiCoords": [],
+    "zoom": 10.77730171542015,
+    "pitch": 0,
+    "loadedTiles": 0
+  },
+  "after": {
+    "styleLoaded": true,
+    "hasKombiIcon": true,
+    "kombiFeatures": 2,
+    "kombiCoords": [
+      [
+        31.044917106628418,
+        -17.759967159607598
+      ],
+      [
+        31.044917106628418,
+        -17.759967159607598
+      ]
+    ],
+    "zoom": 10.77730171542015,
+    "pitch": 0,
+    "loadedTiles": 0
+  },
+  "samples": [
+    [
+      -17.7498,
+      31.0425,
+      178
+    ],
+    [
+      -17.756,
+      31.044,
+      175
+    ],
+    [
+      -17.7625,
+      31.0455,
+      172
+    ]
+  ]
+}

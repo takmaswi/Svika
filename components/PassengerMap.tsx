@@ -550,12 +550,22 @@ export default function PassengerMap({
           "circle-blur": 0.4,
         },
       });
-      // Kombi minibus icon, rotated to direction-of-travel via the bearing on
-      // each tick payload. Active (assigned) kombi renders at full size +
+      // Kombi minibus icon, rotated to direction-of-travel via the bearing
+      // on each tick payload. Active (assigned) kombi renders at full size +
       // opacity; pass-through kombis render at 0.7× and 0.5 alpha so the eye
       // tracks the trip-relevant vehicle first.
-      void registerKombiIcon(map).then(() => {
-        if (!map.getLayer(KOMBIS_LAYER)) {
+      // Defer the addLayer + registerKombiIcon work to the next tick so the
+      // initial paint can land before we touch the style with addImage.
+      // Mapbox's idle/loaded() machinery treats a freshly-added image as a
+      // pending style operation, and when stacked on top of the source +
+      // layer adds inside the same `load` callback it can leave the style
+      // marked "loading" and the basemap unrendered until something else
+      // forces a repaint.
+      setTimeout(() => {
+        if (!mapRef.current) return;
+        void registerKombiIcon(map).then(() => {
+          if (!mapRef.current) return;
+          if (map.getLayer(KOMBIS_LAYER)) return;
           map.addLayer({
             id: KOMBIS_LAYER,
             type: "symbol",
@@ -583,8 +593,9 @@ export default function PassengerMap({
               ],
             },
           });
-        }
-      });
+          map.triggerRepaint();
+        });
+      }, 0);
 
       // Click a route line to highlight it and reveal its named stops.
       map.on("click", ROUTES_LAYER_BASE, handleRouteClick);
