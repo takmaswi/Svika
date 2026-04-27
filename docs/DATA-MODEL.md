@@ -125,6 +125,7 @@ The unit of value. Issued by the trip planner, transferable, redeemable.
 | `vehicle_id` | text foreign key | Set on redemption |
 | `status` | text | `issued`, `transferred_pending`, `held`, `redeemed`, `completed`, `expired`, `cash_walkin` |
 | `kind` | text | `passenger` or `parcel` |
+| `payment_method` | text | `wallet` or `cash`. Added in migration `0005`. Default `wallet`. Wallet bookings deduct credit at purchase; cash bookings reserve the seat and the conductor collects on board. |
 | `parcel_receiver_phone` | text | For parcels only |
 | `parcel_description` | text | For parcels only |
 | `created_at` | timestamptz | |
@@ -183,6 +184,17 @@ Telemetry log. The simulation runner appends rows here. The fleet dashboard read
 | `is_at_stop` | boolean | True if the position is within thirty metres of a stop |
 | `recorded_at` | timestamptz | |
 
+### `top_ups`
+
+Mocked wallet top-up ledger. Added in migration `0005`. The `TopUpSheet` on the passenger surface calls `topUpAction`, which inserts a row here and increments `users.credit_balance_usd`. There is no real money involved — this is the audit trail for the demo's wallet flow.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid (primary key) | |
+| `user_id` | uuid foreign key | References `users.id` |
+| `amount_usd` | numeric(10,2) | Must be positive |
+| `created_at` | timestamptz | |
+
 ### `audit_narratives`
 
 Generated audit reports for fleet owners.
@@ -229,6 +241,12 @@ vehicles (1) ─── (M) audit_narratives
 | `issued` or `held` | end of day | `expired` |
 
 The `cash_walkin` status is a parallel branch — created by the conductor's "+1 cash" tap with no `originating_user_id`, and terminates immediately as `completed`.
+
+## PostGIS RPCs
+
+Migration `0004` ships three GeoJSON helpers used by the network loader: `routes_geojson()`, `stop_points_geojson()`, `route_stops_ordered()`.
+
+Migration `0006` adds `nearest_vehicles_to_point(in_lat, in_lng, in_limit)` for the WhatsApp `kombi near me` command. It returns the closest "active" vehicles (those with a `current_position` recorded within the last 30 minutes), ordered by `ST_Distance` over geography, with a coarse arrival estimate computed at a 25 km/h average — `ceil(distance / 417 m/min) + 1` minutes.
 
 ## Indexes worth creating
 

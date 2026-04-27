@@ -1,10 +1,10 @@
 # Pitch Deck Outline — Svika
 
-Eight slides. Designed to support the three-minute video, not duplicate it. Every slide carries the Mosi-oa-Tunya palette: deep teal `#0A4B5C` primary, sunset rust `#D9622A` accent, pale stone `#F2EDE6` background, Geist typeface.
+Eight slides. Designed to support the three-minute video, not duplicate it. Every slide carries the Mosi-oa-Tunya palette: deep teal `#0F4C5C` primary, sunset rust `#D9622A` accent, off-white `#FAFAF9` background, Geist typeface.
 
 ## Slide 1 — Title
 
-**Visual:** Wordmark *Svika* in deep teal on the pale stone background. Below it, a quiet line of text.
+**Visual:** Wordmark *Svika* in deep teal on the off-white background. Below it, a quiet line of text.
 
 **Words:**
 > *Svika*
@@ -30,20 +30,22 @@ Eight slides. Designed to support the three-minute video, not duplicate it. Ever
 
 **Notes:** This slide sets up the "switch" pillar of the hackathon — local product for local pain.
 
-## Slide 3 — The solution in one sentence
+## Slide 3 — The hero user and the solution in one sentence
 
-**Visual:** A single sentence centred on the slide. Below it, a one-line subtitle.
+**Visual:** A single sentence centred on the slide. Below it, a one-line subtitle. Below that, a small caption naming the user.
 
 **Words:**
 > *Svika is a digital ticket and trip-planning system for Harare's informal kombi network.*
 >
 > Transferable tickets. Walking-transfer trip planning. Real revenue dashboards. Same kombi, same hwindi, same fare.
+>
+> One user — Takunda, a working professional in Mt Pleasant Heights. Everyone else (his cousin Rudo, the conductor Farai, the fleet owner Baba Tino) appears as a propagated effect on his screen.
 
-**Notes:** Memorise this sentence. Use it verbatim in any conversation about the project.
+**Notes:** Memorise the first sentence. Use it verbatim in any conversation about the project. The single-user framing is what makes the demo legible in three minutes.
 
-## Slide 4 — The demo
+## Slide 4 — The demo and three real moments
 
-**Visual:** A still frame from the three-minute video — the moment the bilingual Gemma audit narrative appears on the fleet dashboard. A play button overlay. URL below.
+**Visual:** A still frame from the three-minute video — the moment the bilingual Gemma audit narrative appears on the fleet dashboard. A play button overlay. URL below. Three numbered captions to the right.
 
 **Words:**
 > *Three-minute demo.*
@@ -51,40 +53,49 @@ Eight slides. Designed to support the three-minute video, not duplicate it. Ever
 > svika.vercel.app
 >
 > [video link]
+>
+> Three real moments to watch for:
+> 1. Shona-to-trip-plan — Takunda dictates in Shona, gets a walking-transfer plan no map app would surface.
+> 2. Fare cleared by Farai — the conductor's keypad on the other side of the kombi door reaches Takunda's phone in real time.
+> 3. Your fare just landed in Baba Tino's ledger — the arrival card shows where the money went, in two languages.
 
-**Notes:** During the live pitch, this is the slide that plays the video. Judges already saw it but it anchors the rest of the conversation.
+**Notes:** During the live pitch, this is the slide that plays the video. Judges already saw it but it anchors the rest of the conversation around the three moments that matter.
 
 ## Slide 5 — How it is built
 
-**Visual:** A clean version of the system architecture diagram from `docs/diagrams/system-architecture.mmd`, rendered for slide aesthetics. Logos for the four named technologies.
+**Visual:** A clean version of the system architecture diagram from `docs/diagrams/system-architecture.mmd`, rendered for slide aesthetics. Logos for the named technologies.
 
 **Words:**
-> *One Next.js app. Four surfaces. Supabase for data. Mapbox for maps. Gemma 4 E2B running on-device for Shona understanding and bilingual audit narratives.*
+> *One Next.js app. Five surfaces. Supabase + PostGIS for data. Mapbox for maps. Gemini 2.5 Flash for live Shona understanding. Gemma 4 E2B running on-device for the bilingual revenue audit.*
 >
 > Free tiers throughout. Zero ongoing infrastructure cost.
 
-**Notes:** This slide is for the 20% Google-tools score. Lead with Gemma. The "on-device, private inference" framing is the hackathon's published language for Gemma — use it.
+**Notes:** This slide is for the 20% Google-tools score. Lead with Gemma for the on-device, private inference framing. Be honest about why Gemini handles the interactive understand path: Gemma 4 E2B on a CPU laptop is too slow for live use, so we put it where its latency does not matter — the warmed audit narrative.
 
 ## Slide 6 — What is solved today and what is not
 
-**Visual:** A two-column table. Left column: what is built and working. Right column: what is roadmap.
+**Visual:** A two-column table. Left column: built and working. Right column: roadmap.
 
 **Words:**
 > **Working today**
 > - Trip planning with walking transfers
 > - Transferable digital tickets
-> - Conductor PIN flow plus cash walk-on
-> - Live kombi positions
-> - Bilingual revenue audit
+> - Conductor PIN flow with payment-method-aware feedback
+> - Cash walk-on and "pay cash on board" reservation
+> - Live kombi positions, eased per-vehicle motion, rotated SVG markers
+> - Six-stage live journey card with Uber-style driver chip
+> - "Fare cleared by Farai" toast on the rider's own screen
+> - Fleet impact card inside the arrived sheet
+> - Bilingual revenue audit (warmed locally, served from cache)
 > - Estimated ZIMRA liability
-> - WhatsApp-style companion
+> - WhatsApp-style companion with three live commands
 > - Same-kombi parcel happy path
 >
 > **Roadmap**
-> - Carrier menu access (*123#)
+> - Carrier menu access (*123#) — preview at `/ussd-mock`
 > - Real EcoCash top-ups
 > - Speeding engine
-> - Emergency manifest
+> - Emergency manifest (static card today)
 > - Real WhatsApp Business
 > - City planning data
 > - ZUPCO ticket interoperability
@@ -96,7 +107,7 @@ Eight slides. Designed to support the three-minute video, not duplicate it. Ever
 **Visual:** Three short paragraphs.
 
 **Words:**
-> *Why now.* On-device language models like Gemma 4 E2B make local-language artificial intelligence affordable for the first time. Mapbox and Supabase give a single developer the infrastructure of a small company. The change to digitise this layer is technically possible today.
+> *Why now.* On-device language models like Gemma 4 E2B make local-language artificial intelligence affordable for the first time. Mapbox and Supabase give a single developer the infrastructure of a small company. The technical change to digitise this layer is possible today.
 >
 > *Why this approach.* The kombi network does not need disruption — it works. It needs visibility, trust, and a digital signal so price changes stop being arguments. Svika sits over the existing system without replacing it.
 >
@@ -120,7 +131,7 @@ Eight slides. Designed to support the three-minute video, not duplicate it. Ever
 ## Visual style notes
 
 - All slides use the same brand palette and typography. No mixed fonts.
-- Charts and tables, where present, use the brand teal and accent rust. No third colour.
+- Charts and tables, where present, use the brand teal and accent rust. No third colour beyond the salmon `#F2733E` used for FEATURED tags in the product itself.
 - No clipart. No stock photos of African cities. No drone shots of Harare. The product itself is the visual.
 - Line spacing generous. Words sparse. Each slide should be readable from across a room in three seconds.
 

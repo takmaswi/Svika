@@ -12,16 +12,16 @@ Direct. Local. No hype words. Voiceover in plain English. Shona phrases appear o
 
 There is one user. The story follows him end to end. The other characters appear as inserts, screenshots, and propagated effects on his screen — never as persona switches the viewer has to follow.
 
-| Character | Role | Surface |
+| Character | Role | How they appear |
 |---|---|---|
 | **Takunda** | Hero passenger — the only person who navigates the app on camera | Phone, mobile-first web on `/?as=takunda` |
-| Rudo | Takunda's cousin, transfer recipient | Appears as a still recipient screenshot when Takunda shares a ticket |
-| Farai | Conductor on kombi `ZH 4821` | Cutaway insert from `/hwindi`; never reached by switching from Takunda's phone |
-| Baba Tino | Fleet owner | Cutaway insert from `/fleet`; the fleet-impact mini-card surfaces inside Takunda's trip-complete sheet |
+| Rudo | Takunda's cousin, transfer recipient | A still recipient screenshot when Takunda shares a ticket; never reached by switching personas |
+| Farai | Conductor on kombi `ZH 4821` | Cutaway insert from `/hwindi?as=farai` for two seconds; appears by name on Takunda's journey card and in the "Fare cleared" toast |
+| Baba Tino | Fleet owner | Cutaway insert from `/fleet?as=baba_tino`; the fleet-impact mini-card surfaces inside Takunda's arrived sheet |
 
 ## Cold open — 0:00 to 0:20 — the pain
 
-Visuals: a single still or short clip of a real Harare kombi rank with the audio of an argument about change. No text. A pale-stone background appears over the visual. White text fades up:
+Visuals: a single still or short clip of a real Harare kombi rank with the audio of an argument about change. No text. A pale-stone background fades over the visual. White text fades up:
 
 > *"Zimbabwe moves on kombis."*
 >
@@ -31,58 +31,70 @@ End the cold open on a Mosi-oa-Tunya teal title card: **Svika**.
 
 ## Scene 1 — 0:20 to 0:55 — Takunda plans the trip
 
-Visuals: phone screen recording of `/?as=takunda`. The brand-teal landing card has already filled the gap — Takunda is past the front door. The empty-state hero greets him by name: *"Where to, Takunda?"* The map underneath shows the four kombi routes faintly, with kombi markers moving in real time.
+Visuals: phone screen recording of `/?as=takunda`. The brand-teal landing card has already filled the gap — Takunda is past the front door. The empty-state hero greets him by name: *"Where to, Takunda?"* The map underneath shows the four kombi routes faintly, with kombi markers — top-down rasterised SVGs of a Toyota Hiace, rotated to follow each route's bearing — moving smoothly in real time.
 
 On-screen action:
 - Takunda taps the search bar.
 - He types or dictates: *"Ndirikuda kuenda Avondale, ndiri kuMt Pleasant Heights"* — Shona for "I want to go to Avondale from Mt Pleasant Heights."
-- A small banner appears: *"Understood by Gemma 4 E2B running on this device."*
-- Two trip cards slide up: the Lomagundi walking transfer (31 minutes, $1.50) and the CBD rank transfer (75 minutes, $2.50). Each card shows a small map with the route highlighted.
-- A short bilingual line under each card explains the trade-off: *"Faster but six minutes of walking"* and *"Slower but no street walking."*
+- A small banner appears: *"Understood by Gemini 2.5 Flash."* (Gemma 4 E2B remains on the laptop for the audit narrative; Gemini handles the interactive Shona understanding because Gemma's CPU latency is too slow on this hardware.)
+- Two trip cards slide up: the Lomagundi walking transfer (31 minutes, $1.50) and the CBD rank transfer (75 minutes, $2.50). Each card shows the route highlighted on the underlying map.
+- A short bilingual line under each card explains the trade-off.
 
 Voiceover:
-> *"Takunda is at Mt Pleasant Heights. He is going to Avondale. There is no kombi that goes there directly. The trip planner knows two ways — a tribal-knowledge walking transfer at Lomagundi corner, or the slow ride into the city and back out. The artificial intelligence understanding his Shona is running on the laptop, not on a server somewhere."*
+> *"Takunda is at Mt Pleasant Heights. He is going to Avondale. There is no kombi that goes there directly. The trip planner knows two ways — a tribal-knowledge walking transfer at Lomagundi corner, or the slow ride into the city and back out."*
 
 ## Scene 2 — 0:55 to 1:20 — Takunda buys two tickets and shares the first
 
-He picks the walking-transfer plan. Taps **Buy trip — $1.50**.
+He picks the walking-transfer plan. A glass payment-choice sheet rises:
 
-A wallet drawer opens. Two tickets appear:
+> *Pay $1.50 from wallet · you have $5.00*
+>
+> *Pay $1.50 cash on board · 0 of 15 seats today*
+
+He taps wallet. Two tickets land in his wallet drawer:
+
 - Ticket **482** — Heights kombi, valid for boarding at Bannockburn, alighting at Second/Lomagundi.
 - Ticket **619** — King George kombi, valid for boarding at Lomagundi/King George, alighting at Avondale Shops.
 
 The second ticket is dimmed with a small label: *"Activates after Leg 1."*
 
-A short beat — Takunda realises his cousin Rudo needs the first leg too. He taps **Share / transfer** on a separate spare ticket and picks Rudo. The system share sheet opens; cut briefly to a still **screenshot inset** of a WhatsApp message landing on Rudo's phone with the claim link. We do not switch personas on screen.
+A short beat — Takunda realises his cousin Rudo needs the ticket more than he does. He taps **Share / transfer** on the spare ticket and picks Rudo. The system share sheet opens; cut briefly to a still **screenshot inset** of a WhatsApp message landing on Rudo's phone with the claim link `/?as=rudo&claim=<id>`. We do not switch personas on screen.
 
 Voiceover:
 > *"Two access codes. One trip. Paid up front, deductible from his wallet. And tickets transfer — Takunda just sent a spare to his cousin Rudo over WhatsApp. Same code, different person, no cash, no change, no fight."*
 
 ## Scene 3 — 1:20 to 1:45 — Takunda boards, the fare clears on his screen
 
-Takunda walks up to the kombi at the Bannockburn stop. Cut briefly to a **conductor cutaway insert** — Farai's `/hwindi` keypad fills the corner of the frame for two seconds — Farai taps *4*, *8*, *2*, confirm. We never leave Takunda's narrative; the insert is a side card, not a navigation.
+Takunda walks up to the kombi at the Bannockburn stop. The journey card at the bottom of his screen shows the Uber-style driver chip — *Farai · Conductor · ZH 4821 · Toyota Hiace · cream* — and the live "Arriving in 2 min" rust readout.
+
+Cut briefly to a **conductor cutaway insert** — Farai's `/hwindi` keypad fills the corner of the frame for two seconds — Farai taps *4*, *8*, *2*, confirm. We never leave Takunda's narrative; the insert is a side card, not a navigation.
 
 We return to Takunda's phone. A glass toast slides in from the top of his screen:
 
 > **Fare cleared by Farai · ZH 4821 · seat 9 of 15**
 
-The toast auto-dismisses. The Journey sheet at the bottom of his screen flips to *"On board · heading to Second & Lomagundi."*
+The toast auto-dismisses after four seconds. The journey card flips to *"On your way to Second St at Lomagundi Rd Intersection"* and the rust readout switches to *"Arriving in 10 min."*
 
 Voiceover:
 > *"Takunda does not switch screens. He does not refresh anything. The conductor's keypad on the other side of the kombi door reaches his phone in real time."*
 
 ## Scene 4 — 1:45 to 2:10 — the walking transfer and the second leg
 
-The map zooms into the Lomagundi corner. The dashed walking polyline appears between the two stops, with a heading like *"Walk six minutes west to King George corner."* As Takunda walks, the rust dot tracks along the polyline.
+The map zooms into the Lomagundi corner. The dashed walking polyline appears between the two stops, and the journey card swaps to the cardinal-arrow icon and reads:
 
-He boards the second kombi. The same toast pattern fires again — *"Fare cleared · ZH 5101 · seat 7 of 15"* — and the journey sheet flips to *"On board · heading to Avondale Shops."*
+> *Walk west on Lomagundi Road*
+> *From: Second St at Lomagundi Rd Intersection (just alighted)*
+> *To: King George Rd just off Lomagundi Rd (board next)*
+> *6 min · 480 m*
+
+He boards the second kombi. The same toast pattern fires again — *"Fare cleared by Farai · ZH 5101 · seat 7 of 15"* — and the journey card flips to *"On your way to Avondale Shops (King George Rd)"*.
 
 Voiceover:
 > *"Six minutes of walking. One transfer. Both fares paid up front, both cleared digitally. Avondale, in half the time of the alternative."*
 
 ## Scene 5 — 2:10 to 2:45 — Avondale, and where the money landed
 
-The map fits the trip and eases back to the network bounds. The journey sheet collapses into a small *"You've arrived · 31 min · $1.50"* card.
+The map fits the trip and eases back to the network bounds. The journey card collapses into a small *"You've arrived · 31 min · $1.50"* summary.
 
 Underneath the arrival line, a quiet new row appears:
 
@@ -125,20 +137,28 @@ End on a final card with the URL `svika.vercel.app` and the GitHub link.
 Voiceover for the tail:
 > *"This is the first version. Carrier menu access, driver safety, emergency manifest, planning data — these are next."*
 
+## The three real moments
+
+If anyone forgets the rest of the script, hold these three moments. Each is built and working in code; each shows a problem the network has had for decades getting solved.
+
+1. **The Shona-to-trip-plan moment** (Scene 1) — local-language understanding into a real walking-transfer plan, on a network the city has never seen on a map.
+2. **The "fare cleared" moment** (Scene 3) — the conductor's keypad, on the other side of the kombi door, reaches the passenger's phone in real time.
+3. **The fleet-impact moment** (Scene 5) — the passenger sees where his fare landed and that the system can already tell Baba Tino where the gaps are, in two languages.
+
 ## Capture method
 
 | Scene | Method |
 |---|---|
 | Cold open | Stills or stock footage with overlaid text |
 | Scenes 1–6 | Live screen recording at 60 frames per second on a real device, fullscreen |
-| Walking transfer animation | Either real footage or a simple After Effects animation over the map |
+| Walking transfer animation | Real footage or a short After Effects animation over the live map |
 | Roadmap tail | Slide compositions with subtle animation |
 
 ## Rules during recording
 
 - No real EcoCash, no real WhatsApp, no real money. The seed data covers everything.
-- The artificial-intelligence calls are real — the demo runs against Ollama with Gemma 4 E2B locally. If Ollama is too slow on the day, set `AI_PROVIDER=gemini` before recording.
-- The kombi simulation runner is started before recording to make the markers move.
+- The artificial-intelligence calls are real — `understand` runs through Gemini 2.5 Flash; the audit narrative is warmed locally via Gemma 4 E2B and read from the `audit_narratives` cache in prod.
+- The kombi simulation runner is started before recording so the markers move and the eased per-vehicle interpolation is visible.
 - Every screen carries the persona query parameter so navigation between surfaces is fluid.
 - Audio is recorded separately and dubbed over the screen recording.
 
