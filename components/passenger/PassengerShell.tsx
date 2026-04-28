@@ -352,17 +352,14 @@ export default function PassengerShell({
     if (pickedOption !== null) return "choosing-payment";
     if (plans !== null) return "plans-returned";
     if (searchBusy) return "searching";
-    if (journey && stage) {
-      const k = stage.kind;
-      if (ACTIVE_JOURNEY_STAGES.includes(k)) {
-        // Map "boarding" stages (the brief uses boarding-leg-2 for the second
-        // boarding moment; the journey stage returns "boarding" for both
-        // first-time and second-leg). Without a clean way to disambiguate at
-        // the shell layer, we treat both as the in-transit feel for the sheet.
-        return k as SheetState;
+    if (journey) {
+      if (stage && ACTIVE_JOURNEY_STAGES.includes(stage.kind)) {
+        return stage.kind as SheetState;
       }
-      // For boarding (first leg) treat as walk-to-board feel; the Journey
-      // component itself reads the canonical stage.
+      // Journey exists but stage hasn't been computed yet (Journey
+      // component sets stage via onStageChange once it mounts). Default
+      // to walk-to-board so JourneySheetContent mounts <Journey>, which
+      // will then push the real stage up to the shell.
       return "walk-to-board";
     }
     return "idle";
