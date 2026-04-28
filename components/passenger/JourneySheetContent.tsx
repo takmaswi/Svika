@@ -215,6 +215,7 @@ export default function JourneySheetContent(
       >
         <Journey
           journey={props.journey}
+          personaSlug={props.personaSlug}
           onPlanAnother={props.onPlanAnother}
           onLifecycleEvent={props.onLifecycleEvent}
           onStageChange={props.onStageChange}

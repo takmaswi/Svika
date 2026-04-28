@@ -75,6 +75,7 @@ export default async function HomeRoute({
       mapboxToken={data.mapboxToken}
       initialTickets={data.initialTickets}
       initialJourney={data.initialJourney}
+      initialKombis={data.initialKombis}
       pendingClaim={data.pendingClaim}
       liveStats={data.liveStats}
     />

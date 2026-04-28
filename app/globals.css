@@ -267,15 +267,18 @@ body {
   touch-action: none;
 }
 
-.svika-sheet-handle-row {
+.svika-sheet-drag-zone {
   flex-shrink: 0;
+  width: 100%;
+  height: 40px;
   display: flex;
+  align-items: center;
   justify-content: center;
-  padding: 8px 0 4px;
   cursor: grab;
+  touch-action: none;
 }
 
-.svika-sheet-handle-row:active {
+.svika-sheet-drag-zone:active {
   cursor: grabbing;
 }
 

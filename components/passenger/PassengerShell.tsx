@@ -34,6 +34,7 @@ import { createClient } from "@/lib/supabase/client";
 import {
   SIM_CHANNEL,
   TICKET_REDEEMED_EVENT,
+  type KombiTickPayload,
   type TicketRedeemedPayload,
 } from "@/lib/sim/simRunner";
 import type { TripPlan } from "@/lib/trip-planner";
@@ -45,6 +46,7 @@ interface PassengerShellProps {
   mapboxToken: string;
   initialTickets: WalletTicket[];
   initialJourney: ActiveJourney | null;
+  initialKombis: KombiTickPayload[];
   pendingClaim: string | null;
   liveStats: LiveStats;
 }
@@ -82,6 +84,7 @@ export default function PassengerShell({
   mapboxToken,
   initialTickets,
   initialJourney,
+  initialKombis,
   pendingClaim,
   liveStats,
 }: PassengerShellProps) {
@@ -398,7 +401,7 @@ export default function PassengerShell({
       case "in-transit":
       case "walking-transfer":
       case "boarding-leg-2":
-        desired = snap === "peek" ? "half" : snap;
+        desired = "full";
         break;
       case "idle":
         desired = "peek";
@@ -471,6 +474,27 @@ export default function PassengerShell({
                 {activeCount > 0 ? ` · ${activeCount}` : ""}
               </span>
             </span>
+            <span
+              aria-hidden
+              className="ml-1 flex items-center text-svika-mute"
+              style={{ fontSize: "10px" }}
+            >
+              More
+              <svg
+                className="ml-0.5 h-3 w-3"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                aria-hidden
+              >
+                <path
+                  d="M6 9l6 6 6-6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </span>
           </button>
 
           <div className="flex items-center gap-2">
@@ -542,6 +566,7 @@ export default function PassengerShell({
               mapboxToken={mapboxToken}
               journey={journey}
               stage={stage}
+              initialKombis={initialKombis}
             />
             <div
               aria-hidden

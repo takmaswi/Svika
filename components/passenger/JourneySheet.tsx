@@ -117,11 +117,11 @@ export default function JourneySheet({
         aria-label="Journey controls"
       >
         <div
-          className="svika-sheet-handle-row"
+          className="svika-sheet-drag-zone"
           onPointerDown={handlePointerDown}
           onPointerUp={handlePointerUp}
           role="button"
-          aria-label={`Sheet handle — ${snap}. Tap to expand.`}
+          aria-label={`Sheet — ${snap}. Drag or tap to expand.`}
           tabIndex={0}
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {

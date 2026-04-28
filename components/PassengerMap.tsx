@@ -113,6 +113,12 @@ interface PassengerMapProps {
   journey: ActiveJourney | null;
   /** Latest stage from the Journey sheet. Identifies the assigned kombi. */
   stage: JourneyStage | null;
+  /**
+   * Last-known kombi positions read from the database at page load. Seeds the
+   * GeoJSON source so all 8 kombis are visible immediately whether or not a
+   * sim is broadcasting; live broadcasts continue to override.
+   */
+  initialKombis?: KombiTickPayload[];
 }
 
 interface SelectedRouteInfo {
@@ -266,10 +272,12 @@ export default function PassengerMap({
   mapboxToken,
   journey,
   stage,
+  initialKombis,
 }: PassengerMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const positionsRef = useRef<Map<string, KombiTickPayload>>(new Map());
+  const initialKombisRef = useRef<KombiTickPayload[]>(initialKombis ?? []);
   /** Lerp buffer fed by Realtime broadcasts, drained by the RAF loop. */
   const interpRef = useRef<Map<string, InterpEntry>>(new Map());
   const assignedVehicleIdRef = useRef<string | null>(null);
@@ -432,6 +440,14 @@ export default function PassengerMap({
     if (!containerRef.current || mapRef.current) return;
     const network = networkRef.current;
     const mapboxToken = tokenRef.current;
+
+    // Seed last-known positions before the source is created so all kombis
+    // render immediately on first paint, even when no broadcast is arriving.
+    for (const k of initialKombisRef.current) {
+      if (!positionsRef.current.has(k.vehicle_id)) {
+        positionsRef.current.set(k.vehicle_id, k);
+      }
+    }
 
     mapboxgl.accessToken = mapboxToken;
     const map = new mapboxgl.Map({

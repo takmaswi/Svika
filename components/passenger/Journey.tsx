@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import FleetImpactCard from "@/components/passenger/FleetImpactCard";
 import { createClient } from "@/lib/supabase/client";
@@ -15,6 +16,7 @@ import {
   deriveJourneyStage,
   type VehicleSnapshot,
 } from "@/lib/passenger/journey-stage";
+import { simulateNextStepAction } from "@/lib/passenger/simulate";
 import {
   getTransferDetail,
   type Cardinal,
@@ -29,6 +31,8 @@ import type {
 
 interface JourneyProps {
   journey: ActiveJourney;
+  /** Persona slug — passed to the simulate-next server action. */
+  personaSlug: string;
   /** Called when the passenger taps "Plan another" after arriving. */
   onPlanAnother: () => void;
   /**
@@ -126,13 +130,31 @@ function formatEta(seconds: number | null): string | null {
   return mins + " min";
 }
 
+function simulateLabel(stage: JourneyStage): string | null {
+  switch (stage.kind) {
+    case "walk-to-board":
+      return "Simulate boarding (kombi arrives + code clears)";
+    case "boarding":
+    case "in-transit":
+      return "Skip to drop-off";
+    case "walking-transfer":
+      return "Simulate the walking transfer";
+    case "boarding-leg-2":
+      return "Skip to final drop-off";
+    default:
+      return null;
+  }
+}
+
 export default function Journey({
   journey,
+  personaSlug,
   onPlanAnother,
   onLifecycleEvent,
   onStageChange,
   onEndTrip,
 }: JourneyProps) {
+  const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const [vehicles, setVehicles] = useState<Map<string, VehicleSnapshot>>(
     () => new Map(),
@@ -142,6 +164,8 @@ export default function Journey({
   const [endConfirming, setEndConfirming] = useState(false);
   const [endBusy, setEndBusy] = useState(false);
   const [endError, setEndError] = useState<string | null>(null);
+  const [simBusy, setSimBusy] = useState(false);
+  const [simError, setSimError] = useState<string | null>(null);
 
   async function handleConfirmEnd() {
     setEndBusy(true);
@@ -153,6 +177,22 @@ export default function Journey({
       return;
     }
     setEndConfirming(false);
+  }
+
+  async function handleSimulateNext() {
+    if (simBusy) return;
+    setSimBusy(true);
+    setSimError(null);
+    const result = await simulateNextStepAction({
+      persona_slug: personaSlug,
+      trip_id: journey.trip_id,
+    });
+    setSimBusy(false);
+    if (!result.ok) {
+      setSimError(result.error);
+      return;
+    }
+    router.refresh();
   }
 
   // Subscribe once. Every kombi tick triggers a recompute via state update.
@@ -546,6 +586,31 @@ export default function Journey({
             </ol>
           </div>
         ) : null}
+
+        {(() => {
+          if (isParcel) return null;
+          const label = simulateLabel(stage);
+          if (!label) return null;
+          return (
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={handleSimulateNext}
+                disabled={simBusy}
+                className="w-full rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-sm transition-transform active:scale-[0.99] disabled:opacity-60"
+                style={{ background: RUST }}
+                data-testid="journey-simulate-next"
+              >
+                {simBusy ? "Working…" : label}
+              </button>
+              {simError ? (
+                <p className="mt-1 text-[11px] text-svika-rust" data-testid="journey-simulate-error">
+                  {simError}
+                </p>
+              ) : null}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
