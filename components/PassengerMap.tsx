@@ -16,6 +16,7 @@ import type { ActiveJourney, JourneyStage } from "@/lib/passenger/journey-types"
 
 const ROUTES_SOURCE = "svika-routes";
 const ROUTES_LAYER_BASE = "svika-routes-base";
+const ROUTES_LAYER_HIGHLIGHT_HALO = "svika-routes-highlight-halo";
 const ROUTES_LAYER_HIGHLIGHT = "svika-routes-highlight";
 
 const STOPS_SOURCE = "svika-stops";
@@ -388,7 +389,9 @@ export default function PassengerMap({
         [number, number],
         [number, number],
       ];
-      m.fitBounds([sw, ne], { padding: 40, duration: 800, essential: true });
+      // 80px padding on the empty/idle landing so the entire network sits
+      // inside the viewport even with the bottom sheet at peek.
+      m.fitBounds([sw, ne], { padding: 80, duration: 800, essential: true });
     }
 
     function run(): void {
@@ -434,7 +437,7 @@ export default function PassengerMap({
       container: containerRef.current,
       style: "mapbox://styles/mapbox/streets-v12",
       bounds: harareBounds(network),
-      fitBoundsOptions: { padding: 40, duration: 0 },
+      fitBoundsOptions: { padding: 80, duration: 0 },
       attributionControl: false,
     });
     mapRef.current = map;
@@ -456,6 +459,21 @@ export default function PassengerMap({
           "line-opacity": 0.55,
         },
       });
+      // White halo underneath the active leg so basemap labels and street
+      // names stay legible when the rust line crosses dense type. Slightly
+      // wider than the rust line (case effect).
+      map.addLayer({
+        id: ROUTES_LAYER_HIGHLIGHT_HALO,
+        type: "line",
+        source: ROUTES_SOURCE,
+        layout: { "line-cap": "round", "line-join": "round" },
+        filter: ["in", ["get", "id"], ["literal", []]],
+        paint: {
+          "line-color": "#ffffff",
+          "line-width": ["interpolate", ["linear"], ["zoom"], 10, 7, 14, 11, 16, 14],
+          "line-opacity": 0.78,
+        },
+      });
       map.addLayer({
         id: ROUTES_LAYER_HIGHLIGHT,
         type: "line",
@@ -465,7 +483,7 @@ export default function PassengerMap({
         paint: {
           "line-color": RUST,
           "line-width": ["interpolate", ["linear"], ["zoom"], 10, 4, 14, 7, 16, 10],
-          "line-opacity": 0.95,
+          "line-opacity": 0.78,
         },
       });
 
@@ -625,6 +643,13 @@ export default function PassengerMap({
         if (hits.length === 0) {
           setSelected(null);
           map.setFilter(ROUTES_LAYER_HIGHLIGHT, ["in", ["get", "id"], ["literal", []]]);
+          if (map.getLayer(ROUTES_LAYER_HIGHLIGHT_HALO)) {
+            map.setFilter(ROUTES_LAYER_HIGHLIGHT_HALO, [
+              "in",
+              ["get", "id"],
+              ["literal", []],
+            ]);
+          }
         }
       });
 
@@ -836,7 +861,16 @@ export default function PassengerMap({
               onClick={() => {
                 setSelected(null);
                 const map = mapRef.current;
-                if (map) map.setFilter(ROUTES_LAYER_HIGHLIGHT, ["in", ["get", "id"], ["literal", []]]);
+                if (map) {
+                  map.setFilter(ROUTES_LAYER_HIGHLIGHT, ["in", ["get", "id"], ["literal", []]]);
+                  if (map.getLayer(ROUTES_LAYER_HIGHLIGHT_HALO)) {
+                    map.setFilter(ROUTES_LAYER_HIGHLIGHT_HALO, [
+                      "in",
+                      ["get", "id"],
+                      ["literal", []],
+                    ]);
+                  }
+                }
               }}
               className="text-svika-mute hover:text-svika-teal"
               aria-label="Close route details"
@@ -900,15 +934,30 @@ function repaintActiveLeg(
   if (!journey || !stage || stage.active_kombi_leg_index === null) {
     map.setPaintProperty(ROUTES_LAYER_BASE, "line-opacity", 0.55);
     map.setFilter(ROUTES_LAYER_HIGHLIGHT, ["in", ["get", "id"], ["literal", []]]);
+    if (map.getLayer(ROUTES_LAYER_HIGHLIGHT_HALO)) {
+      map.setFilter(ROUTES_LAYER_HIGHLIGHT_HALO, [
+        "in",
+        ["get", "id"],
+        ["literal", []],
+      ]);
+    }
     return;
   }
 
   const activeLeg = journey.legs[stage.active_kombi_leg_index];
   const activeRouteId = activeLeg && activeLeg.kind === "kombi" ? activeLeg.route_id : null;
   map.setPaintProperty(ROUTES_LAYER_BASE, "line-opacity", 0.22);
+  const ids = activeRouteId ? [activeRouteId] : [];
   map.setFilter(ROUTES_LAYER_HIGHLIGHT, [
     "in",
     ["get", "id"],
-    ["literal", activeRouteId ? [activeRouteId] : []],
+    ["literal", ids],
   ]);
+  if (map.getLayer(ROUTES_LAYER_HIGHLIGHT_HALO)) {
+    map.setFilter(ROUTES_LAYER_HIGHLIGHT_HALO, [
+      "in",
+      ["get", "id"],
+      ["literal", ids],
+    ]);
+  }
 }

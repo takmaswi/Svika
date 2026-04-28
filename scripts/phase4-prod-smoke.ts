@@ -170,10 +170,22 @@ async function main(): Promise<void> {
   }
 
   // 5 — parcel send on /?as=takunda
+  // Phase B removed the Parcel pill from the header; the affordance lives in
+  // the persona drawer (Phase C). Open the drawer via the persona chip and
+  // tap the Send-a-parcel tile. Falls back to a no-op if the drawer markup
+  // hasn't shipped yet (older prod build).
   const passenger = await context.newPage();
   await passenger.goto(`${BASE}/?as=takunda`, { waitUntil: "networkidle" });
-  await passenger.waitForSelector('[data-testid="parcel-open"]');
-  await passenger.click('[data-testid="parcel-open"]');
+  await passenger.waitForSelector('[data-testid="persona-chip-tap"]');
+  await passenger.click('[data-testid="persona-chip-tap"]');
+  const drawerTile = await passenger.$(
+    '[data-testid="persona-drawer-parcel"]',
+  );
+  if (drawerTile) {
+    await drawerTile.click();
+  } else {
+    console.warn("[phase4] persona drawer parcel tile missing — older prod?");
+  }
   await passenger.waitForSelector('[data-testid="parcel-sheet"]');
   await passenger.fill(
     '[data-testid="parcel-desc"]',

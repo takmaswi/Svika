@@ -4,16 +4,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import PassengerMap from "@/components/PassengerMap";
-import EmptyHero from "@/components/passenger/EmptyHero";
 import FareClearedToast, {
   type FareClearedToastState,
 } from "@/components/passenger/FareClearedToast";
-import Journey from "@/components/passenger/Journey";
-import ParcelSheet from "@/components/passenger/ParcelSheet";
-import PaymentChoiceSheet from "@/components/passenger/PaymentChoiceSheet";
-import PlanList from "@/components/passenger/PlanList";
-import TopUpSheet from "@/components/passenger/TopUpSheet";
-import Wallet from "@/components/passenger/Wallet";
+import JourneySheet, {
+  type SheetSnap,
+} from "@/components/passenger/JourneySheet";
+import JourneySheetContent, {
+  type SheetState,
+} from "@/components/passenger/JourneySheetContent";
 import {
   bookTripAction,
   claimTicketAction,
@@ -67,7 +66,13 @@ interface ClaimFlash {
   message: string;
 }
 
-const DEFAULT_CAPACITY = 15;
+const ACTIVE_JOURNEY_STAGES: ReadonlyArray<JourneyStage["kind"]> = [
+  "walk-to-board",
+  "in-transit",
+  "walking-transfer",
+  "boarding-leg-2",
+  "arrived",
+];
 
 export default function PassengerShell({
   persona,
@@ -81,7 +86,6 @@ export default function PassengerShell({
 }: PassengerShellProps) {
   const router = useRouter();
   const tickets = initialTickets;
-  const [walletOpen, setWalletOpen] = useState(false);
   const [plans, setPlans] = useState<PlansState | null>(null);
   const [searchBusy, setSearchBusy] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
@@ -91,18 +95,22 @@ export default function PassengerShell({
   const [topUpOpen, setTopUpOpen] = useState(false);
   const [topUpBusy, setTopUpBusy] = useState(false);
   const [parcelOpen, setParcelOpen] = useState(false);
+  const [walletOpen, setWalletOpen] = useState(false);
   const [claimFlash, setClaimFlash] = useState<ClaimFlash | null>(null);
   const [stage, setStage] = useState<JourneyStage | null>(null);
   const [dismissedTripId, setDismissedTripId] = useState<string | null>(null);
   const [fareClearedToast, setFareClearedToast] =
     useState<FareClearedToastState | null>(null);
+  const [snap, setSnap] = useState<SheetSnap>("peek");
+  // Tracks the last sheet state for which we auto-snapped, so manual user
+  // drags aren't overridden every render. Stored in state (not a ref) so the
+  // "derive state from props change" pattern is React-Compiler-clean.
+  const [lastAutoSnapState, setLastAutoSnapState] = useState<SheetState | null>(
+    null,
+  );
   const claimedRef = useRef<string | null>(null);
   const lastToastSigRef = useRef<string | null>(null);
 
-  // The server-rendered persona balance is the source of truth. After
-  // bookTripAction or topUpAction call revalidatePath, router.refresh pulls
-  // the new value through the persona prop on the next paint. No local
-  // mirror needed.
   const walletBalance = persona.credit_balance_usd;
 
   const journey = useMemo<ActiveJourney | null>(() => {
@@ -112,9 +120,7 @@ export default function PassengerShell({
   }, [initialJourney, dismissedTripId]);
 
   // Listen for the conductor's redeem broadcast and surface a "Fare cleared
-  // by Farai" glass toast on the passenger surface itself, so Takunda sees
-  // the consequence of the conductor's keypad without having to navigate.
-  // Only fires for tickets the persona currently holds.
+  // by Farai" glass toast on the passenger surface itself.
   useEffect(() => {
     const personaId = persona.id;
     const supabase = createClient();
@@ -148,23 +154,18 @@ export default function PassengerShell({
     };
   }, [persona.id]);
 
-  // Dismiss the toast 4s after it appears.
   useEffect(() => {
     if (!fareClearedToast) return;
     const timer = setTimeout(() => setFareClearedToast(null), 4000);
     return () => clearTimeout(timer);
   }, [fareClearedToast]);
 
-  // Phase A — auto-dismiss the post-book confirmation toast so the
-  // journey card has the screen unobstructed once the message has been
-  // read. Errors stay until the user dismisses or re-acts.
   useEffect(() => {
     if (!bookingFlash || bookingFlash.kind === "err") return;
     const timer = setTimeout(() => setBookingFlash(null), 6000);
     return () => clearTimeout(timer);
   }, [bookingFlash]);
 
-  // Auto-claim when arriving via /?as=<recipient>&claim=<id>.
   useEffect(() => {
     if (!pendingClaim || claimedRef.current === pendingClaim) return;
     claimedRef.current = pendingClaim;
@@ -304,11 +305,11 @@ export default function PassengerShell({
     router.refresh();
   }, [initialJourney, router]);
 
-  const handleEndTrip = useCallback(async (): Promise<{ ok: boolean; error?: string }> => {
+  const handleEndTrip = useCallback(async (): Promise<{
+    ok: boolean;
+    error?: string;
+  }> => {
     if (!journey) return { ok: false, error: "No active trip." };
-    // Parcel-shaped journeys are synthesised locally (no `trips` row), so
-    // the × button just hides the live tracker view. The parcel ticket
-    // itself stays in the wallet and the conductor flow is unaffected.
     if (journey.kind === "parcel") {
       setDismissedTripId(journey.trip_id);
       setStage(null);
@@ -331,24 +332,123 @@ export default function PassengerShell({
 
   const balanceLabel = walletBalance.toFixed(2);
   const activeCount = tickets.filter((t) => !t.is_outgoing_transfer).length;
-  const showHero = !journey && !plans;
   const personaMeta = findPersonaMeta(personaSlug);
   const initial = personaMeta?.initial ?? persona.name.charAt(0).toUpperCase();
 
-  // Surface a featured-tile route label when prompting for payment.
   const routeLabel = useMemo(() => {
     if (!pickedOption) return "";
     return pickedOption.label;
   }, [pickedOption]);
 
+  // Derive the SheetState from the underlying booking / journey state. The
+  // priority ladder is: wallet → parcel → topUp → payment-choice → plans →
+  // searching → active journey stage → idle.
+  const sheetState: SheetState = useMemo(() => {
+    if (walletOpen) return "wallet";
+    if (parcelOpen) return "parcel";
+    if (topUpOpen) return "topping-up";
+    if (pickedOption !== null) return "choosing-payment";
+    if (plans !== null) return "plans-returned";
+    if (searchBusy) return "searching";
+    if (journey && stage) {
+      const k = stage.kind;
+      if (ACTIVE_JOURNEY_STAGES.includes(k)) {
+        // Map "boarding" stages (the brief uses boarding-leg-2 for the second
+        // boarding moment; the journey stage returns "boarding" for both
+        // first-time and second-leg). Without a clean way to disambiguate at
+        // the shell layer, we treat both as the in-transit feel for the sheet.
+        return k as SheetState;
+      }
+      // For boarding (first leg) treat as walk-to-board feel; the Journey
+      // component itself reads the canonical stage.
+      return "walk-to-board";
+    }
+    return "idle";
+  }, [
+    walletOpen,
+    parcelOpen,
+    topUpOpen,
+    pickedOption,
+    plans,
+    searchBusy,
+    journey,
+    stage,
+  ]);
+
+  // Auto-snap rules — applied at state transitions, not on every render. The
+  // React-blessed pattern for "derive new state from props/state change" is
+  // to compare a previous-value state during render and call setState; React
+  // batches both updates into a single commit. User drags between snaps stay
+  // sticky until sheetState itself changes.
+  if (lastAutoSnapState !== sheetState) {
+    setLastAutoSnapState(sheetState);
+    let desired: SheetSnap = snap;
+    switch (sheetState) {
+      case "plans-returned":
+      case "choosing-payment":
+      case "topping-up":
+      case "parcel":
+      case "arrived":
+      case "searching":
+        desired = "half";
+        break;
+      case "wallet":
+        desired = "full";
+        break;
+      case "walk-to-board":
+      case "in-transit":
+      case "walking-transfer":
+      case "boarding-leg-2":
+        desired = snap === "peek" ? "half" : snap;
+        break;
+      case "idle":
+        desired = "peek";
+        break;
+    }
+    if (desired !== snap) {
+      setSnap(desired);
+    }
+  }
+
+  function closeWallet() {
+    setWalletOpen(false);
+  }
+
+  function closeParcel() {
+    setParcelOpen(false);
+  }
+
+  function closePayment() {
+    if (busyMethod === null) setPickedOption(null);
+  }
+
+  function closeTopUp() {
+    setTopUpOpen(false);
+  }
+
+  // When the user drags the sheet down to peek while in wallet/parcel/topUp,
+  // close those overlays so the canonical state is plain idle/journey.
+  function handleSnapChange(next: SheetSnap) {
+    setSnap(next);
+    if (next === "peek") {
+      if (walletOpen) setWalletOpen(false);
+      if (parcelOpen) setParcelOpen(false);
+      if (topUpOpen) setTopUpOpen(false);
+    }
+  }
+
   return (
     <main className="flex min-h-dvh flex-col bg-svika-bg">
       <header className="z-20 border-b border-svika-line bg-svika-bg/85 px-4 py-3 backdrop-blur">
         <div className="flex items-center justify-between gap-3">
-          <div
+          <button
+            type="button"
+            onClick={() => {
+              /* Phase B placeholder — Phase C wires the persona drawer. */
+            }}
             className="flex items-center gap-2 rounded-full px-1 py-1"
             aria-label={`Signed in as ${persona.name}`}
-            data-testid="persona-chip"
+            data-testid="persona-chip-tap"
           >
             <span
               aria-hidden
@@ -357,7 +457,7 @@ export default function PassengerShell({
             >
               {initial}
             </span>
-            <span className="flex flex-col leading-tight">
+            <span className="flex flex-col leading-tight text-left">
               <span
                 className="text-svika-teal"
                 style={{ fontSize: "13px", fontWeight: 500 }}
@@ -369,9 +469,10 @@ export default function PassengerShell({
                 style={{ fontSize: "10px" }}
               >
                 ${balanceLabel} · wallet
+                {activeCount > 0 ? ` · ${activeCount}` : ""}
               </span>
             </span>
-          </div>
+          </button>
 
           <div className="flex items-center gap-2">
             <span
@@ -387,36 +488,8 @@ export default function PassengerShell({
                 {liveStats.active_vehicle_count} on the road
               </span>
             </span>
-            <button
-              type="button"
-              onClick={() => setParcelOpen(true)}
-              className="svika-glass px-3 py-1.5 text-sm text-svika-teal"
-              style={{ borderRadius: "999px", fontWeight: 500 }}
-              data-testid="parcel-open"
-            >
-              Parcel
-            </button>
-            <button
-              type="button"
-              onClick={() => setWalletOpen(true)}
-              className="svika-glass relative px-3 py-1.5 text-sm text-svika-teal"
-              style={{ borderRadius: "999px", fontWeight: 500 }}
-              data-testid="wallet-open"
-            >
-              Wallet
-              {activeCount > 0 ? (
-                <span className="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-svika-rust px-1.5 text-[11px] font-semibold text-white">
-                  {activeCount}
-                </span>
-              ) : null}
-            </button>
           </div>
         </div>
-        {searchError ? (
-          <p className="mt-2 rounded-2xl bg-white/80 px-3 py-2 text-xs text-svika-rust">
-            {searchError}
-          </p>
-        ) : null}
         {bookingFlash ? (
           <div
             data-testid="booking-flash"
@@ -459,23 +532,8 @@ export default function PassengerShell({
         ) : null}
       </header>
 
-      {showHero ? (
-        <EmptyHero
-          personaName={persona.name}
-          walletBalanceUsd={walletBalance}
-          nextHeightsMinutes={liveStats.next_heights_minutes}
-          onSubmit={handleSearch}
-          busy={searchBusy}
-        />
-      ) : null}
-
       <section className="relative flex-1">
         {mapboxToken ? (
-          // `absolute inset-0` instead of `h-full w-full`: the section is a
-          // flex item, and percentage heights inside it don't always resolve
-          // (Mapbox would initialise the canvas at 0 height and never
-          // recover, leaving the basemap blank). Pinning the wrapper to the
-          // section's edges sidesteps the percentage-height ambiguity.
           <div
             className="absolute inset-0"
             style={{ opacity: 0.92 }}
@@ -500,86 +558,61 @@ export default function PassengerShell({
             NEXT_PUBLIC_MAPBOX_TOKEN missing — set it in .env.local to render the map.
           </div>
         )}
-
-        {!journey && plans ? (
-          <div className="pointer-events-auto absolute bottom-3 left-3 right-3 z-10 max-h-[60vh] overflow-y-auto svika-glass-strong p-3">
-            <PlanList
-              options={plans.options}
-              busyOption={busyMethod ? pickedOption?.label ?? null : null}
-              onChoose={handleChoose}
-              onClose={() => {
-                setPlans(null);
-                setPickedOption(null);
-              }}
-            />
-          </div>
-        ) : null}
       </section>
-
-      {journey ? (
-        <Journey
-          journey={journey}
-          onPlanAnother={handlePlanAnother}
-          onLifecycleEvent={handleLifecycleEvent}
-          onStageChange={handleStageChange}
-          onEndTrip={handleEndTrip}
-        />
-      ) : null}
-
-      <PaymentChoiceSheet
-        open={pickedOption !== null && !topUpOpen}
-        option={pickedOption}
-        routeLabel={routeLabel}
-        walletBalance={walletBalance}
-        seatsTaken={null}
-        capacity={DEFAULT_CAPACITY}
-        busyMethod={busyMethod}
-        onWallet={() => pickedOption && handleBook(pickedOption, "wallet")}
-        onCash={() => pickedOption && handleBook(pickedOption, "cash")}
-        onTopUp={() => setTopUpOpen(true)}
-        onClose={() => {
-          if (busyMethod === null) setPickedOption(null);
-        }}
-      />
-
-      <TopUpSheet
-        open={topUpOpen}
-        walletBalance={walletBalance}
-        fareUsd={pickedOption?.total_fare_usd ?? 0}
-        busy={topUpBusy}
-        onTopUp={handleTopUp}
-        onClose={() => setTopUpOpen(false)}
-      />
 
       <FareClearedToast
         state={fareClearedToast}
         onDismiss={() => setFareClearedToast(null)}
       />
 
-      <Wallet
-        open={walletOpen}
-        onClose={() => setWalletOpen(false)}
-        tickets={tickets}
-        personaSlug={personaSlug}
-        onTransfer={handleTransfer}
-      />
-
-      <ParcelSheet
-        open={parcelOpen}
-        personaSlug={personaSlug}
-        walletBalance={walletBalance}
-        onClose={() => setParcelOpen(false)}
-        onBooked={(result) => {
-          setParcelOpen(false);
-          setBookingFlash({
-            kind: "ok",
-            message: `Parcel booked for ${result.alight_label} · $${result.fare_usd.toFixed(2)}.`,
-            access_codes: [result.access_code],
-          });
-          setWalletOpen(true);
-          router.refresh();
-        }}
-      />
+      <JourneySheet snap={snap} onSnapChange={handleSnapChange}>
+        <JourneySheetContent
+          state={sheetState}
+          personaName={persona.name}
+          personaSlug={personaSlug}
+          nextHeightsMinutes={liveStats.next_heights_minutes}
+          searchBusy={searchBusy}
+          searchError={searchError}
+          onSearch={handleSearch}
+          plansOptions={plans?.options ?? []}
+          busyOptionLabel={busyMethod ? pickedOption?.label ?? null : null}
+          onChoose={handleChoose}
+          onClearPlans={() => {
+            setPlans(null);
+            setPickedOption(null);
+          }}
+          pickedOption={pickedOption}
+          routeLabel={routeLabel}
+          walletBalance={walletBalance}
+          busyMethod={busyMethod}
+          topUpBusy={topUpBusy}
+          onPayWallet={() => pickedOption && handleBook(pickedOption, "wallet")}
+          onPayCash={() => pickedOption && handleBook(pickedOption, "cash")}
+          onOpenTopUp={() => setTopUpOpen(true)}
+          onClosePayment={closePayment}
+          onTopUp={handleTopUp}
+          onCloseTopUp={closeTopUp}
+          journey={journey}
+          onPlanAnother={handlePlanAnother}
+          onLifecycleEvent={handleLifecycleEvent}
+          onStageChange={handleStageChange}
+          onEndTrip={handleEndTrip}
+          tickets={tickets}
+          onTransfer={handleTransfer}
+          onCloseWallet={closeWallet}
+          onParcelBooked={(result) => {
+            setParcelOpen(false);
+            setBookingFlash({
+              kind: "ok",
+              message: `Parcel booked for ${result.alight_label} · $${result.fare_usd.toFixed(2)}.`,
+              access_codes: [result.access_code],
+            });
+            setWalletOpen(true);
+            router.refresh();
+          }}
+          onCloseParcel={closeParcel}
+        />
+      </JourneySheet>
     </main>
   );
 }

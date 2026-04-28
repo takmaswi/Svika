@@ -41,6 +41,10 @@
   --radius-sm: 0.5rem;
   --radius: 0.875rem;
   --radius-lg: 1.375rem;
+
+  --sheet-peek: 110px;
+  --sheet-half: 48vh;
+  --sheet-full: 92vh;
 }
 
 html,
@@ -193,5 +197,104 @@ body {
   .svika-animate-image-fade,
   .svika-pulse-dot {
     animation: none;
+  }
+}
+
+/* ----- Bottom sheet primitive — Phase B ---------------------------------- */
+.svika-sheet {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 30;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border-top: 0.5px solid rgba(255, 255, 255, 0.7);
+  border-top-left-radius: 22px;
+  border-top-right-radius: 22px;
+  box-shadow: 0 -8px 32px rgba(15, 76, 92, 0.12);
+  transition:
+    height 320ms cubic-bezier(0.32, 0.72, 0, 1),
+    transform 320ms cubic-bezier(0.32, 0.72, 0, 1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  touch-action: none;
+}
+
+.svika-sheet-handle-row {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 4px;
+  cursor: grab;
+}
+
+.svika-sheet-handle-row:active {
+  cursor: grabbing;
+}
+
+.svika-sheet-handle {
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(15, 76, 92, 0.22);
+}
+
+.svika-sheet-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 16px 16px;
+  touch-action: pan-y;
+}
+
+.svika-sheet-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 29;
+  background: rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms ease-out;
+}
+
+.svika-sheet-scrim[data-open="true"] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .svika-sheet,
+  .svika-sheet-scrim {
+    transition: none;
+  }
+}
+
+/* ----- Persona drawer — Phase C ------------------------------------------- */
+.svika-persona-drawer {
+  position: fixed;
+  inset-block: 0;
+  inset-inline-end: 0;
+  z-index: 50;
+  width: min(360px, 88vw);
+  display: flex;
+  flex-direction: column;
+  background: rgba(250, 250, 249, 0.96);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border-inline-start: 0.5px solid rgba(255, 255, 255, 0.7);
+  box-shadow: -12px 0 32px rgba(15, 76, 92, 0.16);
+  transform: translateX(100%);
+  transition: transform 280ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.svika-persona-drawer[data-open="true"] {
+  transform: translateX(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .svika-persona-drawer {
+    transition: none;
   }
 }

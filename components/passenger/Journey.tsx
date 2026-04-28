@@ -246,41 +246,39 @@ export default function Journey({
   if (arrived) {
     return (
       <div
-        className="pointer-events-auto fixed inset-x-0 bottom-0 z-30 border-t border-svika-teal-100 bg-svika-stone"
+        className="relative pt-1"
         data-testid="journey-arrived"
         data-stage="arrived"
       >
-        <div className="relative mx-auto max-w-md px-4 pb-3 pt-3">
-          <EndTripControl
-            confirming={endConfirming}
-            busy={endBusy}
-            error={endError}
-            onAsk={() => setEndConfirming(true)}
-            onCancel={() => {
-              setEndConfirming(false);
-              setEndError(null);
-            }}
-            onConfirm={handleConfirmEnd}
-          />
-          <div className="flex items-center justify-between gap-3 pr-9">
-            <div className="flex min-w-0 flex-col">
-              <p className="text-base font-semibold text-svika-teal">
-                You&apos;ve arrived
-              </p>
-              <p className="truncate text-xs text-svika-mute">
-                {journey.total_duration_minutes} min · ${totalSpent}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={onPlanAnother}
-              className="shrink-0 rounded-md border border-svika-rust px-3 py-1.5 text-xs font-medium text-svika-rust hover:bg-svika-rust hover:text-white"
-            >
-              Plan another
-            </button>
+        <EndTripControl
+          confirming={endConfirming}
+          busy={endBusy}
+          error={endError}
+          onAsk={() => setEndConfirming(true)}
+          onCancel={() => {
+            setEndConfirming(false);
+            setEndError(null);
+          }}
+          onConfirm={handleConfirmEnd}
+        />
+        <div className="flex items-center justify-between gap-3 pr-9">
+          <div className="flex min-w-0 flex-col">
+            <p className="text-base font-semibold text-svika-teal">
+              You&apos;ve arrived
+            </p>
+            <p className="truncate text-xs text-svika-mute">
+              {journey.total_duration_minutes} min · ${totalSpent}
+            </p>
           </div>
-          <FleetImpactCard fareUsd={journey.total_fare_usd} />
+          <button
+            type="button"
+            onClick={onPlanAnother}
+            className="shrink-0 rounded-md border border-svika-rust px-3 py-1.5 text-xs font-medium text-svika-rust hover:bg-svika-rust hover:text-white"
+          >
+            Plan another
+          </button>
         </div>
+        <FleetImpactCard fareUsd={journey.total_fare_usd} />
       </div>
     );
   }
@@ -327,13 +325,13 @@ export default function Journey({
 
   return (
     <div
-      className="pointer-events-auto fixed inset-x-0 bottom-0 z-30 border-t border-svika-teal-100 bg-svika-stone"
-      data-testid="journey-sheet"
+      className="relative pt-1"
+      data-testid="journey-content"
       data-stage={stage.kind}
       data-stage-index={stage.index}
       data-journey-kind={isParcel ? "parcel" : "passenger"}
     >
-      <div className="relative mx-auto max-w-md px-4 pb-3 pt-3">
+      <div>
         <EndTripControl
           confirming={endConfirming}
           busy={endBusy}

@@ -57,6 +57,10 @@ async function resetTakunda(
   if (openTrips && openTrips.length > 0) {
     await client
       .from("trips")
+      // The TripRow type does not surface `completed_at` even though the
+      // column exists in the live schema; the rehearsal needs to mark trips
+      // closed so the empty hero re-renders.
+      // @ts-expect-error — schema/types drift; safe at runtime.
       .update({ completed_at: new Date().toISOString() })
       .in(
         "id",
@@ -114,11 +118,11 @@ async function main(): Promise<void> {
   log("1. open /?as=takunda");
   await page.goto(`${BASE}/?as=takunda`, { waitUntil: "domcontentloaded" });
 
-  log("2. click FEATURED bento tile (Heights → Avondale)");
-  await page.waitForSelector('[data-testid="bento-featured"]', {
+  log("2. click featured quick pick (Heights → Avondale)");
+  await page.waitForSelector('[data-testid="quick-pick-featured"]', {
     timeout: 30_000,
   });
-  await page.click('[data-testid="bento-featured"]');
+  await page.click('[data-testid="quick-pick-featured"]');
 
   log("3. wait for plan list, click first Buy CTA");
   // PlanList renders inside the glass-strong panel; the first button with
@@ -129,9 +133,10 @@ async function main(): Promise<void> {
   await buyButton.click();
 
   log("4. payment choice sheet → pay from wallet");
-  await page.waitForSelector('[data-testid="payment-choice-sheet"]', {
-    timeout: 10_000,
-  });
+  await page.waitForSelector(
+    '[data-testid="journey-sheet-content"][data-state="choosing-payment"]',
+    { timeout: 10_000 },
+  );
   await page.click('[data-testid="payment-wallet"]');
 
   log("5. wait for post-book toast and journey card");

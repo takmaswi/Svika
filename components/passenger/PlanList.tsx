@@ -2,6 +2,11 @@
 
 import type { TripPlan } from "@/lib/trip-planner";
 
+/**
+ * Pure content component — must be rendered inside the JourneySheet's
+ * content slot. The sheet provides the surface; this component owns the
+ * cards and CTAs only.
+ */
 interface PlanListProps {
   options: TripPlan[];
   busyOption: string | null;

@@ -301,7 +301,7 @@ async function main(): Promise<void> {
 
   console.log("[shot] 2 — empty state (Where to, Takunda?)");
   await page.goto(`${BASE}/?as=takunda`, { waitUntil: "domcontentloaded" });
-  await page.waitForSelector('[data-testid="passenger-empty-hero"]');
+  await page.waitForSelector('[data-testid="idle-sheet-content"]');
   await page.waitForTimeout(1100);
   await shoot(page, "02-empty-state-where-to-takunda.png");
 

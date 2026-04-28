@@ -36,7 +36,7 @@ async function main(): Promise<void> {
 
   // 2. Passenger empty state.
   await page.goto(`${BASE}/?as=takunda`, { waitUntil: "domcontentloaded" });
-  await page.waitForSelector('[data-testid="passenger-empty-hero"]');
+  await page.waitForSelector('[data-testid="idle-sheet-content"]');
   await page.waitForTimeout(1100);
   await page.screenshot({
     path: join(OUT_DIR, "02-passenger-empty.png"),
@@ -56,11 +56,11 @@ async function main(): Promise<void> {
   await page.click('[data-testid="persona-action-cancel"]');
 
   // 4. Plan results, then payment-choice sheet.
-  await page.click('[data-testid="bento-featured"]');
+  await page.click('[data-testid="quick-pick-featured"]');
   await page.waitForSelector("text=Buy for $1.50", { timeout: 8000 });
   await page.waitForTimeout(500);
   await page.click("text=Buy for $1.50");
-  await page.waitForSelector('[data-testid="payment-choice-sheet"]');
+  await page.waitForSelector('[data-testid="journey-sheet-content"][data-state="choosing-payment"]');
   await page.waitForTimeout(450);
   await page.screenshot({
     path: join(OUT_DIR, "04-payment-choice.png"),
@@ -72,12 +72,12 @@ async function main(): Promise<void> {
   // open it directly via the close+reopen flow). Some demo personas start with
   // $5; force the disabled-balance path with a query.
   await page.goto(`${BASE}/?as=rudo`, { waitUntil: "domcontentloaded" });
-  await page.waitForSelector('[data-testid="passenger-empty-hero"]');
+  await page.waitForSelector('[data-testid="idle-sheet-content"]');
   await page.waitForTimeout(900);
-  await page.click('[data-testid="bento-small-1"]'); // Sam Levy's $3
+  await page.click('[data-testid="quick-pick-samlevys"]'); // Sam Levy's $3
   await page.waitForSelector("text=Buy for $3.00", { timeout: 8000 });
   await page.click("text=Buy for $3.00");
-  await page.waitForSelector('[data-testid="payment-choice-sheet"]');
+  await page.waitForSelector('[data-testid="journey-sheet-content"][data-state="choosing-payment"]');
   // If Rudo has < $3 the wallet button is replaced by Top up.
   const topUpButton = await page.$('[data-testid="payment-topup"]');
   if (topUpButton) {
