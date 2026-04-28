@@ -27,7 +27,6 @@ const STOPS_LAYER_LABEL = "svika-stops-label";
 const KOMBIS_SOURCE = "svika-kombis";
 const KOMBIS_LAYER = "svika-kombis-dot";
 const KOMBIS_LAYER_HALO = "svika-kombis-halo";
-const KOMBIS_LAYER_SHADOW = "svika-kombis-shadow";
 
 const WALKING_SOURCE = "svika-walking";
 const WALKING_LAYER = "svika-walking-line";
@@ -38,67 +37,71 @@ const RUST = "#d9622a";
 const STONE = "#f2ede6";
 
 const KOMBI_ICON_ID = "kombi-icon";
-const KOMBI_ICON_W = 96;
-const KOMBI_ICON_H = 144;
-
-const KOMBI_SHADOW_ID = "kombi-shadow-icon";
-const KOMBI_SHADOW_W = 60;
-const KOMBI_SHADOW_H = 24;
+const KOMBI_ICON_W = 128;
+const KOMBI_ICON_H = 128;
 
 /**
- * Inline rasterisation of the Hiace SVG so Mapbox can pick it up via
- * `addImage`. The on-disk file at `public/brand/kombi.svg` is the source
- * of truth for the artwork; this constant mirrors the same shapes
- * (cream body, teal stripe + side stripe, rust front bumper, tinted
- * front and rear windows, four wheels) — kept inline because Mapbox +
+ * Inline rasterisation of the Refined kombi marker (v4 design from the
+ * Claude Design tool, integrated 2026-04-28). The on-disk file at
+ * `public/brand/kombi.svg` is the source of truth for the artwork;
+ * this constant mirrors the same shapes — kept inline because Mapbox +
  * headless chromium has shown intermittent failure modes when canvas-
  * rasterising a fetched SVG file, and the data URI path has been
  * stable across the project's earlier rehearsals.
+ *
+ * Native viewBox 128×128. Body fills the centre at x:38–90, y:18–106;
+ * the surrounding padding holds the soft contact shadow ellipse at
+ * y:113. Front (rounded nose) is at the top so bearing rotation makes
+ * the kombi point in the direction of travel.
  */
 const KOMBI_SVG = `
-<svg xmlns="http://www.w3.org/2000/svg" width="${KOMBI_ICON_W}" height="${KOMBI_ICON_H}" viewBox="0 0 96 144">
+<svg xmlns="http://www.w3.org/2000/svg" width="${KOMBI_ICON_W}" height="${KOMBI_ICON_H}" viewBox="0 0 128 128">
   <defs>
-    <linearGradient id="bodyHi" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.55"/>
-      <stop offset="0.16" stop-color="#FFFFFF" stop-opacity="0.18"/>
-      <stop offset="0.32" stop-color="#FFFFFF" stop-opacity="0"/>
+    <linearGradient id="roofGrad" x1="0.15" y1="0.05" x2="0.95" y2="0.95">
+      <stop offset="0%" stop-color="#FFFCF3"/>
+      <stop offset="35%" stop-color="#F4ECD9"/>
+      <stop offset="100%" stop-color="#D9CDB1"/>
     </linearGradient>
-    <linearGradient id="bodyLo" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
-      <stop offset="1" stop-color="#000000" stop-opacity="0.18"/>
+    <linearGradient id="sideWallGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#9c8e72"/>
+      <stop offset="100%" stop-color="#7a6e57"/>
     </linearGradient>
-  </defs>
-  <ellipse cx="14" cy="38" rx="7" ry="11" fill="#2a2a2a"/>
-  <ellipse cx="82" cy="38" rx="7" ry="11" fill="#2a2a2a"/>
-  <ellipse cx="14" cy="106" rx="7" ry="11" fill="#2a2a2a"/>
-  <ellipse cx="82" cy="106" rx="7" ry="11" fill="#2a2a2a"/>
-  <rect x="14" y="10" width="68" height="124" rx="20" ry="22"
-        fill="#F0EDE3" stroke="#0d0d0d" stroke-width="1.4"/>
-  <rect x="15" y="11" width="66" height="124" rx="19" ry="21" fill="url(#bodyHi)"/>
-  <rect x="15" y="11" width="66" height="124" rx="19" ry="21" fill="url(#bodyLo)"/>
-  <rect x="22" y="12" width="52" height="6" rx="2.5" fill="#D9622A"/>
-  <rect x="22" y="22" width="52" height="22" rx="4" fill="#0F4C5C" fill-opacity="0.82"
-        stroke="#0a3a48" stroke-width="0.8"/>
-  <rect x="24" y="24" width="48" height="6" rx="2" fill="#FFFFFF" fill-opacity="0.18"/>
-  <rect x="14" y="69" width="68" height="6" fill="#0F4C5C"/>
-  <rect x="22" y="98" width="52" height="18" rx="4" fill="#0F4C5C" fill-opacity="0.82"
-        stroke="#0a3a48" stroke-width="0.8"/>
-  <rect x="22" y="124" width="52" height="4" rx="1.5" fill="#9b3c0d" fill-opacity="0.55"/>
-  <line x1="14" y1="84" x2="82" y2="84" stroke="#0d0d0d" stroke-opacity="0.18" stroke-width="0.7"/>
-  <line x1="48" y1="44" x2="48" y2="69" stroke="#0d0d0d" stroke-opacity="0.18" stroke-width="0.7"/>
-</svg>
-`.trim();
-
-const KOMBI_SHADOW_SVG = `
-<svg xmlns="http://www.w3.org/2000/svg" width="${KOMBI_SHADOW_W}" height="${KOMBI_SHADOW_H}" viewBox="0 0 60 24">
-  <defs>
-    <radialGradient id="shadowGrad" cx="0.5" cy="0.5" r="0.5">
-      <stop offset="0" stop-color="#000000" stop-opacity="0.32"/>
-      <stop offset="0.55" stop-color="#000000" stop-opacity="0.12"/>
-      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    <linearGradient id="glassGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#3a3f45"/>
+      <stop offset="100%" stop-color="#1c2024"/>
+    </linearGradient>
+    <linearGradient id="windshieldGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5a626b"/>
+      <stop offset="20%" stop-color="#2a2f34"/>
+      <stop offset="100%" stop-color="#1a1d20"/>
+    </linearGradient>
+    <radialGradient id="contactShadow" cx="50%" cy="55%" r="50%">
+      <stop offset="0%" stop-color="#000000" stop-opacity="0.40"/>
+      <stop offset="50%" stop-color="#000000" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
     </radialGradient>
+    <linearGradient id="sheenGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
   </defs>
-  <ellipse cx="30" cy="12" rx="28" ry="10" fill="url(#shadowGrad)"/>
+  <ellipse cx="65" cy="113" rx="28" ry="6" fill="url(#contactShadow)"/>
+  <path d="M89 28 C92 28 93 30 93 33 L93 95 C93 99 91 102 88 102 L86 102 L86 28 Z" fill="url(#sideWallGrad)"/>
+  <ellipse cx="38" cy="38" rx="2.5" ry="5" fill="#1c1916" opacity="0.7"/>
+  <ellipse cx="38" cy="92" rx="2.5" ry="5" fill="#1c1916" opacity="0.7"/>
+  <ellipse cx="90" cy="38" rx="2.5" ry="5" fill="#1c1916" opacity="0.55"/>
+  <ellipse cx="90" cy="92" rx="2.5" ry="5" fill="#1c1916" opacity="0.55"/>
+  <path d="M40 30 C40 22 48 18 64 18 C80 18 88 22 88 30 L88 95 C88 102 82 106 64 106 C46 106 40 102 40 95 Z" fill="url(#roofGrad)"/>
+  <path d="M40 30 C40 22 48 18 64 18 C80 18 88 22 88 30 L88 33 C88 25 80 21 64 21 C48 21 40 25 40 33 Z" fill="#ffffff" opacity="0.4"/>
+  <path d="M88 30 L88 95 C88 102 82 106 64 106 L64 103 C80 103 85 100 85 95 L85 30 Z" fill="#000000" opacity="0.07"/>
+  <path d="M48 25 C52 22 76 22 80 25 L82 32 C72 30 56 30 46 32 Z" fill="url(#windshieldGrad)"/>
+  <path d="M50 25 C56 23 72 23 78 25 L78 27 C72 25 56 25 50 27 Z" fill="url(#sheenGrad)"/>
+  <path d="M42 38 C42 36 43 35 45 35 L45 90 C43 90 42 89 42 87 Z" fill="url(#glassGrad)"/>
+  <path d="M86 38 C86 36 85 35 83 35 L83 90 C85 90 86 89 86 87 Z" fill="url(#glassGrad)"/>
+  <path d="M48 100 C52 102 76 102 80 100 L78 96 C72 97 56 97 50 96 Z" fill="url(#glassGrad)" opacity="0.85"/>
+  <ellipse cx="38" cy="30" rx="2.2" ry="2.6" fill="#5a5040"/>
+  <ellipse cx="90" cy="30" rx="2.2" ry="2.6" fill="#5a5040"/>
+  <path d="M40 30 C40 22 48 18 64 18 C80 18 88 22 88 30 L88 95 C88 102 82 106 64 106 C46 106 40 102 40 95 Z" fill="none" stroke="#3a3327" stroke-opacity="0.45" stroke-width="1"/>
 </svg>
 `.trim();
 
@@ -140,22 +143,14 @@ async function registerSvgImage(
 }
 
 /**
- * Rasterises the kombi SVG and the soft shadow ellipse and hands them
- * to Mapbox. Both run in parallel; either failure leaves the layer
- * with a missing icon, which Mapbox draws as nothing — the marker just
- * disappears, never breaks the rest of the map.
+ * Rasterises the kombi SVG and hands it to Mapbox. The Refined v4
+ * design has the soft contact shadow baked into the same SVG so we
+ * no longer need a separate shadow layer. Failure leaves the layer
+ * with a missing icon, which Mapbox draws as nothing — the marker
+ * just disappears, never breaks the rest of the map.
  */
 async function registerKombiIcons(map: mapboxgl.Map): Promise<void> {
-  await Promise.all([
-    registerSvgImage(map, KOMBI_ICON_ID, KOMBI_SVG, KOMBI_ICON_W, KOMBI_ICON_H),
-    registerSvgImage(
-      map,
-      KOMBI_SHADOW_ID,
-      KOMBI_SHADOW_SVG,
-      KOMBI_SHADOW_W,
-      KOMBI_SHADOW_H,
-    ),
-  ]);
+  await registerSvgImage(map, KOMBI_ICON_ID, KOMBI_SVG, KOMBI_ICON_W, KOMBI_ICON_H);
 }
 
 interface PassengerMapProps {
@@ -729,42 +724,12 @@ export default function PassengerMap({
       // on each tick payload. Active (assigned) kombi renders larger and
       // fully opaque; pass-through kombis render slightly smaller and at
       // 0.6 alpha so the eye tracks the trip-relevant vehicle first.
-      // The shadow ellipse renders BELOW the body as a separate symbol
-      // layer so it lays flat on the road regardless of icon rotation.
+      //
+      // The Refined v4 SVG (integrated 2026-04-28) has the contact
+      // shadow baked in (radialGradient ellipse at viewBox y=113), so
+      // there is no longer a separate shadow symbol layer. One layer,
+      // one rotation, simpler stack.
       void registerKombiIcons(map).then(() => {
-        if (!map.getLayer(KOMBIS_LAYER_SHADOW)) {
-          map.addLayer({
-            id: KOMBIS_LAYER_SHADOW,
-            type: "symbol",
-            source: KOMBIS_SOURCE,
-            layout: {
-              "icon-image": KOMBI_SHADOW_ID,
-              "icon-allow-overlap": true,
-              "icon-ignore-placement": true,
-              "icon-anchor": "center",
-              "icon-pitch-alignment": "map",
-              "icon-rotation-alignment": "map",
-              "icon-offset": [0, 22],
-              // Zoom-interpolated so the shadow scales with the body. At the
-              // network-overview zoom (~11) the shadow shrinks to a small
-              // soft dot; at street level (~16-17) it widens to sit under
-              // the full-size icon.
-              "icon-size": [
-                "interpolate",
-                ["linear"],
-                ["zoom"],
-                10, 0.18,
-                12, 0.28,
-                14, 0.45,
-                15.5, 0.65,
-                17, 0.95,
-              ],
-            },
-            paint: {
-              "icon-opacity": 0.85,
-            },
-          });
-        }
         if (!map.getLayer(KOMBIS_LAYER)) {
           map.addLayer({
             id: KOMBIS_LAYER,
@@ -777,29 +742,33 @@ export default function PassengerMap({
               "icon-allow-overlap": true,
               "icon-ignore-placement": true,
               "icon-anchor": "center",
-              // Zoom-interpolated icon-size with a 1.3× multiplier when the
-              // vehicle is the one assigned to the active trip. Before Z.2
-              // the icons rendered at a flat 1.2-1.5 across all zooms,
-              // which on a 3× DPR phone meant ~432-540 device pixels —
-              // the kombis covered ~200m of road and looked like trucks
-              // parked on buildings. The interpolated values keep them
-              // readable as vehicles at street-level zoom and as small
-              // dots at the network-overview zoom.
+              // Zoom-interpolated icon-size, recalibrated for the
+              // 128×128 native viewBox of the Refined v4 marker
+              // (integrated 2026-04-28). Within that frame the
+              // body+shadow occupy ~80% (16px padding); at icon-size
+              // 0.30 the rendered marker is ~38 logical px which is
+              // the design tool's recommended "39px on map" target.
               //
-              // Mapbox rejects ["zoom"] inside a non-top-level expression
-              // (e.g. ["*", ["interpolate", ["zoom"], ...], multiplier]),
-              // so the assigned-multiplier is folded into each stop via
-              // a per-feature `case`: assigned values are simply 1.3× the
-              // base value at the same stop.
+              // The curve here ships SLIGHTLY SMALLER than the
+              // recommendation across the board because real-phone
+              // testing on a 3× DPR Android showed the design's 39px
+              // recommendation rendering at ~117 device pixels —
+              // still a touch larger than Uber-grade markers (which
+              // sit at ~80-100 device pixels at street zoom). These
+              // values aim for ~50-100 device px on a 3× DPR phone.
+              //
+              // Mapbox rejects ["zoom"] inside a non-top-level
+              // expression, so the 1.25× assigned multiplier is
+              // folded into each stop via a per-feature `case`.
               "icon-size": [
                 "interpolate",
                 ["linear"],
                 ["zoom"],
-                10, ["case", ["get", "is_assigned"], 0.234, 0.18],
-                12, ["case", ["get", "is_assigned"], 0.364, 0.28],
-                14, ["case", ["get", "is_assigned"], 0.585, 0.45],
-                15.5, ["case", ["get", "is_assigned"], 0.845, 0.65],
-                17, ["case", ["get", "is_assigned"], 1.235, 0.95],
+                10, ["case", ["get", "is_assigned"], 0.175, 0.14],
+                12, ["case", ["get", "is_assigned"], 0.250, 0.20],
+                14, ["case", ["get", "is_assigned"], 0.325, 0.26],
+                15.5, ["case", ["get", "is_assigned"], 0.425, 0.34],
+                17, ["case", ["get", "is_assigned"], 0.525, 0.42],
               ],
             },
             paint: {
