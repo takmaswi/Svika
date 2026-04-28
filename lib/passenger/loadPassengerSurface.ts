@@ -173,6 +173,47 @@ function spreadColocatedAlongRoutes(
   return Array.from(out.values());
 }
 
+/* ============================================================================
+ * R2 — corridor filter
+ *
+ * Surface-side override that confines visible kombis to the Heights→Rezende
+ * corridor for the rebuilt empty state. Two real plates (ZH 4821, ZH 4822)
+ * remain DB-backed and continue to receive sim broadcasts. A third synthetic
+ * plate (ZH 4823) is injected at SSR time only — no DB row, no broadcasts,
+ * pinned at the UZ Main Gate stop with bearing 0 (inbound visual).
+ *
+ * The other fleet plates (ZH 4901, ZH 4902, ZH 5001, ZH 5002, ZH 5101,
+ * ZH 5102) are dropped here AND must also be filtered at the client-side
+ * broadcast handler in PassengerMap.tsx — see R2 step 3.
+ * =========================================================================*/
+
+const HEIGHTS_NATIVE_PLATES: ReadonlySet<string> = new Set([
+  "ZH 4821",
+  "ZH 4822",
+]);
+
+const R2_SYNTHETIC_PLATE = "ZH 4823" as const;
+const R2_UZ_GATE: Readonly<{ lat: number; lng: number }> = {
+  lat: -17.78465,
+  lng: 31.05154,
+};
+
+function applyR2CorridorFilter(
+  kombis: ReadonlyArray<KombiTickPayload>,
+): KombiTickPayload[] {
+  const corridor = kombis.filter((k) => HEIGHTS_NATIVE_PLATES.has(k.vehicle_id));
+  corridor.push({
+    vehicle_id: R2_SYNTHETIC_PLATE,
+    route_id: "route_heights_rezende",
+    lat: R2_UZ_GATE.lat,
+    lng: R2_UZ_GATE.lng,
+    direction: "inbound",
+    bearing: 0,
+    at: new Date().toISOString(),
+  });
+  return corridor;
+}
+
 /**
  * Server-side composition for the passenger surface. Shared between the
  * landing dispatcher and any future deep-linked entry points so the data
@@ -192,7 +233,8 @@ export async function loadPassengerSurface(args: {
       loadLiveStats(),
       loadInitialKombis(),
     ]);
-  const initialKombis = spreadColocatedAlongRoutes(rawKombis, network);
+  const spread = spreadColocatedAlongRoutes(rawKombis, network);
+  const initialKombis = applyR2CorridorFilter(spread);
   return {
     persona,
     personaSlug,

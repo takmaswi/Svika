@@ -16,6 +16,7 @@ import type { ActiveJourney, JourneyStage } from "@/lib/passenger/journey-types"
 
 const ROUTES_SOURCE = "svika-routes";
 const ROUTES_LAYER_BASE = "svika-routes-base";
+const ROUTES_LAYER_BASE_PRIMARY = "svika-routes-base-primary";
 const ROUTES_LAYER_HIGHLIGHT_HALO = "svika-routes-highlight-halo";
 const ROUTES_LAYER_HIGHLIGHT = "svika-routes-highlight";
 
@@ -30,6 +31,25 @@ const KOMBIS_LAYER_HALO = "svika-kombis-halo";
 
 const WALKING_SOURCE = "svika-walking";
 const WALKING_LAYER = "svika-walking-line";
+
+// R2 — Takunda's synthetic GPS at Bannockburn Rd North Terminus. The blue
+// user dot is hardcoded here; no `navigator.geolocation` call. The idle map
+// view re-centers on this position at zoom 15.5.
+const USER_LOCATION = { lat: -17.74980, lng: 31.04250 } as const;
+const USER_SOURCE = "svika-user";
+const USER_LAYER_HALO = "svika-user-halo";
+const USER_LAYER_DOT = "svika-user-dot";
+
+// R2 — Heights→Rezende is the corridor that owns the rebuilt empty state.
+// Native plates ZH 4821 and ZH 4822 stay DB-backed and broadcast-driven;
+// the synthetic ZH 4823 is server-injected with no broadcast. The client
+// broadcast handler whitelists only the native pair so any sim ticks for
+// other plates are dropped before they touch interpRef.
+const HEIGHTS_ROUTE_ID = "route_heights_rezende" as const;
+const HEIGHTS_NATIVE_PLATES_CLIENT: ReadonlySet<string> = new Set([
+  "ZH 4821",
+  "ZH 4822",
+]);
 
 const TEAL = "#0a4b5c";
 const TEAL_700 = "#144f5e";
@@ -558,11 +578,19 @@ export default function PassengerMap({
     }
 
     mapboxgl.accessToken = mapboxToken;
+    // R2 — idle view re-centered on Takunda's synthetic location at the
+    // Bannockburn Rd North Terminus (zoom 13.5). 13.5 keeps the user dot
+    // visible AND lands the upper half of the Heights→Rezende corridor
+    // (UZ Gate + ZH 4823 + at least one moving native plate) in frame, so
+    // the brand framing — Takunda + the kombis that matter to him —
+    // reads at idle. The trip-active fitBounds useEffect still runs on
+    // journey-change so a picked trip frames its own corridor; this
+    // constructor only governs the idle landing view.
     const map = new mapboxgl.Map({
       container: containerRef.current,
       style: "mapbox://styles/mapbox/dark-v11",
-      bounds: harareBounds(network),
-      fitBoundsOptions: { padding: 80, duration: 0 },
+      center: [USER_LOCATION.lng, USER_LOCATION.lat],
+      zoom: 13.5,
       attributionControl: false,
     });
     mapRef.current = map;
@@ -598,15 +626,34 @@ export default function PassengerMap({
       }
 
       map.addSource(ROUTES_SOURCE, { type: "geojson", data: routesGeoJSON(network.routes) });
+      // R2 — split base routes into primary (Heights→Rezende, Apple-blue,
+      // prominent) and secondary (other three routes, faint white). The
+      // secondary layer keeps the existing `ROUTES_LAYER_BASE` id so the
+      // fade-on-journey-active logic in `repaintActiveLeg` still works
+      // (the active leg's route is highlighted by ROUTES_LAYER_HIGHLIGHT
+      // regardless of which base layer it lives on).
+      map.addLayer({
+        id: ROUTES_LAYER_BASE_PRIMARY,
+        type: "line",
+        source: ROUTES_SOURCE,
+        filter: ["==", ["get", "id"], HEIGHTS_ROUTE_ID],
+        layout: { "line-cap": "round", "line-join": "round" },
+        paint: {
+          "line-color": "#007AFF", // --color-action
+          "line-width": ["interpolate", ["linear"], ["zoom"], 10, 3, 14, 5, 16, 7],
+          "line-opacity": 0.95,
+        },
+      });
       map.addLayer({
         id: ROUTES_LAYER_BASE,
         type: "line",
         source: ROUTES_SOURCE,
+        filter: ["!=", ["get", "id"], HEIGHTS_ROUTE_ID],
         layout: { "line-cap": "round", "line-join": "round" },
         paint: {
-          "line-color": TEAL,
+          "line-color": "rgba(255, 255, 255, 0.45)",
           "line-width": ["interpolate", ["linear"], ["zoom"], 10, 2, 14, 4, 16, 6],
-          "line-opacity": 0.55,
+          "line-opacity": 0.18,
         },
       });
       // White halo underneath the active leg so basemap labels and street
@@ -693,6 +740,51 @@ export default function PassengerMap({
           "circle-color": ["case", ["get", "is_active"], TEAL_700, TEAL],
         },
       });
+
+      // R2 — Takunda's user dot. A pulsing Apple-blue halo + a solid blue
+      // dot with a white ring at the synthetic GPS position. Layered
+      // immediately above STOPS_LAYER_DOT so kombi markers (registered
+      // later in this same load callback) draw on top of it.
+      map.addSource(USER_SOURCE, {
+        type: "geojson",
+        data: {
+          type: "FeatureCollection",
+          features: [
+            {
+              type: "Feature",
+              geometry: {
+                type: "Point",
+                coordinates: [USER_LOCATION.lng, USER_LOCATION.lat],
+              },
+              properties: {},
+            },
+          ],
+        },
+      });
+      map.addLayer({
+        id: USER_LAYER_HALO,
+        type: "circle",
+        source: USER_SOURCE,
+        paint: {
+          "circle-radius": 14,
+          "circle-color": "#007AFF",
+          "circle-opacity": 0.4,
+          "circle-stroke-width": 0,
+        },
+      });
+      map.addLayer({
+        id: USER_LAYER_DOT,
+        type: "circle",
+        source: USER_SOURCE,
+        paint: {
+          "circle-radius": 7,
+          "circle-color": "#007AFF",
+          "circle-stroke-color": "#ffffff",
+          "circle-stroke-width": 2,
+          "circle-opacity": 1,
+        },
+      });
+
       map.addLayer({
         id: STOPS_LAYER_LABEL,
         type: "symbol",
@@ -914,6 +1006,46 @@ export default function PassengerMap({
     };
   }, []);
 
+  // R2 — user-dot pulse. Halo radius eases 14 → 26 px and opacity 0.4 → 0
+  // over a 1.6 s cycle, giving the location dot the same "I'm here, live"
+  // breathing feel as Apple/Google Maps. Independent of the kombi RAF so
+  // the two animations don't fight for the same source.setData budget.
+  // Skipped entirely under prefers-reduced-motion: the halo stays at its
+  // resting paint values from the addLayer call.
+  useEffect(() => {
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return;
+    }
+    let raf = 0;
+    const startedAt = performance.now();
+    const tick = (now: number) => {
+      const map = mapRef.current;
+      if (!map || !map.getLayer(USER_LAYER_HALO)) {
+        raf = requestAnimationFrame(tick);
+        return;
+      }
+      const t = ((now - startedAt) % 1600) / 1600;
+      const radius = 14 + (26 - 14) * t;
+      const opacity = 0.4 * (1 - t);
+      try {
+        map.setPaintProperty(USER_LAYER_HALO, "circle-radius", radius);
+        map.setPaintProperty(USER_LAYER_HALO, "circle-opacity", opacity);
+      } catch {
+        // map disposed mid-tick; bail.
+        return;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(raf);
+    };
+  }, []);
+
   // Subscribe to the sim runner's broadcast channel. The handler does NOT
   // write the GeoJSON source itself — it only pushes the new sample into the
   // per-vehicle interpolation buffer. The RAF loop below drains the buffer
@@ -930,6 +1062,12 @@ export default function PassengerMap({
       if (!Array.isArray(ticks)) return;
       const at = performance.now();
       for (const t of ticks) {
+        // R2 — corridor filter. Drop ticks for fleet plates not on the
+        // Heights→Rezende corridor so even if `pnpm sim` ticks for
+        // ZH 4901/4902/5001/5002/5101/5102, those vehicles never reach
+        // interpRef and never render. Synthetic ZH 4823 is server-injected
+        // and never broadcasts, so no special case for it.
+        if (!HEIGHTS_NATIVE_PLATES_CLIENT.has(t.vehicle_id)) continue;
         const existing = interpRef.current.get(t.vehicle_id);
         const prev = existing?.next ?? [t.lng, t.lat];
         const prevBearing =
@@ -1223,7 +1361,8 @@ function repaintActiveLeg(
   if (!map.getLayer(ROUTES_LAYER_BASE) || !map.getLayer(ROUTES_LAYER_HIGHLIGHT)) return;
 
   if (!journey || !stage || stage.active_kombi_leg_index === null) {
-    map.setPaintProperty(ROUTES_LAYER_BASE, "line-opacity", 0.55);
+    // R2 — secondary layer (other three routes) sits faint at 0.18 in idle.
+    map.setPaintProperty(ROUTES_LAYER_BASE, "line-opacity", 0.18);
     map.setFilter(ROUTES_LAYER_HIGHLIGHT, ["in", ["get", "id"], ["literal", []]]);
     if (map.getLayer(ROUTES_LAYER_HIGHLIGHT_HALO)) {
       map.setFilter(ROUTES_LAYER_HIGHLIGHT_HALO, [
@@ -1237,7 +1376,10 @@ function repaintActiveLeg(
 
   const activeLeg = journey.legs[stage.active_kombi_leg_index];
   const activeRouteId = activeLeg && activeLeg.kind === "kombi" ? activeLeg.route_id : null;
-  map.setPaintProperty(ROUTES_LAYER_BASE, "line-opacity", 0.22);
+  // R2 — fade the secondary base further when a journey is active so the
+  // active leg's highlight lines and the primary Heights polyline sit
+  // forward visually.
+  map.setPaintProperty(ROUTES_LAYER_BASE, "line-opacity", 0.10);
   const ids = activeRouteId ? [activeRouteId] : [];
   map.setFilter(ROUTES_LAYER_HIGHLIGHT, [
     "in",
