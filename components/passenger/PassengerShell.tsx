@@ -463,6 +463,8 @@ export default function PassengerShell({
               </span>
               <span
                 className="text-svika-mute"
+                // Drops uppercase + tracking that svika-meta would impose on
+                // a dollar figure — small caps look poor on $ amounts.
                 style={{ fontSize: "10px" }}
               >
                 ${balanceLabel} · wallet
@@ -479,8 +481,8 @@ export default function PassengerShell({
             >
               <span aria-hidden className="svika-pulse-dot" />
               <span
-                className="text-svika-teal"
-                style={{ fontSize: "10px", fontWeight: 500 }}
+                className="svika-meta text-svika-teal"
+                style={{ textTransform: "none", fontSize: "10px" }}
               >
                 {liveStats.active_vehicle_count} on the road
               </span>

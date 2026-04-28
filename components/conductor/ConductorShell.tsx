@@ -174,17 +174,17 @@ export default function ConductorShell({
     <main className="min-h-dvh bg-svika-stone-dark">
       <header className="bg-svika-teal px-4 py-3 text-svika-stone">
         <div className="flex items-baseline justify-between gap-4">
-          <h1 className="text-lg font-semibold">Hwindi · {persona.name}</h1>
-          <span className="text-xs opacity-80">
+          <h1 className="svika-headline">Hwindi · {persona.name}</h1>
+          <span className="svika-meta opacity-80" style={{ textTransform: "none" }}>
             {activeVehicle
               ? `${activeVehicle.id} · ${activeVehicle.current_passenger_count}/${activeVehicle.capacity_seats}`
               : "No kombi assigned"}
           </span>
         </div>
         {activeVehicle ? (
-          <p className="text-xs opacity-80">{activeVehicle.route_name}</p>
+          <p className="svika-meta opacity-80" style={{ textTransform: "none" }}>{activeVehicle.route_name}</p>
         ) : (
-          <p className="text-xs opacity-80">Pick your kombi to start clearing fares.</p>
+          <p className="svika-meta opacity-80" style={{ textTransform: "none" }}>Pick your kombi to start clearing fares.</p>
         )}
       </header>
 
@@ -287,10 +287,10 @@ export default function ConductorShell({
             data-testid="hwindi-pin-keypad"
             data-mode={mode}
           >
-            <h2 className="text-sm font-medium text-svika-teal">
+            <h2 className="svika-headline text-svika-teal">
               {mode === "parcel" ? "Parcel code" : "Code"}
             </h2>
-            <p className="mt-1 text-xs text-svika-mute">
+            <p className="svika-meta mt-1 text-svika-mute" style={{ textTransform: "none" }}>
               {mode === "parcel"
                 ? "Type the sender's 3-digit parcel code. Tap Enter to accept."
                 : "Type the passenger's 3-digit code. Tap Enter when full."}
@@ -330,9 +330,9 @@ export default function ConductorShell({
           </section>
 
           <section className="px-4 pb-6" data-testid="hwindi-activity">
-            <h2 className="text-sm font-medium text-svika-teal">Today&apos;s clears</h2>
+            <h2 className="svika-headline text-svika-teal">Today&apos;s clears</h2>
             {state.recent_activity.length === 0 ? (
-              <p className="mt-2 text-xs text-svika-mute">
+              <p className="svika-meta mt-2 text-svika-mute" style={{ textTransform: "none" }}>
                 No fares cleared yet today on {activeVehicle.id}.
               </p>
             ) : (
@@ -342,7 +342,7 @@ export default function ConductorShell({
                     key={a.ticket_id}
                     className="flex items-center justify-between rounded-md border border-svika-teal-100 bg-white px-3 py-2 text-xs"
                   >
-                    <span className="font-mono text-svika-rust">{a.access_code}</span>
+                    <span className="svika-mono-code text-svika-rust" style={{ fontSize: "13px" }}>{a.access_code}</span>
                     <span className="text-svika-teal">
                       {a.board_at_stop_name} → {a.alight_at_stop_name}
                     </span>

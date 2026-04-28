@@ -31,11 +31,9 @@ export default async function HomeRoute({
           <Link
             href="/?as=takunda"
             prefetch={false}
-            className="svika-animate-fade-up flex w-full items-center justify-center gap-2 rounded-2xl bg-svika-rust px-4 text-white shadow-sm transition-transform active:scale-[0.99]"
+            className="svika-animate-fade-up svika-headline flex w-full items-center justify-center gap-2 rounded-2xl bg-svika-rust px-4 text-white shadow-sm transition-transform active:scale-[0.99]"
             style={{
               minHeight: "56px",
-              fontSize: "16px",
-              fontWeight: 600,
               animationDelay: "200ms",
             }}
             data-testid="landing-continue-takunda"
@@ -43,7 +41,7 @@ export default async function HomeRoute({
             Continue as Takunda
             <span aria-hidden style={{ fontSize: "18px" }}>→</span>
           </Link>
-          <p className="mt-3 text-[12px] leading-snug text-svika-mute">
+          <p className="svika-meta mt-3 text-svika-mute" style={{ textTransform: "none" }}>
             Want to see the system from another seat? Visit{" "}
             <Link href="/hwindi" className="underline" prefetch={false}>
               /hwindi
@@ -56,7 +54,7 @@ export default async function HomeRoute({
           </p>
         </section>
         <footer className="mt-auto px-5 pb-6 pt-2">
-          <p className="text-[11px] text-svika-mute">
+          <p className="svika-meta text-svika-mute" style={{ textTransform: "none" }}>
             Built for Harare. Designed to integrate with ZUPCO.
           </p>
         </footer>

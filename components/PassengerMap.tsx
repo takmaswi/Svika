@@ -32,6 +32,7 @@ const WALKING_SOURCE = "svika-walking";
 const WALKING_LAYER = "svika-walking-line";
 
 const TEAL = "#0a4b5c";
+const TEAL_700 = "#144f5e";
 const RUST = "#d9622a";
 const STONE = "#f2ede6";
 
@@ -481,9 +482,12 @@ export default function PassengerMap({
         layout: { "line-cap": "round", "line-join": "round" },
         filter: ["in", ["get", "id"], ["literal", []]],
         paint: {
-          "line-color": RUST,
+          // Phase D: active route polyline switches to teal-700 with the
+          // existing white halo. Rust on the map is now confined to the
+          // moving kombi marker and the walking-transfer dashed line.
+          "line-color": TEAL_700,
           "line-width": ["interpolate", ["linear"], ["zoom"], 10, 4, 14, 7, 16, 10],
-          "line-opacity": 0.78,
+          "line-opacity": 0.85,
         },
       });
 
@@ -519,7 +523,9 @@ export default function PassengerMap({
             ["case", ["get", "is_rank"], 10, ["get", "is_terminal"], 8, 6],
           ],
           "circle-color": STONE,
-          "circle-stroke-color": ["case", ["get", "is_active"], RUST, TEAL],
+          // Phase D: active stops adopt the route polyline's teal-700 to
+          // keep map rust reserved for the moving kombi marker.
+          "circle-stroke-color": ["case", ["get", "is_active"], TEAL_700, TEAL],
           "circle-stroke-width": ["case", ["get", "is_active"], 2.5, 2],
           "circle-opacity": 0.95,
         },
@@ -535,7 +541,7 @@ export default function PassengerMap({
             ["case", ["get", "is_rank"], 5, 4],
             ["case", ["get", "is_rank"], 4, 3],
           ],
-          "circle-color": ["case", ["get", "is_active"], RUST, TEAL],
+          "circle-color": ["case", ["get", "is_active"], TEAL_700, TEAL],
         },
       });
       map.addLayer({
@@ -567,7 +573,7 @@ export default function PassengerMap({
           "text-padding": 4,
         },
         paint: {
-          "text-color": ["case", ["get", "is_active"], RUST, TEAL],
+          "text-color": ["case", ["get", "is_active"], TEAL_700, TEAL],
           "text-halo-color": STONE,
           "text-halo-width": 1.5,
           "text-halo-blur": 0.5,

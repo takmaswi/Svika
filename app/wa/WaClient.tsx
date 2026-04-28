@@ -115,8 +115,8 @@ export default function WaClient({
           S
         </div>
         <div className="flex flex-col leading-tight">
-          <span className="text-sm font-medium">Svika</span>
-          <span className="text-[11px] opacity-80">+263 77 X SVIKA · online</span>
+          <span className="svika-body" style={{ fontWeight: 500 }}>Svika</span>
+          <span className="svika-meta opacity-80" style={{ textTransform: "none" }}>+263 77 X SVIKA · online</span>
         </div>
         <span className="ml-auto rounded-full bg-white/15 px-2 py-0.5 text-[10px] uppercase tracking-wider">
           Companion

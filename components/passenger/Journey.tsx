@@ -355,16 +355,15 @@ export default function Journey({
         >
           <span
             aria-hidden
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"
-            style={{ background: RUST }}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-svika-teal text-sm font-semibold text-white"
           >
             {CONDUCTOR_NAME.charAt(0)}
           </span>
           <span className="flex min-w-0 flex-1 flex-col leading-tight">
-            <span className="truncate text-sm font-semibold text-svika-teal">
+            <span className="svika-body truncate font-semibold text-svika-teal">
               {CONDUCTOR_NAME} · Conductor
             </span>
-            <span className="truncate text-[11px] text-svika-mute">
+            <span className="svika-meta truncate text-svika-mute">
               {vehiclePlate} · {VEHICLE_MAKE} · {VEHICLE_COLOR}
             </span>
             {isParcel ? (
@@ -382,10 +381,14 @@ export default function Journey({
         {/* Stage line + parcel/transfer detail */}
         <div className="mt-2 flex items-start gap-3">
           <span
-            className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-md text-base font-bold text-white transition-transform duration-300 ${
-              stage.flashing ? "scale-110" : "scale-100"
+            className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-md text-base font-bold transition-transform duration-300 ${
+              stage.flashing ? "scale-110 text-white" : "scale-100"
             }`}
-            style={{ background: RUST }}
+            style={
+              stage.flashing
+                ? { background: RUST, color: "#fff" }
+                : { border: "1.5px solid " + RUST, color: RUST, background: "transparent" }
+            }
             aria-hidden
           >
             {stageIcon(stage, transferDetail?.cardinal ?? null)}
@@ -393,31 +396,31 @@ export default function Journey({
           <div className="min-w-0 flex-1">
             {isParcel ? (
               <FadingText
-                className="text-base font-semibold text-svika-teal"
+                className="svika-headline text-svika-teal"
                 text={parcelStageLine()}
               />
             ) : stage.kind === "walking-transfer" && transferDetail && walkLeg ? (
               <>
                 <FadingText
-                  className="text-base font-semibold text-svika-teal"
+                  className="svika-headline text-svika-teal"
                   text={transferDetail.heading}
                 />
                 <FadingText
-                  className="mt-0.5 text-xs text-svika-mute"
+                  className="svika-meta mt-0.5 text-svika-mute"
                   text={`From: ${walkLeg.from_stop.name} (${transferDetail.from_note})`}
                 />
                 <FadingText
-                  className="mt-0.5 text-xs text-svika-mute"
+                  className="svika-meta mt-0.5 text-svika-mute"
                   text={`To: ${walkLeg.to_stop.name} (${transferDetail.to_note})`}
                 />
                 <FadingText
-                  className="mt-0.5 font-mono text-[11px] text-svika-teal"
+                  className="svika-meta mt-0.5 font-mono text-svika-teal"
                   text={`${transferDetail.walking_duration_minutes} min · ${transferDetail.walking_distance_meters} m`}
                 />
               </>
             ) : (
               <FadingText
-                className="text-base font-semibold text-svika-teal"
+                className="svika-headline text-svika-teal"
                 text={stage.title}
               />
             )}
@@ -425,8 +428,8 @@ export default function Journey({
             {/* Live ETA minute — only for passenger in-transit */}
             {liveEtaMinutes !== null ? (
               <p
-                className="mt-1 font-mono text-[14px] font-semibold"
-                style={{ color: RUST }}
+                className="svika-body mt-1 font-mono font-semibold"
+                style={{ color: "var(--color-accent)" }}
                 data-testid="journey-eta-minutes"
               >
                 Arriving in {liveEtaMinutes} min
@@ -454,14 +457,14 @@ export default function Journey({
           ) : null}
         </div>
 
-        {/* Animated progress bar — 700 ms ease-out so the rust fill glides
+        {/* Animated progress bar — 700 ms ease-out so the accent fill glides
             forward rather than snapping when the stage advances. */}
         <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-svika-teal-50">
           <div
             className="h-full rounded-full"
             style={{
               width: Math.round(stage.progress * 100) + "%",
-              background: RUST,
+              background: "var(--color-accent)",
               transition: "width 700ms cubic-bezier(0.16, 1, 0.3, 1)",
             }}
           />
@@ -473,7 +476,7 @@ export default function Journey({
           isParcel ? (
             <div className="mt-2 text-xs">
               <span className="text-svika-mute">Parcel code: </span>
-              <span className="font-mono text-base text-svika-rust">
+              <span className="svika-mono-code text-svika-rust">
                 {currentLeg.access_code}
               </span>
               <span className="text-svika-mute"> · revealed to receiver on arrival</span>
@@ -482,7 +485,7 @@ export default function Journey({
             <div className="mt-2 flex items-center justify-between text-xs">
               <span>
                 <span className="text-svika-mute">Show </span>
-                <span className="font-mono text-base text-svika-rust">
+                <span className="svika-mono-code text-svika-rust">
                   {currentLeg.access_code}
                 </span>
               </span>

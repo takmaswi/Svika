@@ -42,18 +42,10 @@ export default function LandingHero({ imageSrc, hasImage }: LandingHeroProps) {
 
       <div className="relative z-10 flex h-full min-h-[62vh] flex-col px-5 pb-8 pt-8">
         <header className="flex items-baseline justify-between">
-          <h1
-            className="text-svika-teal"
-            style={{
-              fontSize: "28px",
-              fontWeight: 600,
-              letterSpacing: "-0.5px",
-              lineHeight: 1,
-            }}
-          >
+          <h1 className="svika-display text-svika-teal" style={{ lineHeight: 1 }}>
             Svika
           </h1>
-          <p className="text-[11px] font-medium uppercase tracking-[0.5px] text-svika-mute">
+          <p className="svika-meta uppercase text-svika-mute">
             the kombi network in your pocket
           </p>
         </header>
@@ -62,20 +54,11 @@ export default function LandingHero({ imageSrc, hasImage }: LandingHeroProps) {
           <div className="svika-glass-strong px-5 py-5">
             <h2
               id="svika-hero-headline"
-              className="text-svika-teal"
-              style={{
-                fontSize: "28px",
-                fontWeight: 600,
-                letterSpacing: "-0.4px",
-                lineHeight: 1.15,
-              }}
+              className="svika-display text-svika-teal"
             >
               Where every kombi is one tap away
             </h2>
-            <p
-              className="mt-2 text-svika-mute"
-              style={{ fontSize: "14px", lineHeight: 1.5 }}
-            >
+            <p className="svika-body mt-2 text-svika-mute">
               Plan it. Pay it. Board it. Send it. Same kombi.
             </p>
           </div>

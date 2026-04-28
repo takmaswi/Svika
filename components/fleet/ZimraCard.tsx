@@ -6,17 +6,17 @@ interface ZimraCardProps {
 export default function ZimraCard({ monthlyEstimateUsd, dailyRevenueUsd }: ZimraCardProps) {
   return (
     <article
-      className="rounded-lg border-2 border-svika-rust bg-white p-5 shadow-sm"
+      className="rounded-lg border border-svika-teal-700 bg-white p-5 shadow-sm"
       data-testid="fleet-zimra-card"
     >
       <header>
-        <h3 className="text-sm font-medium text-svika-mute">ZIMRA liability (estimate)</h3>
-        <p className="text-[11px] text-svika-mute">
+        <h3 className="svika-meta text-svika-mute">ZIMRA liability (estimate)</h3>
+        <p className="svika-meta text-svika-mute">
           10% of monthly revenue, extrapolated from today.
         </p>
       </header>
       <p
-        className="mt-3 font-mono text-4xl font-semibold text-svika-rust"
+        className="svika-display mt-3 font-mono text-svika-teal-700"
         data-testid="fleet-zimra-amount"
       >
         ${monthlyEstimateUsd.toFixed(2)}

@@ -39,14 +39,11 @@ function TileButton({
       className="svika-glass flex min-h-[56px] w-full items-center justify-between gap-3 px-4 py-3 text-left transition-transform active:scale-[0.99]"
     >
       <span className="min-w-0 flex-1">
-        <span
-          className="block text-svika-teal"
-          style={{ fontSize: "13px", fontWeight: 600 }}
-        >
+        <span className="svika-body block font-semibold text-svika-teal">
           {label}
         </span>
         {detail ? (
-          <span className="mt-0.5 block text-[11px] text-svika-mute">
+          <span className="svika-meta mt-0.5 block text-svika-mute" style={{ textTransform: "none" }}>
             {detail}
           </span>
         ) : null}
@@ -75,14 +72,11 @@ function TileLink({ label, detail, href, testid }: TileLinkProps) {
       className="svika-glass flex min-h-[56px] w-full items-center justify-between gap-3 px-4 py-3 text-left transition-transform active:scale-[0.99]"
     >
       <span className="min-w-0 flex-1">
-        <span
-          className="block text-svika-teal"
-          style={{ fontSize: "13px", fontWeight: 600 }}
-        >
+        <span className="svika-body block font-semibold text-svika-teal">
           {label}
         </span>
         {detail ? (
-          <span className="mt-0.5 block text-[11px] text-svika-mute">
+          <span className="svika-meta mt-0.5 block text-svika-mute" style={{ textTransform: "none" }}>
             {detail}
           </span>
         ) : null}
@@ -96,7 +90,7 @@ function TileLink({ label, detail, href, testid }: TileLinkProps) {
 
 function SectionHeader({ children }: { children: React.ReactNode }) {
   return (
-    <p className="mt-5 px-1 text-[10px] font-medium uppercase tracking-[0.5px] text-svika-mute">
+    <p className="svika-meta mt-5 px-1 uppercase text-svika-mute">
       {children}
     </p>
   );
@@ -151,13 +145,10 @@ export default function PersonaDrawer({
               {persona.name.charAt(0).toUpperCase()}
             </span>
             <span className="flex flex-col leading-tight">
-              <span
-                className="text-svika-teal"
-                style={{ fontSize: "13px", fontWeight: 600 }}
-              >
+              <span className="svika-headline text-svika-teal">
                 {persona.name}
               </span>
-              <span className="text-[10px] text-svika-mute">
+              <span className="svika-meta text-svika-mute" style={{ textTransform: "none", fontSize: "10px" }}>
                 signed in as {personaSlug}
               </span>
             </span>

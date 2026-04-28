@@ -26,22 +26,22 @@ export default function VehicleCard({ stats, selected, onSelect }: VehicleCardPr
       }`}
     >
       <header className="flex items-baseline justify-between">
-        <h4 className="font-mono text-base font-semibold text-svika-teal">{stats.vehicle_id}</h4>
-        <span className="text-xs text-svika-mute">{stats.route_name}</span>
+        <h4 className="svika-headline font-mono text-svika-teal">{stats.vehicle_id}</h4>
+        <span className="svika-meta text-svika-mute">{stats.route_name}</span>
       </header>
       <dl className="grid grid-cols-3 gap-2 text-xs">
         <div>
-          <dt className="text-svika-mute">Revenue</dt>
+          <dt className="svika-meta text-svika-mute">Revenue</dt>
           <dd className="font-mono text-sm text-svika-teal">
             ${stats.total_logged_revenue_usd.toFixed(2)}
           </dd>
         </div>
         <div>
-          <dt className="text-svika-mute">Stops</dt>
+          <dt className="svika-meta text-svika-mute">Stops</dt>
           <dd className="font-mono text-sm text-svika-teal">{stats.stops_made}</dd>
         </div>
         <div>
-          <dt className="text-svika-mute">On board</dt>
+          <dt className="svika-meta text-svika-mute">On board</dt>
           <dd className="font-mono text-sm text-svika-teal">
             {stats.current_passenger_count}/{stats.capacity_seats}
             <span className="ml-1 text-[10px] text-svika-mute">({ratio}%)</span>
@@ -54,8 +54,12 @@ export default function VehicleCard({ stats, selected, onSelect }: VehicleCardPr
           {stats.parcels_delivered > 0 ? ` · Parcels ${stats.parcels_delivered}` : ""}
         </span>
         <span
+          // Phase D: only flag a gap as rust when it's a real warning (> $5).
+          // Below that, treat as mute teal so the card reads calm.
           className={
-            stats.revenue_gap_estimate_usd > 0 ? "font-medium text-svika-rust" : "text-svika-mute"
+            stats.revenue_gap_estimate_usd > 5
+              ? "font-medium text-svika-rust"
+              : "text-svika-mute"
           }
         >
           Gap ${stats.revenue_gap_estimate_usd.toFixed(2)}

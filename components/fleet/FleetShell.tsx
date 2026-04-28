@@ -33,8 +33,8 @@ export default function FleetShell({ persona, state, narratives }: FleetShellPro
   return (
     <main className="min-h-dvh">
       <header className="border-b border-svika-teal-100 bg-svika-teal px-6 py-4 text-svika-stone">
-        <h1 className="text-2xl font-semibold">Fleet · {persona.name}</h1>
-        <p className="text-xs opacity-80">
+        <h1 className="svika-display">Fleet · {persona.name}</h1>
+        <p className="svika-meta opacity-80">
           {state.for_date} · {state.vehicles.length} kombi
           {state.vehicles.length === 1 ? "" : "s"}
         </p>
@@ -42,20 +42,20 @@ export default function FleetShell({ persona, state, narratives }: FleetShellPro
 
       <section className="grid grid-cols-1 gap-4 p-6 lg:grid-cols-3">
         <article className="rounded-lg border border-svika-teal-100 bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-medium text-svika-mute">Today&apos;s revenue</h2>
+          <h2 className="svika-meta text-svika-mute">Today&apos;s revenue</h2>
           <p
-            className="mt-2 font-mono text-3xl font-semibold text-svika-teal"
+            className="svika-display mt-2 font-mono text-svika-teal"
             data-testid="fleet-revenue"
           >
             ${state.totals.revenue_usd.toFixed(2)}
           </p>
-          <p className="mt-1 text-xs text-svika-mute">
+          <p className="svika-meta mt-1 text-svika-mute">
             Digital {state.totals.digital_fares_logged} · Cash {state.totals.cash_walkons_logged}
           </p>
         </article>
         <article className="rounded-lg border border-svika-teal-100 bg-white p-5 shadow-sm">
-          <h2 className="text-sm font-medium text-svika-mute">Stops vs fares logged</h2>
-          <p className="mt-2 font-mono text-3xl font-semibold text-svika-teal">
+          <h2 className="svika-meta text-svika-mute">Stops vs fares logged</h2>
+          <p className="svika-display mt-2 font-mono text-svika-teal">
             {state.totals.stops_made}
             <span className="text-base text-svika-mute">
               {" "}
@@ -63,8 +63,10 @@ export default function FleetShell({ persona, state, narratives }: FleetShellPro
             </span>
           </p>
           <p
-            className={`mt-1 text-xs ${
-              state.totals.revenue_gap_usd > 0 ? "font-medium text-svika-rust" : "text-svika-mute"
+            className={`svika-meta mt-1 ${
+              // Phase D: only escalate to rust when the gap crosses the $5
+              // threshold; below that, mute teal keeps the card calm.
+              state.totals.revenue_gap_usd > 5 ? "font-medium text-svika-rust" : "text-svika-mute"
             }`}
             data-testid="fleet-gap"
           >
@@ -78,8 +80,8 @@ export default function FleetShell({ persona, state, narratives }: FleetShellPro
       </section>
 
       <section className="px-6 pb-2">
-        <h2 className="text-sm font-medium text-svika-teal">Per-kombi</h2>
-        <p className="text-xs text-svika-mute">
+        <h2 className="svika-headline text-svika-teal">Per-kombi</h2>
+        <p className="svika-meta text-svika-mute">
           Tap a kombi to see its bilingual audit narrative.
         </p>
         <div

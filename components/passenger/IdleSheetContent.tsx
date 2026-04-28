@@ -89,7 +89,7 @@ export default function IdleSheetContent({
       >
         Where to, {firstName}?
       </h2>
-      <p className="mt-1 text-[11px] text-svika-mute">
+      <p className="svika-meta mt-1 text-svika-mute" style={{ textTransform: "none" }}>
         Type in Shona or English · next Heights kombi {nextHeightsMinutes} min
       </p>
 
@@ -102,7 +102,7 @@ export default function IdleSheetContent({
         />
       </div>
 
-      <p className="mt-4 px-1 text-[10px] font-medium uppercase tracking-[0.5px] text-svika-mute">
+      <p className="svika-meta mt-4 px-1 uppercase text-svika-mute">
         Quick picks
       </p>
 
@@ -127,14 +127,11 @@ export default function IdleSheetContent({
             >
               {FEATURED.destination}
             </span>
-            <span className="mt-0.5 block text-[11px] text-svika-mute">
+            <span className="svika-meta mt-0.5 block text-svika-mute" style={{ textTransform: "none" }}>
               {FEATURED.via} · {FEATURED.duration_minutes} min
             </span>
           </span>
-          <span
-            className="font-mono text-svika-teal"
-            style={{ fontSize: "15px", fontWeight: 600 }}
-          >
+          <span className="svika-mono-code text-svika-teal">
             ${FEATURED.fare_usd.toFixed(2)}
           </span>
           {busy && pickedPreset === FEATURED.query ? (
@@ -160,7 +157,7 @@ export default function IdleSheetContent({
               >
                 {preset.destination}
               </span>
-              <span className="mt-0.5 block text-[11px] text-svika-mute">
+              <span className="svika-meta mt-0.5 block text-svika-mute" style={{ textTransform: "none" }}>
                 {preset.via} · {preset.duration_minutes} min
               </span>
             </span>

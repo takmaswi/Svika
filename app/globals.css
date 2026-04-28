@@ -35,6 +35,17 @@
 
   --color-live: #16a34a;
 
+  /* Phase D — rust re-allocation. `action` is rust reserved for primary
+     CTAs only; `accent` is teal-700 used for highlights/emphasis previously
+     painted in rust; `mark` is rust pinned to the moving kombi marker on
+     the map. Keeping these named separately from the brand `svika-*`
+     tokens means the palette stays intact while semantic usage tightens. */
+  --color-action: #d9622a;
+  --color-action-hover: #c25620;
+  --color-action-disabled: rgba(217, 98, 42, 0.32);
+  --color-accent: #144f5e;
+  --color-mark: #d9622a;
+
   --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, monospace;
 
@@ -53,6 +64,40 @@ body {
   color: var(--color-svika-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+}
+
+/* ----- Type ramp — Phase D --------------------------------------------- */
+/* Geist ramp consolidating ad-hoc inline fontSize declarations across the
+   four surfaces. Five sizes only; anything outside the ramp keeps an inline
+   override but should still align family + weight to the nearest step. */
+.svika-display {
+  font-size: 28px;
+  line-height: 1.15;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+}
+.svika-headline {
+  font-size: 18px;
+  line-height: 1.3;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+.svika-body {
+  font-size: 15px;
+  line-height: 1.5;
+  font-weight: 400;
+}
+.svika-meta {
+  font-size: 11px;
+  line-height: 1.4;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+.svika-mono-code {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  line-height: 1;
+  font-weight: 600;
 }
 
 /* Conductor screen utility — fat finger targets */
