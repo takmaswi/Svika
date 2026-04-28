@@ -439,26 +439,87 @@ export default function PassengerMap({
           [minLng, minLat],
           [maxLng, maxLat],
         ],
-        // Padding 80 + maxZoom 14.5 keeps street-level basemap legible on
-        // mobile rather than zooming straight into a single roundabout.
-        { padding: 80, maxZoom: 14.5, duration: 800, essential: true },
+        // maxZoom 15.5 (up from 14.5) so an active trip actually frames the
+        // corridor on a phone instead of showing most of Harare. Mobile-
+        // aware padding: top 60 leaves room for the header chip, bottom
+        // 280 keeps the trip area clear of the JourneySheet at full snap,
+        // sides 40 keep the corridor centred.
+        {
+          padding: { top: 60, right: 40, bottom: 280, left: 40 },
+          maxZoom: 15.5,
+          duration: 800,
+          essential: true,
+        },
       );
     }
 
-    function applyNetworkBounds(): void {
+    /**
+     * Walking-transfer override: when the passenger is between two stops on
+     * foot, pull the camera tight to just the walk corridor at street level
+     * so the dashed walking line and both stops are clearly visible.
+     */
+    function applyWalkingTransferBounds(): boolean {
+      if (!journey) return false;
+      const walkLeg = journey.legs.find((l) => l.kind === "walk");
+      if (!walkLeg || walkLeg.kind !== "walk") return false;
+      const minLng = Math.min(walkLeg.from_stop.lng, walkLeg.to_stop.lng);
+      const maxLng = Math.max(walkLeg.from_stop.lng, walkLeg.to_stop.lng);
+      const minLat = Math.min(walkLeg.from_stop.lat, walkLeg.to_stop.lat);
+      const maxLat = Math.max(walkLeg.from_stop.lat, walkLeg.to_stop.lat);
+      m.fitBounds(
+        [
+          [minLng, minLat],
+          [maxLng, maxLat],
+        ],
+        {
+          padding: { top: 80, right: 60, bottom: 320, left: 60 },
+          maxZoom: 17,
+          duration: 600,
+          essential: true,
+        },
+      );
+      return true;
+    }
+
+    function applyArrivedBounds(): void {
       const [sw, ne] = harareBounds(networkRef.current) as [
         [number, number],
         [number, number],
       ];
-      // 80px padding on the empty/idle landing so the entire network sits
-      // inside the viewport even with the bottom sheet at peek.
-      m.fitBounds([sw, ne], { padding: 80, duration: 800, essential: true });
+      m.fitBounds([sw, ne], {
+        padding: 40,
+        maxZoom: 12,
+        duration: 600,
+        essential: true,
+      });
+    }
+
+    function applyEmptyStateBounds(): void {
+      const [sw, ne] = harareBounds(networkRef.current) as [
+        [number, number],
+        [number, number],
+      ];
+      // maxZoom 12.5 keeps Harare's structure visible (all four routes
+      // legible) without the prior overview-of-a-continent feel. Duration 0
+      // because this fires on initial idle landing, not a transition.
+      m.fitBounds([sw, ne], {
+        padding: 60,
+        maxZoom: 12.5,
+        duration: 0,
+        essential: true,
+      });
     }
 
     function run(): void {
+      // Walking-transfer takes priority — when the passenger steps off the
+      // first kombi for the 6-min walk to the next stop, slam the camera
+      // tight on the walk corridor regardless of trip-change state.
+      if (stage?.kind === "walking-transfer" && journey) {
+        if (applyWalkingTransferBounds()) return;
+      }
       if (justArrived) {
         lastArrivedFitRef.current = arrivedTripId;
-        applyNetworkBounds();
+        applyArrivedBounds();
         return;
       }
       if (!tripChanged) return;
@@ -467,7 +528,7 @@ export default function PassengerMap({
         applyTripBounds();
       } else {
         lastArrivedFitRef.current = null;
-        applyNetworkBounds();
+        applyEmptyStateBounds();
       }
     }
 
@@ -684,11 +745,19 @@ export default function PassengerMap({
               "icon-pitch-alignment": "map",
               "icon-rotation-alignment": "map",
               "icon-offset": [0, 22],
+              // Zoom-interpolated so the shadow scales with the body. At the
+              // network-overview zoom (~11) the shadow shrinks to a small
+              // soft dot; at street level (~16-17) it widens to sit under
+              // the full-size icon.
               "icon-size": [
-                "case",
-                ["==", ["get", "is_assigned"], true],
-                1.0,
-                0.85,
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                10, 0.18,
+                12, 0.28,
+                14, 0.45,
+                15.5, 0.65,
+                17, 0.95,
               ],
             },
             paint: {
@@ -708,11 +777,29 @@ export default function PassengerMap({
               "icon-allow-overlap": true,
               "icon-ignore-placement": true,
               "icon-anchor": "center",
+              // Zoom-interpolated icon-size with a 1.3× multiplier when the
+              // vehicle is the one assigned to the active trip. Before Z.2
+              // the icons rendered at a flat 1.2-1.5 across all zooms,
+              // which on a 3× DPR phone meant ~432-540 device pixels —
+              // the kombis covered ~200m of road and looked like trucks
+              // parked on buildings. The interpolated values keep them
+              // readable as vehicles at street-level zoom and as small
+              // dots at the network-overview zoom.
+              //
+              // Mapbox rejects ["zoom"] inside a non-top-level expression
+              // (e.g. ["*", ["interpolate", ["zoom"], ...], multiplier]),
+              // so the assigned-multiplier is folded into each stop via
+              // a per-feature `case`: assigned values are simply 1.3× the
+              // base value at the same stop.
               "icon-size": [
-                "case",
-                ["==", ["get", "is_assigned"], true],
-                1.5,
-                1.2,
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                10, ["case", ["get", "is_assigned"], 0.234, 0.18],
+                12, ["case", ["get", "is_assigned"], 0.364, 0.28],
+                14, ["case", ["get", "is_assigned"], 0.585, 0.45],
+                15.5, ["case", ["get", "is_assigned"], 0.845, 0.65],
+                17, ["case", ["get", "is_assigned"], 1.235, 0.95],
               ],
             },
             paint: {
