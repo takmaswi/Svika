@@ -742,33 +742,23 @@ export default function PassengerMap({
               "icon-allow-overlap": true,
               "icon-ignore-placement": true,
               "icon-anchor": "center",
-              // Zoom-interpolated icon-size, recalibrated for the
-              // 128×128 native viewBox of the Refined v4 marker
-              // (integrated 2026-04-28). Within that frame the
-              // body+shadow occupy ~80% (16px padding); at icon-size
-              // 0.30 the rendered marker is ~38 logical px which is
-              // the design tool's recommended "39px on map" target.
-              //
-              // The curve here ships SLIGHTLY SMALLER than the
-              // recommendation across the board because real-phone
-              // testing on a 3× DPR Android showed the design's 39px
-              // recommendation rendering at ~117 device pixels —
-              // still a touch larger than Uber-grade markers (which
-              // sit at ~80-100 device pixels at street zoom). These
-              // values aim for ~50-100 device px on a 3× DPR phone.
-              //
-              // Mapbox rejects ["zoom"] inside a non-top-level
-              // expression, so the 1.25× assigned multiplier is
-              // folded into each stop via a per-feature `case`.
+              // Zoom-interpolated icon-size, recalibrated 2026-04-28 against an
+              // empirical sweep on prod (Playwright headed at 390x844 + 3× DPR).
+              // Previous theoretical curve (0.14-0.42) rendered markers at
+              // 10-15 device pixels at zoom 16 — invisible. Empirical anchor:
+              // icon-size 1.5 = ~55 device px = clean Hiace silhouette at the
+              // typical demo recording zoom. Curve targets 30 px at overview,
+              // 45 px at trip-corridor zoom, 80 px at street level, with a
+              // 1.25× multiplier for the assigned vehicle.
               "icon-size": [
                 "interpolate",
                 ["linear"],
                 ["zoom"],
-                10, ["case", ["get", "is_assigned"], 0.175, 0.14],
-                12, ["case", ["get", "is_assigned"], 0.250, 0.20],
-                14, ["case", ["get", "is_assigned"], 0.325, 0.26],
-                15.5, ["case", ["get", "is_assigned"], 0.425, 0.34],
-                17, ["case", ["get", "is_assigned"], 0.525, 0.42],
+                10, ["case", ["get", "is_assigned"], 0.875, 0.70],
+                12, ["case", ["get", "is_assigned"], 1.250, 1.00],
+                14, ["case", ["get", "is_assigned"], 1.750, 1.40],
+                15.5, ["case", ["get", "is_assigned"], 2.250, 1.80],
+                17, ["case", ["get", "is_assigned"], 2.750, 2.20],
               ],
             },
             paint: {
