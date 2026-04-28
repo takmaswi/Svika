@@ -27,6 +27,7 @@ const STOPS_LAYER_LABEL = "svika-stops-label";
 const KOMBIS_SOURCE = "svika-kombis";
 const KOMBIS_LAYER = "svika-kombis-dot";
 const KOMBIS_LAYER_HALO = "svika-kombis-halo";
+const KOMBIS_LAYER_SHADOW = "svika-kombis-shadow";
 
 const WALKING_SOURCE = "svika-walking";
 const WALKING_LAYER = "svika-walking-line";
@@ -37,64 +38,96 @@ const RUST = "#d9622a";
 const STONE = "#f2ede6";
 
 const KOMBI_ICON_ID = "kombi-icon";
-const KOMBI_ICON_PX = 64;
+const KOMBI_ICON_W = 96;
+const KOMBI_ICON_H = 144;
+
+const KOMBI_SHADOW_ID = "kombi-shadow-icon";
+const KOMBI_SHADOW_W = 60;
+const KOMBI_SHADOW_H = 24;
 
 /**
  * Inline rasterisation of the Hiace SVG so Mapbox can pick it up via
  * `addImage`. The on-disk file at `public/brand/kombi.svg` is the source
  * of truth for the artwork; this constant mirrors the same shapes
- * (cream body, teal stripe, rust bumper, tinted windows, four wheels,
- * soft shadow) — kept inline because Mapbox + headless chromium has
- * shown intermittent failure modes when canvas-rasterising a fetched
- * SVG file, and the data URI path has been stable across the project's
- * earlier rehearsals.
+ * (cream body, teal stripe + side stripe, rust front bumper, tinted
+ * front and rear windows, four wheels) — kept inline because Mapbox +
+ * headless chromium has shown intermittent failure modes when canvas-
+ * rasterising a fetched SVG file, and the data URI path has been
+ * stable across the project's earlier rehearsals.
  */
 const KOMBI_SVG = `
-<svg xmlns="http://www.w3.org/2000/svg" width="${KOMBI_ICON_PX}" height="${KOMBI_ICON_PX}" viewBox="0 0 64 64">
+<svg xmlns="http://www.w3.org/2000/svg" width="${KOMBI_ICON_W}" height="${KOMBI_ICON_H}" viewBox="0 0 96 144">
   <defs>
-    <filter id="kombiShadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="1" stdDeviation="1.6" flood-color="#000" flood-opacity="0.18"/>
-    </filter>
+    <linearGradient id="bodyHi" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.55"/>
+      <stop offset="0.16" stop-color="#FFFFFF" stop-opacity="0.18"/>
+      <stop offset="0.32" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="bodyLo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.18"/>
+    </linearGradient>
   </defs>
-  <g filter="url(#kombiShadow)">
-    <ellipse cx="13" cy="18" rx="3.2" ry="4.2" fill="#1a1a1a"/>
-    <ellipse cx="51" cy="18" rx="3.2" ry="4.2" fill="#1a1a1a"/>
-    <ellipse cx="13" cy="48" rx="3.2" ry="4.2" fill="#1a1a1a"/>
-    <ellipse cx="51" cy="48" rx="3.2" ry="4.2" fill="#1a1a1a"/>
-    <rect x="11" y="6" width="42" height="52" rx="9" ry="9" fill="#F0EDE3"/>
-    <rect x="22" y="6" width="20" height="3" rx="1" fill="#D9622A"/>
-    <rect x="18" y="11" width="28" height="10" rx="2" fill="#0F4C5C" fill-opacity="0.85"/>
-    <rect x="11" y="30" width="42" height="3" fill="#0F4C5C"/>
-    <rect x="18" y="44" width="28" height="10" rx="2" fill="#0F4C5C" fill-opacity="0.85"/>
-  </g>
+  <ellipse cx="14" cy="38" rx="7" ry="11" fill="#2a2a2a"/>
+  <ellipse cx="82" cy="38" rx="7" ry="11" fill="#2a2a2a"/>
+  <ellipse cx="14" cy="106" rx="7" ry="11" fill="#2a2a2a"/>
+  <ellipse cx="82" cy="106" rx="7" ry="11" fill="#2a2a2a"/>
+  <rect x="14" y="10" width="68" height="124" rx="20" ry="22"
+        fill="#F0EDE3" stroke="#0d0d0d" stroke-width="1.4"/>
+  <rect x="15" y="11" width="66" height="124" rx="19" ry="21" fill="url(#bodyHi)"/>
+  <rect x="15" y="11" width="66" height="124" rx="19" ry="21" fill="url(#bodyLo)"/>
+  <rect x="22" y="12" width="52" height="6" rx="2.5" fill="#D9622A"/>
+  <rect x="22" y="22" width="52" height="22" rx="4" fill="#0F4C5C" fill-opacity="0.82"
+        stroke="#0a3a48" stroke-width="0.8"/>
+  <rect x="24" y="24" width="48" height="6" rx="2" fill="#FFFFFF" fill-opacity="0.18"/>
+  <rect x="14" y="69" width="68" height="6" fill="#0F4C5C"/>
+  <rect x="22" y="98" width="52" height="18" rx="4" fill="#0F4C5C" fill-opacity="0.82"
+        stroke="#0a3a48" stroke-width="0.8"/>
+  <rect x="22" y="124" width="52" height="4" rx="1.5" fill="#9b3c0d" fill-opacity="0.55"/>
+  <line x1="14" y1="84" x2="82" y2="84" stroke="#0d0d0d" stroke-opacity="0.18" stroke-width="0.7"/>
+  <line x1="48" y1="44" x2="48" y2="69" stroke="#0d0d0d" stroke-opacity="0.18" stroke-width="0.7"/>
 </svg>
 `.trim();
 
-/**
- * Rasterises the SVG and hands the pixels to Mapbox under the name
- * `kombi-icon`. `data:` URIs are treated as same-origin and never taint
- * the canvas, which is the root cause we hit when fetching the file.
- */
-async function registerKombiIcon(map: mapboxgl.Map): Promise<void> {
-  if (map.hasImage(KOMBI_ICON_ID)) return;
+const KOMBI_SHADOW_SVG = `
+<svg xmlns="http://www.w3.org/2000/svg" width="${KOMBI_SHADOW_W}" height="${KOMBI_SHADOW_H}" viewBox="0 0 60 24">
+  <defs>
+    <radialGradient id="shadowGrad" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#000000" stop-opacity="0.32"/>
+      <stop offset="0.55" stop-color="#000000" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="30" cy="12" rx="28" ry="10" fill="url(#shadowGrad)"/>
+</svg>
+`.trim();
+
+async function registerSvgImage(
+  map: mapboxgl.Map,
+  id: string,
+  svg: string,
+  width: number,
+  height: number,
+): Promise<void> {
+  if (map.hasImage(id)) return;
   await new Promise<void>((resolve) => {
-    const img = new Image(KOMBI_ICON_PX, KOMBI_ICON_PX);
+    const img = new Image(width, height);
     const url =
-      "data:image/svg+xml;charset=utf-8," + encodeURIComponent(KOMBI_SVG);
+      "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
     img.onload = () => {
       try {
         const canvas = document.createElement("canvas");
-        canvas.width = KOMBI_ICON_PX;
-        canvas.height = KOMBI_ICON_PX;
+        canvas.width = width;
+        canvas.height = height;
         const ctx = canvas.getContext("2d");
         if (!ctx) {
           resolve();
           return;
         }
-        ctx.drawImage(img, 0, 0, KOMBI_ICON_PX, KOMBI_ICON_PX);
-        const data = ctx.getImageData(0, 0, KOMBI_ICON_PX, KOMBI_ICON_PX);
-        if (!map.hasImage(KOMBI_ICON_ID)) {
-          map.addImage(KOMBI_ICON_ID, data, { pixelRatio: 2 });
+        ctx.drawImage(img, 0, 0, width, height);
+        const data = ctx.getImageData(0, 0, width, height);
+        if (!map.hasImage(id)) {
+          map.addImage(id, data, { pixelRatio: 2 });
         }
       } catch {
         // best-effort; symbol layer falls back to no-icon if missing
@@ -104,6 +137,25 @@ async function registerKombiIcon(map: mapboxgl.Map): Promise<void> {
     img.onerror = () => resolve();
     img.src = url;
   });
+}
+
+/**
+ * Rasterises the kombi SVG and the soft shadow ellipse and hands them
+ * to Mapbox. Both run in parallel; either failure leaves the layer
+ * with a missing icon, which Mapbox draws as nothing — the marker just
+ * disappears, never breaks the rest of the map.
+ */
+async function registerKombiIcons(map: mapboxgl.Map): Promise<void> {
+  await Promise.all([
+    registerSvgImage(map, KOMBI_ICON_ID, KOMBI_SVG, KOMBI_ICON_W, KOMBI_ICON_H),
+    registerSvgImage(
+      map,
+      KOMBI_SHADOW_ID,
+      KOMBI_SHADOW_SVG,
+      KOMBI_SHADOW_W,
+      KOMBI_SHADOW_H,
+    ),
+  ]);
 }
 
 interface PassengerMapProps {
@@ -613,10 +665,37 @@ export default function PassengerMap({
         },
       });
       // Kombi minibus icon, rotated to direction-of-travel via the bearing
-      // on each tick payload. Active (assigned) kombi renders at full size +
-      // opacity; pass-through kombis render at 0.7× and 0.5 alpha so the eye
-      // tracks the trip-relevant vehicle first.
-      void registerKombiIcon(map).then(() => {
+      // on each tick payload. Active (assigned) kombi renders larger and
+      // fully opaque; pass-through kombis render slightly smaller and at
+      // 0.6 alpha so the eye tracks the trip-relevant vehicle first.
+      // The shadow ellipse renders BELOW the body as a separate symbol
+      // layer so it lays flat on the road regardless of icon rotation.
+      void registerKombiIcons(map).then(() => {
+        if (!map.getLayer(KOMBIS_LAYER_SHADOW)) {
+          map.addLayer({
+            id: KOMBIS_LAYER_SHADOW,
+            type: "symbol",
+            source: KOMBIS_SOURCE,
+            layout: {
+              "icon-image": KOMBI_SHADOW_ID,
+              "icon-allow-overlap": true,
+              "icon-ignore-placement": true,
+              "icon-anchor": "center",
+              "icon-pitch-alignment": "map",
+              "icon-rotation-alignment": "map",
+              "icon-offset": [0, 22],
+              "icon-size": [
+                "case",
+                ["==", ["get", "is_assigned"], true],
+                1.0,
+                0.85,
+              ],
+            },
+            paint: {
+              "icon-opacity": 0.85,
+            },
+          });
+        }
         if (!map.getLayer(KOMBIS_LAYER)) {
           map.addLayer({
             id: KOMBIS_LAYER,
@@ -632,8 +711,8 @@ export default function PassengerMap({
               "icon-size": [
                 "case",
                 ["==", ["get", "is_assigned"], true],
-                1.0,
-                0.7,
+                1.5,
+                1.2,
               ],
             },
             paint: {
@@ -641,7 +720,7 @@ export default function PassengerMap({
                 "case",
                 ["==", ["get", "is_assigned"], true],
                 1.0,
-                0.5,
+                0.6,
               ],
             },
           });
@@ -799,6 +878,125 @@ export default function PassengerMap({
 
     return () => {
       void supabase.removeChannel(channel);
+    };
+  }, []);
+
+  // Phase Z.1 — passenger-driven simulate-path animation. Listens for the
+  // `svika:simulate-path` custom event dispatched by Journey, then RAF-
+  // animates the simulated vehicle along the supplied polyline waypoints
+  // for `duration_ms`. The simulated vehicle's feature in the kombis source
+  // is rewritten every frame; all other vehicles keep their last position.
+  // No bearing dependency on broadcasts — bearing is derived per segment
+  // from the segment vector so the icon rotates smoothly along curves.
+  useEffect(() => {
+    let raf: number | null = null;
+
+    function bearingDeg(
+      from: [number, number],
+      to: [number, number],
+    ): number {
+      const toRad = (deg: number) => (deg * Math.PI) / 180;
+      const toDeg = (rad: number) => (rad * 180) / Math.PI;
+      const [lng1, lat1] = from;
+      const [lng2, lat2] = to;
+      const phi1 = toRad(lat1);
+      const phi2 = toRad(lat2);
+      const dLambda = toRad(lng2 - lng1);
+      const y = Math.sin(dLambda) * Math.cos(phi2);
+      const x =
+        Math.cos(phi1) * Math.sin(phi2) -
+        Math.sin(phi1) * Math.cos(phi2) * Math.cos(dLambda);
+      return (toDeg(Math.atan2(y, x)) + 360) % 360;
+    }
+
+    function rebuildSource(): void {
+      const map = mapRef.current;
+      if (!map || !map.isStyleLoaded()) return;
+      const src = map.getSource(KOMBIS_SOURCE) as GeoJSONSource | undefined;
+      if (!src) return;
+      try {
+        src.setData(
+          kombisGeoJSON(positionsRef.current, assignedVehicleIdRef.current),
+        );
+      } catch {
+        // map closed mid-frame
+      }
+    }
+
+    function handleSimulatePath(ev: Event): void {
+      const detail = (ev as CustomEvent).detail as
+        | {
+            vehicle_id: string;
+            route_id: string;
+            path: Array<[number, number]>;
+            duration_ms: number;
+            final_lat: number;
+            final_lng: number;
+          }
+        | undefined;
+      if (!detail || !Array.isArray(detail.path) || detail.path.length < 2) {
+        return;
+      }
+      const { vehicle_id, route_id, path, duration_ms } = detail;
+      const finalLat = detail.final_lat;
+      const finalLng = detail.final_lng;
+      // Suppress the per-tick lerp for this vehicle so the two RAF loops
+      // don't fight: the simulate-path RAF owns this vehicle until done.
+      interpRef.current.delete(vehicle_id);
+
+      const start = performance.now();
+      const segments = path.length - 1;
+
+      if (raf !== null) cancelAnimationFrame(raf);
+      function step(): void {
+        const now = performance.now();
+        const t = Math.max(0, Math.min(1, (now - start) / duration_ms));
+        const segFloat = t * segments;
+        const idx = Math.min(segments - 1, Math.floor(segFloat));
+        const frac = segFloat - idx;
+        const a = path[idx];
+        const b = path[idx + 1];
+        const lng = a[0] + (b[0] - a[0]) * frac;
+        const lat = a[1] + (b[1] - a[1]) * frac;
+        const bearing = bearingDeg(a, b);
+        const existing = positionsRef.current.get(vehicle_id);
+        positionsRef.current.set(vehicle_id, {
+          vehicle_id,
+          route_id,
+          lat,
+          lng,
+          bearing,
+          direction: existing?.direction ?? "outbound",
+          at: existing?.at ?? new Date().toISOString(),
+        });
+        rebuildSource();
+        if (t < 1) {
+          raf = requestAnimationFrame(step);
+        } else {
+          // Snap to final waypoint to make sure rounding doesn't leave the
+          // marker a metre short of the target stop.
+          const finalA = path[path.length - 2];
+          const finalB = path[path.length - 1];
+          positionsRef.current.set(vehicle_id, {
+            vehicle_id,
+            route_id,
+            lat: finalLat,
+            lng: finalLng,
+            bearing: bearingDeg(finalA, finalB),
+            direction: existing?.direction ?? "outbound",
+            at: new Date().toISOString(),
+          });
+          rebuildSource();
+          raf = null;
+        }
+      }
+      raf = requestAnimationFrame(step);
+    }
+
+    window.addEventListener("svika:simulate-path", handleSimulatePath);
+    return () => {
+      window.removeEventListener("svika:simulate-path", handleSimulatePath);
+      if (raf !== null) cancelAnimationFrame(raf);
     };
   }, []);
 

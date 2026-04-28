@@ -60,6 +60,10 @@ interface JourneySheetContentProps {
   onLifecycleEvent: (event: "redeemed" | "arrived") => void;
   onStageChange: (stage: JourneyStage) => void;
   onEndTrip: () => Promise<{ ok: boolean; error?: string }>;
+  /** Fires the moment a Simulate tap kicks off a path animation. */
+  onSimulateStart?: () => void;
+  /** Fires once the simulated path animation has played out. */
+  onSimulateEnd?: () => void;
   // wallet
   tickets: WalletTicket[];
   onTransfer: (
@@ -220,6 +224,8 @@ export default function JourneySheetContent(
           onLifecycleEvent={props.onLifecycleEvent}
           onStageChange={props.onStageChange}
           onEndTrip={props.onEndTrip}
+          onSimulateStart={props.onSimulateStart}
+          onSimulateEnd={props.onSimulateEnd}
         />
       </div>
     );

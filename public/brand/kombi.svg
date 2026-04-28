@@ -1,24 +1,53 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="32" height="48" viewBox="0 0 32 48">
+<svg xmlns="http://www.w3.org/2000/svg" width="96" height="144" viewBox="0 0 96 144">
   <defs>
-    <filter id="kombi-shadow" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur in="SourceAlpha" stdDeviation="4"/>
-      <feOffset dx="0" dy="1"/>
-      <feComponentTransfer><feFuncA type="linear" slope="0.16"/></feComponentTransfer>
-      <feMerge>
-        <feMergeNode/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
+    <linearGradient id="bodyHi" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.55"/>
+      <stop offset="0.16" stop-color="#FFFFFF" stop-opacity="0.18"/>
+      <stop offset="0.32" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="bodyLo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0.62" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.18"/>
+    </linearGradient>
   </defs>
-  <g filter="url(#kombi-shadow)">
-    <ellipse cx="5.6" cy="11" rx="2.4" ry="3.2" fill="#1a1a1a"/>
-    <ellipse cx="26.4" cy="11" rx="2.4" ry="3.2" fill="#1a1a1a"/>
-    <ellipse cx="5.6" cy="37" rx="2.4" ry="3.2" fill="#1a1a1a"/>
-    <ellipse cx="26.4" cy="37" rx="2.4" ry="3.2" fill="#1a1a1a"/>
-    <rect x="4.5" y="3" width="23" height="42" rx="6" ry="6" fill="#F0EDE3"/>
-    <rect x="11" y="3" width="10" height="2.4" rx="1" fill="#D9622A"/>
-    <rect x="9" y="6.5" width="14" height="6" rx="1.6" fill="#0F4C5C" fill-opacity="0.85"/>
-    <rect x="4.5" y="22.6" width="23" height="2" fill="#0F4C5C"/>
-    <rect x="9" y="35.5" width="14" height="6" rx="1.6" fill="#0F4C5C" fill-opacity="0.85"/>
-  </g>
+
+  <!-- wheels (under body) -->
+  <ellipse cx="14" cy="38" rx="7" ry="11" fill="#2a2a2a"/>
+  <ellipse cx="82" cy="38" rx="7" ry="11" fill="#2a2a2a"/>
+  <ellipse cx="14" cy="106" rx="7" ry="11" fill="#2a2a2a"/>
+  <ellipse cx="82" cy="106" rx="7" ry="11" fill="#2a2a2a"/>
+
+  <!-- body shell — cream with 1px black outline -->
+  <rect x="14" y="10" width="68" height="124" rx="20" ry="22"
+        fill="#F0EDE3" stroke="#0d0d0d" stroke-width="1.4"/>
+
+  <!-- subtle top highlight -->
+  <rect x="15" y="11" width="66" height="124" rx="19" ry="21"
+        fill="url(#bodyHi)"/>
+
+  <!-- bottom shading -->
+  <rect x="15" y="11" width="66" height="124" rx="19" ry="21"
+        fill="url(#bodyLo)"/>
+
+  <!-- front bumper rust strip (top = front) -->
+  <rect x="22" y="12" width="52" height="6" rx="2.5" fill="#D9622A"/>
+
+  <!-- front windshield (slightly larger than rear) -->
+  <rect x="22" y="22" width="52" height="22" rx="4" fill="#0F4C5C" fill-opacity="0.82"
+        stroke="#0a3a48" stroke-width="0.8"/>
+  <rect x="24" y="24" width="48" height="6" rx="2" fill="#FFFFFF" fill-opacity="0.18"/>
+
+  <!-- teal side stripe -->
+  <rect x="14" y="69" width="68" height="6" fill="#0F4C5C"/>
+
+  <!-- rear window -->
+  <rect x="22" y="98" width="52" height="18" rx="4" fill="#0F4C5C" fill-opacity="0.82"
+        stroke="#0a3a48" stroke-width="0.8"/>
+
+  <!-- tail bumper accent -->
+  <rect x="22" y="124" width="52" height="4" rx="1.5" fill="#9b3c0d" fill-opacity="0.55"/>
+
+  <!-- door seams for character -->
+  <line x1="14" y1="84" x2="82" y2="84" stroke="#0d0d0d" stroke-opacity="0.18" stroke-width="0.7"/>
+  <line x1="48" y1="44" x2="48" y2="69" stroke="#0d0d0d" stroke-opacity="0.18" stroke-width="0.7"/>
 </svg>

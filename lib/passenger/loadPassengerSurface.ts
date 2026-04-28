@@ -1,3 +1,7 @@
+import along from "@turf/along";
+import length from "@turf/length";
+import { lineString } from "@turf/helpers";
+
 import { loadActiveJourney } from "@/lib/passenger/journey";
 import { loadLiveStats } from "@/lib/passenger/liveStats";
 import { loadNetwork } from "@/lib/network/loadNetwork";
@@ -85,6 +89,90 @@ async function loadInitialKombis(): Promise<KombiTickPayload[]> {
   }
 }
 
+/** Haversine distance in metres between two lat/lng pairs. */
+function haversineMeters(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number,
+): number {
+  const R = 6_371_000;
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const sinLat = Math.sin(dLat / 2);
+  const sinLng = Math.sin(dLng / 2);
+  const h =
+    sinLat * sinLat +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * sinLng * sinLng;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+const COLOCATED_RADIUS_M = 5;
+
+/**
+ * The seed loader places both vehicles per route at the same polyline start,
+ * so without a sim ticking the 8 markers visually collapse to 4 overlapping
+ * pairs. This pass groups vehicles by route_id and, when a group of N
+ * vehicles is colocated within COLOCATED_RADIUS_M, redistributes them along
+ * the route polyline at fractions 0/N, 1/N, 2/N, ... so the empty-state map
+ * shows 8 distinct kombis. Vehicles whose positions have already drifted
+ * (i.e. a sim ran recently) are left alone.
+ */
+function spreadColocatedAlongRoutes(
+  kombis: KombiTickPayload[],
+  network: NetworkPayload,
+): KombiTickPayload[] {
+  if (kombis.length === 0) return kombis;
+  const groups = new Map<string, KombiTickPayload[]>();
+  for (const k of kombis) {
+    const arr = groups.get(k.route_id);
+    if (arr) arr.push(k);
+    else groups.set(k.route_id, [k]);
+  }
+
+  const out = new Map<string, KombiTickPayload>();
+  for (const k of kombis) out.set(k.vehicle_id, k);
+
+  for (const [routeId, group] of groups.entries()) {
+    if (group.length < 2) continue;
+    // Colocated check — every vehicle within COLOCATED_RADIUS_M of the first.
+    const head = group[0];
+    const allColocated = group.every(
+      (v) => haversineMeters(head.lat, head.lng, v.lat, v.lng) <= COLOCATED_RADIUS_M,
+    );
+    if (!allColocated) continue;
+
+    const route = network.routes.find((r) => r.id === routeId);
+    if (!route) continue;
+    const coords = route.geometry.coordinates;
+    if (coords.length < 2) continue;
+
+    try {
+      const line = lineString(coords);
+      const lengthKm = length(line, { units: "kilometers" });
+      // Stable order so re-renders don't reshuffle vehicles between positions.
+      const ordered = [...group].sort((a, b) =>
+        a.vehicle_id.localeCompare(b.vehicle_id),
+      );
+      ordered.forEach((v, i) => {
+        // Skip 0/N (route endpoint) when N > 1 — distribute at 1/(N+1) ... N/(N+1)
+        const fraction = (i + 1) / (ordered.length + 1);
+        const point = along(line, fraction * lengthKm, {
+          units: "kilometers",
+        });
+        const [lng, lat] = point.geometry.coordinates;
+        if (Number.isFinite(lat) && Number.isFinite(lng)) {
+          out.set(v.vehicle_id, { ...v, lat, lng });
+        }
+      });
+    } catch {
+      // turf can throw on degenerate geometry — leave the group untouched.
+    }
+  }
+  return Array.from(out.values());
+}
+
 /**
  * Server-side composition for the passenger surface. Shared between the
  * landing dispatcher and any future deep-linked entry points so the data
@@ -96,7 +184,7 @@ export async function loadPassengerSurface(args: {
 }): Promise<PassengerSurfaceData> {
   const personaSlug = (args.asParam ?? "takunda").toLowerCase();
   const persona = await resolvePersona(personaSlug, "passenger");
-  const [network, tickets, journey, liveStats, initialKombis] =
+  const [network, tickets, journey, liveStats, rawKombis] =
     await Promise.all([
       loadNetwork(),
       loadWallet(persona.id),
@@ -104,6 +192,7 @@ export async function loadPassengerSurface(args: {
       loadLiveStats(),
       loadInitialKombis(),
     ]);
+  const initialKombis = spreadColocatedAlongRoutes(rawKombis, network);
   return {
     persona,
     personaSlug,

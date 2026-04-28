@@ -1,9 +1,12 @@
 /**
  * Server-side derived stats for the passenger empty state.
  *
- * "8 on the road" — count of vehicles whose last_position_at fired within the
- * last five minutes. Falls back to 8 when the query fails or the project
- * hasn't been ticked yet.
+ * "N on the road" — count of vehicles VISIBLE on the passenger map. Phase Z.1
+ * dropped the previous five-minute freshness window because it caused the
+ * pill to flicker between 8 and 2 mid-journey (the simulator's database
+ * update reset every other vehicle's last_position_at to "stale"). The map
+ * always shows every seeded vehicle whether or not the sim runner is
+ * ticking, so the pill should match. Falls back to 8 when the query fails.
  *
  * "next Heights kombi 4 min" — distance from the nearest Heights-route vehicle
  * to the Bannockburn terminus, divided by an average 25 km/h kombi speed.
@@ -23,7 +26,6 @@ const HEIGHTS_TERMINUS = (() => {
   return { lat: route.endpoint_start.lat, lng: route.endpoint_start.lng };
 })();
 
-const ACTIVE_WINDOW_MS = 5 * 60 * 1000;
 const AVG_SPEED_MPS = (25 * 1000) / 3600; // 25 km/h
 const EARTH_RADIUS_M = 6_371_000;
 
@@ -35,6 +37,10 @@ interface VehicleRowMinimal {
 }
 
 export interface LiveStats {
+  /**
+   * Count of kombis visible on the passenger map. Equals the number of rows
+   * in `vehicles` (no freshness window) — see file header.
+   */
   active_vehicle_count: number;
   next_heights_minutes: number;
 }
@@ -73,17 +79,14 @@ export async function loadLiveStats(): Promise<LiveStats> {
       .select("id, route_id, current_position, last_position_at");
     if (error || !data) return DEFAULTS;
     const rows = data as VehicleRowMinimal[];
-    const cutoff = Date.now() - ACTIVE_WINDOW_MS;
 
-    let activeCount = 0;
+    // Visible-on-the-map count: the number of vehicle rows. The pulse dot
+    // on the pill is the "this is updating" signal — the count itself is
+    // the static fleet size the passenger can see, not a freshness gauge.
+    const visibleCount = rows.length;
+
     let nearestHeightsMeters = Number.POSITIVE_INFINITY;
-
     for (const row of rows) {
-      if (!row.last_position_at) continue;
-      const ts = Date.parse(row.last_position_at);
-      if (!Number.isFinite(ts) || ts < cutoff) continue;
-      activeCount += 1;
-
       if (row.route_id !== HEIGHTS_ROUTE_ID) continue;
       const point = parsePoint(row.current_position);
       if (!point) continue;
@@ -102,7 +105,8 @@ export async function loadLiveStats(): Promise<LiveStats> {
         : DEFAULTS.next_heights_minutes;
 
     return {
-      active_vehicle_count: activeCount > 0 ? activeCount : DEFAULTS.active_vehicle_count,
+      active_vehicle_count:
+        visibleCount > 0 ? visibleCount : DEFAULTS.active_vehicle_count,
       next_heights_minutes,
     };
   } catch {

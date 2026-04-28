@@ -107,10 +107,17 @@ export default function PassengerShell({
     useState<FareClearedToastState | null>(null);
   const [snap, setSnap] = useState<SheetSnap>("peek");
   const [personaDrawerOpen, setPersonaDrawerOpen] = useState(false);
-  // Tracks the last sheet state for which we auto-snapped, so manual user
-  // drags aren't overridden every render. Stored in state (not a ref) so the
-  // "derive state from props change" pattern is React-Compiler-clean.
-  const [lastAutoSnapState, setLastAutoSnapState] = useState<SheetState | null>(
+  // True while a Simulate-tap path animation is playing on the map. Forces
+  // the journey sheet down to peek so the user can watch the kombi cross
+  // the map; auto-snap to the new stage's natural snap resumes when this
+  // flips back to false (handled in the auto-snap rules below).
+  const [isSimulating, setIsSimulating] = useState(false);
+  // Tracks the last sheet state (+ simulating flag) for which we auto-snapped,
+  // so manual user drags aren't overridden every render. Stored in state (not
+  // a ref) so the "derive state from props change" pattern is React-Compiler-
+  // clean. Encoded as `${sheetState}|${0|1}` so flipping isSimulating
+  // re-triggers the auto-snap rules.
+  const [lastAutoSnapState, setLastAutoSnapState] = useState<string | null>(
     null,
   );
   const claimedRef = useRef<string | null>(null);
@@ -382,30 +389,39 @@ export default function PassengerShell({
   // to compare a previous-value state during render and call setState; React
   // batches both updates into a single commit. User drags between snaps stay
   // sticky until sheetState itself changes.
-  if (lastAutoSnapState !== sheetState) {
-    setLastAutoSnapState(sheetState);
+  //
+  // Phase Z.1: while a simulate path animation is playing the sheet drops
+  // to peek so the user can see the kombi cross the map. Once isSimulating
+  // flips back to false the auto-snap re-fires for the new sheetState.
+  const autoSnapKey = `${sheetState}|${isSimulating ? "1" : "0"}`;
+  if (lastAutoSnapState !== autoSnapKey) {
+    setLastAutoSnapState(autoSnapKey);
     let desired: SheetSnap = snap;
-    switch (sheetState) {
-      case "plans-returned":
-      case "choosing-payment":
-      case "topping-up":
-      case "parcel":
-      case "arrived":
-      case "searching":
-        desired = "half";
-        break;
-      case "wallet":
-        desired = "full";
-        break;
-      case "walk-to-board":
-      case "in-transit":
-      case "walking-transfer":
-      case "boarding-leg-2":
-        desired = "full";
-        break;
-      case "idle":
-        desired = "peek";
-        break;
+    if (isSimulating) {
+      desired = "peek";
+    } else {
+      switch (sheetState) {
+        case "plans-returned":
+        case "choosing-payment":
+        case "topping-up":
+        case "parcel":
+        case "arrived":
+        case "searching":
+          desired = "half";
+          break;
+        case "wallet":
+          desired = "full";
+          break;
+        case "walk-to-board":
+        case "in-transit":
+        case "walking-transfer":
+        case "boarding-leg-2":
+          desired = "full";
+          break;
+        case "idle":
+          desired = "peek";
+          break;
+      }
     }
     if (desired !== snap) {
       setSnap(desired);
@@ -621,6 +637,8 @@ export default function PassengerShell({
           onLifecycleEvent={handleLifecycleEvent}
           onStageChange={handleStageChange}
           onEndTrip={handleEndTrip}
+          onSimulateStart={() => setIsSimulating(true)}
+          onSimulateEnd={() => setIsSimulating(false)}
           tickets={tickets}
           onTransfer={handleTransfer}
           onCloseWallet={closeWallet}

@@ -51,6 +51,18 @@ interface JourneyProps {
    * server-side; credit is not refunded (see actions.ts → endTripAction).
    */
   onEndTrip: () => Promise<{ ok: boolean; error?: string }>;
+  /**
+   * Fires the moment a Simulate tap kicks off a path animation. The shell
+   * uses this to drop the journey sheet to its peek snap so the user can
+   * watch the kombi cross the map.
+   */
+  onSimulateStart?: () => void;
+  /**
+   * Fires once the simulated path animation has played out (after
+   * duration_ms). The shell uses this to release the auto-snap-to-peek
+   * override and let the new stage's auto-snap rule rise the sheet again.
+   */
+  onSimulateEnd?: () => void;
 }
 
 const RUST = "#d9622a";
@@ -153,6 +165,8 @@ export default function Journey({
   onLifecycleEvent,
   onStageChange,
   onEndTrip,
+  onSimulateStart,
+  onSimulateEnd,
 }: JourneyProps) {
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
@@ -187,12 +201,44 @@ export default function Journey({
       persona_slug: personaSlug,
       trip_id: journey.trip_id,
     });
-    setSimBusy(false);
     if (!result.ok) {
+      setSimBusy(false);
       setSimError(result.error);
       return;
     }
-    router.refresh();
+    // Hand the path to the map so it can RAF-animate the kombi marker over
+    // result.duration_ms. Drop the sheet to peek so the user can see it.
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("svika:simulate-path", { detail: result }),
+      );
+    }
+    onSimulateStart?.();
+    // Wait for the animation to finish, then sync local stage state with
+    // the canonical DB state and let the parent refresh.
+    setTimeout(() => {
+      // Update the local vehicles snapshot so deriveJourneyStage sees the
+      // new position immediately — without this, stage stays stuck at
+      // "in-transit" because vehicles Map only updates from sim broadcasts
+      // (which we deliberately suppress for animated steps).
+      setVehicles((prev) => {
+        const next = new Map(prev);
+        next.set(result.vehicle_id, {
+          vehicle_id: result.vehicle_id,
+          route_id: result.route_id,
+          lat: result.final_lat,
+          lng: result.final_lng,
+        });
+        return next;
+      });
+      setNow(Date.now());
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("svika:simulate-end"));
+      }
+      onSimulateEnd?.();
+      router.refresh();
+      setSimBusy(false);
+    }, result.duration_ms);
   }
 
   // Subscribe once. Every kombi tick triggers a recompute via state update.
