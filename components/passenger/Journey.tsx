@@ -363,9 +363,20 @@ export default function Journey({
             <span className="svika-body truncate font-semibold text-svika-teal">
               {CONDUCTOR_NAME} · Conductor
             </span>
-            <span className="svika-meta truncate text-svika-mute">
-              {vehiclePlate} · {VEHICLE_MAKE} · {VEHICLE_COLOR}
-            </span>
+            {/* Phase E: when no plate is yet pinned (walk-to-board, pre-PIN),
+                the chip drops the make/colour line entirely and reads as a
+                muted "vehicle assigned when your code clears" instead of
+                "— · Toyota Hiace · cream", which had been reading like a
+                missing field on the demo. */}
+            {vehiclePlate === "—" ? (
+              <span className="svika-meta truncate text-svika-mute">
+                Vehicle assigned when your code clears
+              </span>
+            ) : (
+              <span className="svika-meta truncate text-svika-mute">
+                {vehiclePlate} · {VEHICLE_MAKE} · {VEHICLE_COLOR}
+              </span>
+            )}
             {isParcel ? (
               <span
                 className="mt-0.5 inline-flex w-fit rounded-full px-1.5 py-px text-[10px] font-medium text-white"
