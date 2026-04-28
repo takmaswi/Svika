@@ -13,6 +13,7 @@ import JourneySheet, {
 import JourneySheetContent, {
   type SheetState,
 } from "@/components/passenger/JourneySheetContent";
+import PersonaDrawer from "@/components/passenger/PersonaDrawer";
 import {
   bookTripAction,
   claimTicketAction,
@@ -102,6 +103,7 @@ export default function PassengerShell({
   const [fareClearedToast, setFareClearedToast] =
     useState<FareClearedToastState | null>(null);
   const [snap, setSnap] = useState<SheetSnap>("peek");
+  const [personaDrawerOpen, setPersonaDrawerOpen] = useState(false);
   // Tracks the last sheet state for which we auto-snapped, so manual user
   // drags aren't overridden every render. Stored in state (not a ref) so the
   // "derive state from props change" pattern is React-Compiler-clean.
@@ -443,9 +445,7 @@ export default function PassengerShell({
         <div className="flex items-center justify-between gap-3">
           <button
             type="button"
-            onClick={() => {
-              /* Phase B placeholder — Phase C wires the persona drawer. */
-            }}
+            onClick={() => setPersonaDrawerOpen(true)}
             className="flex items-center gap-2 rounded-full px-1 py-1"
             aria-label={`Signed in as ${persona.name}`}
             data-testid="persona-chip-tap"
@@ -613,6 +613,36 @@ export default function PassengerShell({
           onCloseParcel={closeParcel}
         />
       </JourneySheet>
+
+      <PersonaDrawer
+        open={personaDrawerOpen}
+        onClose={() => setPersonaDrawerOpen(false)}
+        persona={persona}
+        personaSlug={personaSlug}
+        walletBalance={walletBalance}
+        activeTicketCount={activeCount}
+        onOpenWallet={() => {
+          setWalletOpen(true);
+          setParcelOpen(false);
+          setPickedOption(null);
+          setTopUpOpen(false);
+        }}
+        onOpenTopUp={() => {
+          // Top-up needs a picked option to render a fare; surface it as
+          // wallet content instead, where the user can drive top-up via the
+          // payment-choice path or a future stand-alone tile.
+          setWalletOpen(true);
+          setParcelOpen(false);
+          setPickedOption(null);
+          setTopUpOpen(false);
+        }}
+        onOpenParcel={() => {
+          setParcelOpen(true);
+          setWalletOpen(false);
+          setPickedOption(null);
+          setTopUpOpen(false);
+        }}
+      />
     </main>
   );
 }
