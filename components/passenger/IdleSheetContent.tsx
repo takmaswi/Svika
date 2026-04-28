@@ -74,7 +74,7 @@ export default function IdleSheetContent({
 
   return (
     <section
-      className="pt-1"
+      className="pt-1 pb-24"
       aria-label="Plan a trip"
       data-testid="idle-sheet-content"
     >

@@ -164,7 +164,7 @@ export default function PersonaDrawer({
           </button>
         </header>
 
-        <div className="flex-1 overflow-y-auto px-3 pb-6">
+        <div className="flex-1 overflow-y-auto px-3 pb-24">
           <SectionHeader>Wallet</SectionHeader>
           <div className="mt-2 space-y-2">
             <TileButton

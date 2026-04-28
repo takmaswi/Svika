@@ -560,7 +560,7 @@ export default function PassengerMap({
     mapboxgl.accessToken = mapboxToken;
     const map = new mapboxgl.Map({
       container: containerRef.current,
-      style: "mapbox://styles/mapbox/streets-v12",
+      style: "mapbox://styles/mapbox/dark-v11",
       bounds: harareBounds(network),
       fitBoundsOptions: { padding: 80, duration: 0 },
       attributionControl: false,
@@ -572,6 +572,31 @@ export default function PassengerMap({
     map.addControl(new mapboxgl.AttributionControl({ compact: true }));
 
     map.on("load", () => {
+      // R1: paint overrides for dark-v11. The dark-v11 style ships its own
+      // layer ids — `map.getLayer(...)` guards each so a renamed/missing
+      // layer is harmless; check the live ids in dev tools if a tuning
+      // doesn't land.
+      const tunings: Array<[string, string, string]> = [
+        ["road-primary", "line-color", "#3a4555"],
+        ["road-secondary", "line-color", "#2f3a4a"],
+        ["road-street", "line-color", "#2a3340"],
+        ["road-major-link", "line-color", "#3a4555"],
+        ["water", "fill-color", "#142028"],
+        ["land", "background-color", "#0a0a0c"],
+        ["landuse", "fill-color", "#1c2a1c"],
+      ];
+      for (const [layerId, prop, value] of tunings) {
+        if (map.getLayer(layerId)) {
+          (
+            map.setPaintProperty as (
+              id: string,
+              name: string,
+              value: unknown,
+            ) => void
+          )(layerId, prop, value);
+        }
+      }
+
       map.addSource(ROUTES_SOURCE, { type: "geojson", data: routesGeoJSON(network.routes) });
       map.addLayer({
         id: ROUTES_LAYER_BASE,

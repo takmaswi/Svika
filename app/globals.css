@@ -6,62 +6,72 @@
    Per CLAUDE.md "Locked decisions" → Brand row.
    ========================================================================= */
 @theme {
-  --color-svika-teal: #0f4c5c;
-  --color-svika-teal-50: #eaf1f3;
-  --color-svika-teal-100: #c8d9de;
-  --color-svika-teal-200: #9bbac3;
-  --color-svika-teal-300: #6e9aa6;
-  --color-svika-teal-400: #4d8493;
-  --color-svika-teal-500: #2d6c7e;
-  --color-svika-teal-600: #1f5a6c;
-  --color-svika-teal-700: #144f5e;
-  --color-svika-teal-800: #0f4c5c;
-  --color-svika-teal-900: #0a3140;
+  /* Surfaces */
+  --color-bg: #0a0a0c;
+  --color-surface: #14141a;
 
-  --color-svika-rust: #d9622a;
-  --color-svika-rust-light: #f08c5a;
-  --color-svika-rust-dark: #a84a1f;
+  /* Ink ramp — white with alpha */
+  --color-ink: #ffffff;
+  --color-ink-soft: rgba(255, 255, 255, 0.72);
+  --color-ink-mute: rgba(255, 255, 255, 0.48);
+  --color-hairline: rgba(255, 255, 255, 0.08);
 
-  --color-svika-salmon: #f2733e;
-  --color-svika-salmon-light: #f9a07c;
+  /* Accent — Apple blue, the only accent in the rebuild */
+  --color-action: #007AFF;
+  --color-action-hover: #0A66D1;
+  --color-action-disabled: rgba(0, 122, 255, 0.32);
 
-  --color-svika-bg: #fafaf9;
-  --color-svika-stone: #f2ede6;
-  --color-svika-stone-dark: #e3dccf;
-
-  --color-svika-ink: #0f4c5c;
-  --color-svika-mute: rgba(15, 76, 92, 0.6);
-  --color-svika-line: rgba(15, 76, 92, 0.12);
-
+  /* Live dot stays green for the "kombis on the road" affordance */
   --color-live: #16a34a;
 
-  /* Phase D — rust re-allocation. `action` is rust reserved for primary
-     CTAs only; `accent` is teal-700 used for highlights/emphasis previously
-     painted in rust; `mark` is rust pinned to the moving kombi marker on
-     the map. Keeping these named separately from the brand `svika-*`
-     tokens means the palette stays intact while semantic usage tightens. */
-  --color-action: #d9622a;
-  --color-action-hover: #c25620;
-  --color-action-disabled: rgba(217, 98, 42, 0.32);
-  --color-accent: #144f5e;
-  --color-mark: #d9622a;
-
+  /* Typography */
   --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", ui-monospace, monospace;
 
+  /* Radii */
   --radius-sm: 0.5rem;
   --radius: 0.875rem;
   --radius-lg: 1.375rem;
 
-  --sheet-peek: 110px;
+  /* Sheet snaps — peek raised from 110px to 140px to clear the tab bar */
+  --sheet-peek: 140px;
   --sheet-half: 48vh;
   --sheet-full: 92vh;
+
+  /* Legacy aliases — components still reference these by name (bg-svika-*,
+     text-svika-*). R3/R5 will purge usage; for R1 they map to the closest
+     new token so the build stays green and the booking flow stays
+     intentionally rough until R3 redesigns it. */
+  --color-svika-bg: #0a0a0c;
+  --color-svika-stone: #14141a;
+  --color-svika-stone-dark: #14141a;
+  --color-svika-ink: #ffffff;
+  --color-svika-mute: rgba(255, 255, 255, 0.48);
+  --color-svika-line: rgba(255, 255, 255, 0.08);
+  --color-svika-teal: #007AFF;
+  --color-svika-teal-50: rgba(0, 122, 255, 0.08);
+  --color-svika-teal-100: rgba(0, 122, 255, 0.16);
+  --color-svika-teal-200: rgba(0, 122, 255, 0.32);
+  --color-svika-teal-300: rgba(0, 122, 255, 0.48);
+  --color-svika-teal-400: rgba(0, 122, 255, 0.6);
+  --color-svika-teal-500: #0A66D1;
+  --color-svika-teal-600: #0A66D1;
+  --color-svika-teal-700: #0A66D1;
+  --color-svika-teal-800: #007AFF;
+  --color-svika-teal-900: #0a0a0c;
+  --color-svika-rust: #007AFF;
+  --color-svika-rust-light: rgba(0, 122, 255, 0.6);
+  --color-svika-rust-dark: #0A66D1;
+  --color-svika-salmon: #007AFF;
+  --color-svika-salmon-light: rgba(0, 122, 255, 0.5);
+  --color-accent: #007AFF;
+  --color-mark: #007AFF;
 }
 
 html,
 body {
-  background-color: var(--color-svika-bg);
-  color: var(--color-svika-ink);
+  background-color: var(--color-bg);
+  color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
@@ -71,7 +81,7 @@ body {
    four surfaces. Five sizes only; anything outside the ramp keeps an inline
    override but should still align family + weight to the nearest step. */
 .svika-display {
-  font-size: 28px;
+  font-size: 32px;
   line-height: 1.15;
   font-weight: 600;
   letter-spacing: -0.5px;
@@ -125,23 +135,75 @@ body {
   cursor: pointer;
 }
 
-/* ----- Glass surfaces — Phase 3.7 -------------------------------------- */
+/* ----- Glass surfaces — R1 dark / iOS liquid glass --------------------- */
 .svika-glass {
-  background: rgba(255, 255, 255, 0.78);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 0.5px solid rgba(255, 255, 255, 0.7);
-  box-shadow: 0 4px 24px rgba(15, 76, 92, 0.08);
+  background: rgba(20, 20, 26, 0.55);
+  backdrop-filter: blur(24px) saturate(1.7);
+  -webkit-backdrop-filter: blur(24px) saturate(1.7);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 22px;
+  position: relative;
+  isolation: isolate;
+}
+.svika-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at 50% -20%,
+    rgba(255, 255, 255, 0.18) 0%,
+    transparent 60%
+  );
 }
 
 .svika-glass-strong {
-  background: rgba(255, 255, 255, 0.86);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  border: 0.5px solid rgba(255, 255, 255, 0.7);
-  box-shadow: 0 8px 32px rgba(15, 76, 92, 0.12);
+  background: rgba(20, 20, 26, 0.7);
+  backdrop-filter: blur(28px) saturate(1.7);
+  -webkit-backdrop-filter: blur(28px) saturate(1.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 22px;
+  position: relative;
+  isolation: isolate;
+}
+.svika-glass-strong::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at 50% -20%,
+    rgba(255, 255, 255, 0.22) 0%,
+    transparent 60%
+  );
+}
+
+/* Tab-bar variant — slightly stronger blur, a touch more opaque,
+   tighter highlight so it reads as a floating "island" rather than
+   a translucent panel. */
+.svika-glass-tab {
+  background: rgba(14, 14, 18, 0.62);
+  backdrop-filter: blur(30px) saturate(1.8);
+  -webkit-backdrop-filter: blur(30px) saturate(1.8);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 24px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.48);
+  position: relative;
+  isolation: isolate;
+}
+.svika-glass-tab::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at 50% -10%,
+    rgba(255, 255, 255, 0.14) 0%,
+    transparent 55%
+  );
 }
 
 /* Live pulsing dot — header, "X on the road" pill */
@@ -251,13 +313,13 @@ body {
   inset-inline: 0;
   bottom: 0;
   z-index: 30;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  border-top: 0.5px solid rgba(255, 255, 255, 0.7);
+  background: rgba(20, 20, 26, 0.85);
+  backdrop-filter: blur(28px) saturate(1.7);
+  -webkit-backdrop-filter: blur(28px) saturate(1.7);
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
   border-top-left-radius: 22px;
   border-top-right-radius: 22px;
-  box-shadow: 0 -8px 32px rgba(15, 76, 92, 0.12);
+  box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.55);
   transition:
     height 320ms cubic-bezier(0.32, 0.72, 0, 1),
     transform 320ms cubic-bezier(0.32, 0.72, 0, 1);
@@ -286,7 +348,7 @@ body {
   width: 40px;
   height: 4px;
   border-radius: 999px;
-  background: rgba(15, 76, 92, 0.22);
+  background: rgba(255, 255, 255, 0.22);
 }
 
 .svika-sheet-body {
@@ -328,11 +390,11 @@ body {
   width: min(360px, 88vw);
   display: flex;
   flex-direction: column;
-  background: rgba(250, 250, 249, 0.96);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  border-inline-start: 0.5px solid rgba(255, 255, 255, 0.7);
-  box-shadow: -12px 0 32px rgba(15, 76, 92, 0.16);
+  background: rgba(20, 20, 26, 0.88);
+  backdrop-filter: blur(28px) saturate(1.7);
+  -webkit-backdrop-filter: blur(28px) saturate(1.7);
+  border-inline-start: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: -12px 0 32px rgba(0, 0, 0, 0.55);
   transform: translateX(100%);
   transition: transform 280ms cubic-bezier(0.32, 0.72, 0, 1);
 }

@@ -31,11 +31,13 @@ export default function SearchBar({
 
   const buttonCls =
     size === "hero"
-      ? "rounded-lg bg-svika-rust px-5 py-3 text-sm font-semibold text-white shadow-sm transition-opacity disabled:opacity-50"
+      ? "w-full rounded-lg bg-svika-rust px-5 py-3 text-sm font-semibold text-white shadow-sm transition-opacity disabled:opacity-50"
       : "rounded-md bg-svika-teal px-4 py-2 text-sm font-medium text-svika-stone shadow-sm transition-opacity disabled:opacity-50";
 
+  const formCls = size === "hero" ? "flex flex-col gap-2" : "flex gap-2";
+
   return (
-    <form onSubmit={handleSubmit} className="flex gap-2">
+    <form onSubmit={handleSubmit} className={formCls}>
       <label htmlFor="trip-search" className="sr-only">
         Where do you want to go?
       </label>

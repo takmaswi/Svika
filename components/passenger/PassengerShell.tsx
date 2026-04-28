@@ -14,6 +14,7 @@ import JourneySheetContent, {
   type SheetState,
 } from "@/components/passenger/JourneySheetContent";
 import PersonaDrawer from "@/components/passenger/PersonaDrawer";
+import TabBar, { type TabKey } from "@/components/passenger/TabBar";
 import {
   bookTripAction,
   claimTicketAction,
@@ -25,7 +26,6 @@ import {
 import type { ActiveJourney, JourneyStage } from "@/lib/passenger/journey-types";
 import type { LiveStats } from "@/lib/passenger/liveStats";
 import type { NetworkPayload } from "@/lib/network/loadNetwork";
-import { findPersonaMeta } from "@/lib/personas-meta";
 import { fetchFareClearedContextAction } from "@/lib/passenger/fare-cleared";
 import type { WalletTicket } from "@/lib/passenger/wallet";
 import type { Persona } from "@/lib/personas";
@@ -100,13 +100,14 @@ export default function PassengerShell({
   const [topUpBusy, setTopUpBusy] = useState(false);
   const [parcelOpen, setParcelOpen] = useState(false);
   const [walletOpen, setWalletOpen] = useState(false);
-  const [claimFlash, setClaimFlash] = useState<ClaimFlash | null>(null);
+  const [, setClaimFlash] = useState<ClaimFlash | null>(null);
   const [stage, setStage] = useState<JourneyStage | null>(null);
   const [dismissedTripId, setDismissedTripId] = useState<string | null>(null);
   const [fareClearedToast, setFareClearedToast] =
     useState<FareClearedToastState | null>(null);
   const [snap, setSnap] = useState<SheetSnap>("peek");
   const [personaDrawerOpen, setPersonaDrawerOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabKey>("home");
   // True while a Simulate-tap path animation is playing on the map. Forces
   // the journey sheet down to peek so the user can watch the kombi cross
   // the map; auto-snap to the new stage's natural snap resumes when this
@@ -342,10 +343,7 @@ export default function PassengerShell({
     return { ok: true };
   }, [journey, personaSlug, router]);
 
-  const balanceLabel = walletBalance.toFixed(2);
   const activeCount = tickets.filter((t) => !t.is_outgoing_transfer).length;
-  const personaMeta = findPersonaMeta(personaSlug);
-  const initial = personaMeta?.initial ?? persona.name.charAt(0).toUpperCase();
 
   const routeLabel = useMemo(() => {
     if (!pickedOption) return "";
@@ -430,6 +428,7 @@ export default function PassengerShell({
 
   function closeWallet() {
     setWalletOpen(false);
+    setActiveTab("home");
   }
 
   function closeParcel() {
@@ -449,134 +448,20 @@ export default function PassengerShell({
   function handleSnapChange(next: SheetSnap) {
     setSnap(next);
     if (next === "peek") {
-      if (walletOpen) setWalletOpen(false);
+      if (walletOpen) {
+        setWalletOpen(false);
+        setActiveTab("home");
+      }
       if (parcelOpen) setParcelOpen(false);
       if (topUpOpen) setTopUpOpen(false);
     }
   }
 
   return (
-    <main className="flex min-h-dvh flex-col bg-svika-bg">
-      <header className="z-20 border-b border-svika-line bg-svika-bg/85 px-4 py-3 backdrop-blur">
-        <div className="flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={() => setPersonaDrawerOpen(true)}
-            className="flex items-center gap-2 rounded-full px-1 py-1"
-            aria-label={`Signed in as ${persona.name}`}
-            data-testid="persona-chip-tap"
-          >
-            <span
-              aria-hidden
-              className="flex h-7 w-7 items-center justify-center rounded-full bg-svika-teal text-white"
-              style={{ fontSize: "12px", fontWeight: 600 }}
-            >
-              {initial}
-            </span>
-            <span className="flex flex-col leading-tight text-left">
-              <span
-                className="text-svika-teal"
-                style={{ fontSize: "13px", fontWeight: 500 }}
-              >
-                {persona.name}
-              </span>
-              <span
-                className="text-svika-mute"
-                // Drops uppercase + tracking that svika-meta would impose on
-                // a dollar figure — small caps look poor on $ amounts.
-                style={{ fontSize: "10px" }}
-              >
-                ${balanceLabel} · wallet
-                {activeCount > 0 ? ` · ${activeCount}` : ""}
-              </span>
-            </span>
-            <span
-              aria-hidden
-              className="ml-1 flex items-center text-svika-mute"
-              style={{ fontSize: "10px" }}
-            >
-              More
-              <svg
-                className="ml-0.5 h-3 w-3"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                aria-hidden
-              >
-                <path
-                  d="M6 9l6 6 6-6"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </span>
-          </button>
-
-          <div className="flex items-center gap-2">
-            <span
-              className="svika-glass flex items-center gap-1.5 px-2.5 py-1"
-              data-testid="live-pill"
-              style={{ borderRadius: "999px" }}
-            >
-              <span aria-hidden className="svika-pulse-dot" />
-              <span
-                className="svika-meta text-svika-teal"
-                style={{ textTransform: "none", fontSize: "10px" }}
-              >
-                {liveStats.active_vehicle_count} on the road
-              </span>
-            </span>
-          </div>
-        </div>
-        {bookingFlash ? (
-          <div
-            data-testid="booking-flash"
-            data-phase-a="post-book-toast"
-            className={`mt-2 rounded-2xl px-3 py-2 text-xs ${
-              bookingFlash.kind === "ok"
-                ? "bg-white/80 text-svika-teal"
-                : "bg-white/80 text-svika-rust"
-            }`}
-          >
-            <p>{bookingFlash.message}</p>
-            {bookingFlash.access_codes ? (
-              <p
-                className="mt-0.5 font-mono text-svika-rust"
-                data-testid="booking-flash-codes"
-              >
-                {bookingFlash.access_codes.join(" · ")}
-              </p>
-            ) : null}
-          </div>
-        ) : null}
-        {claimFlash ? (
-          <div
-            className={`mt-2 rounded-2xl px-3 py-2 text-xs ${
-              claimFlash.kind === "ok"
-                ? "bg-white/80 text-svika-teal"
-                : "bg-white/80 text-svika-rust"
-            }`}
-          >
-            {claimFlash.message}
-            <button
-              type="button"
-              onClick={() => setClaimFlash(null)}
-              className="ml-2 text-svika-mute hover:text-svika-teal"
-              aria-label="Dismiss"
-            >
-              ×
-            </button>
-          </div>
-        ) : null}
-      </header>
-
-      <section className="relative flex-1">
+    <main className="relative min-h-dvh bg-[var(--color-bg)]">
+      <section className="absolute inset-0">
         {mapboxToken ? (
-          <div
-            className="absolute inset-0"
-            style={{ opacity: 0.92 }}
-          >
+          <div className="absolute inset-0">
             <PassengerMap
               network={network}
               mapboxToken={mapboxToken}
@@ -584,17 +469,9 @@ export default function PassengerShell({
               stage={stage}
               initialKombis={initialKombis}
             />
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-0"
-              style={{
-                background:
-                  "linear-gradient(180deg, rgba(250,250,249,0.4) 0%, rgba(250,250,249,0) 35%)",
-              }}
-            />
           </div>
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center px-4 text-center text-sm text-svika-mute">
+          <div className="absolute inset-0 flex items-center justify-center px-4 text-center text-sm text-[var(--color-ink-mute)]">
             NEXT_PUBLIC_MAPBOX_TOKEN missing — set it in .env.local to render the map.
           </div>
         )}
@@ -656,9 +533,30 @@ export default function PassengerShell({
         />
       </JourneySheet>
 
+      <TabBar
+        active={activeTab}
+        ridesBadge={activeCount}
+        onChange={(next) => {
+          setActiveTab(next);
+          if (next === "rides") {
+            setWalletOpen(true);
+            setPersonaDrawerOpen(false);
+          } else if (next === "account") {
+            setPersonaDrawerOpen(true);
+            setWalletOpen(false);
+          } else {
+            setWalletOpen(false);
+            setPersonaDrawerOpen(false);
+          }
+        }}
+      />
+
       <PersonaDrawer
         open={personaDrawerOpen}
-        onClose={() => setPersonaDrawerOpen(false)}
+        onClose={() => {
+          setPersonaDrawerOpen(false);
+          setActiveTab("home");
+        }}
         persona={persona}
         personaSlug={personaSlug}
         walletBalance={walletBalance}
