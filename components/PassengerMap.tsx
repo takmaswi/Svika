@@ -10,7 +10,7 @@ import mapboxgl, {
 import "mapbox-gl/dist/mapbox-gl.css";
 
 import { createClient } from "@/lib/supabase/client";
-import { pointAtDistance } from "@/lib/sim/geometry";
+import { haversineMeters, pointAtDistance } from "@/lib/sim/geometry";
 import { SIM_CHANNEL, SIM_EVENT, type KombiTickPayload } from "@/lib/sim/simRunner";
 import type { NetworkPayload, RouteForMap, StopForMap } from "@/lib/network/loadNetwork";
 import type { ActiveJourney, JourneyStage } from "@/lib/passenger/journey-types";
@@ -393,6 +393,39 @@ interface InterpEntry {
 }
 
 const TICK_PERIOD_MS = 1500;
+
+/**
+ * Defense-in-depth thresholds for the broadcast-handler regression guard.
+ *
+ * A legitimate 2 s tick at any kombi speed (incl. the model's hard-coded
+ * speed-by-route-length, plus generous slack for clock drift) covers ≤70 m
+ * of chord distance. The same is true for the route-endpoint reflection
+ * step, which advances by the same per-tick distance, just with the sign
+ * of `progressMeters` flipping. The only thing that can drive BOTH a
+ * progressMeters delta >50 m AND a chord delta >60 m in a single 2 s
+ * window is a duplicate broadcaster — a second sim instance with its own
+ * cold-start `loadVehicles` state writing to the same `kombi-positions`
+ * channel. The Phase 1 evidence document captures exactly this signature.
+ *
+ * AND (not OR) is deliberate: a polyline-densification mismatch could push
+ * chord up while progressMeters delta stays tiny (steady-state); a route
+ * swap on the same vehicle id (extremely unlikely with the corridor
+ * filter) could push progressMeters delta up while chord stays tiny.
+ * Neither of those is the bug we want to swallow — only the both-huge
+ * combination matches the duplicate-broadcaster signature.
+ */
+const REGRESSION_PM_THRESHOLD_M = 50;
+const REGRESSION_CHORD_THRESHOLD_M = 60;
+const WARN_INTERVAL_MS = 60_000;
+
+const lastBroadcastWarnAt = new Map<string, number>();
+function warnDuplicateBroadcaster(vehicleId: string, message: string): void {
+  const now = Date.now();
+  const last = lastBroadcastWarnAt.get(vehicleId) ?? 0;
+  if (now - last < WARN_INTERVAL_MS) return;
+  lastBroadcastWarnAt.set(vehicleId, now);
+  console.warn(message);
+}
 
 function easeInOut(t: number): number {
   return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
@@ -1355,6 +1388,28 @@ export default function PassengerMap({
         const tickProgress =
           typeof t.progressMeters === "number" ? t.progressMeters : 0;
         const prevProgress = existing?.nextProgressMeters ?? tickProgress;
+        // Phase 3 Fix B — duplicate-broadcaster regression guard. Skip ticks
+        // whose progressMeters AND chord-distance from the last good sample
+        // both exceed plausible 2 s motion. See REGRESSION_*_THRESHOLD_M
+        // comment near the top of this file for the rationale.
+        if (existing) {
+          const dPm = Math.abs(tickProgress - existing.nextProgressMeters);
+          const dChord = haversineMeters(existing.next, [t.lat, t.lng]);
+          if (
+            dPm > REGRESSION_PM_THRESHOLD_M &&
+            dChord > REGRESSION_CHORD_THRESHOLD_M
+          ) {
+            warnDuplicateBroadcaster(
+              t.vehicle_id,
+              `[map-bcast] dropping suspicious tick for ${t.vehicle_id}: ` +
+                `Δpm=${dPm.toFixed(0)} m (>${REGRESSION_PM_THRESHOLD_M}), ` +
+                `Δchord=${dChord.toFixed(0)} m (>${REGRESSION_CHORD_THRESHOLD_M}). ` +
+                `Likely a duplicate broadcaster from another sim instance — ` +
+                `see docs/debug/phase-1-evidence.md.`,
+            );
+            continue;
+          }
+        }
         interpRef.current.set(t.vehicle_id, {
           prev,
           next: [t.lat, t.lng],

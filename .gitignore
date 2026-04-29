@@ -50,3 +50,6 @@ phase*-*.png
 # Cowork session artifacts
 .claude/sessions/
 .vercel
+
+# Sim runner single-flight lock (Phase 3 fix)
+.svika-sim.lock
