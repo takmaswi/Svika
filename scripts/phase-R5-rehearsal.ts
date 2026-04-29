@@ -19,7 +19,7 @@
 //  10. wa-light              — WhatsApp companion (chrome restyled, bubbles green)
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { chromium, type Page } from "playwright";
+import { chromium, type Page } from "@playwright/test";
 
 import type { Database } from "@/lib/supabase/types";
 
