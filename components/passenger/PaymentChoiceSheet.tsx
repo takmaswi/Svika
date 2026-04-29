@@ -46,13 +46,22 @@ export default function PaymentChoiceSheet({
     <div className="pt-1">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="svika-meta uppercase text-svika-mute">
+          <p
+            className="svika-meta uppercase"
+            style={{ color: "var(--color-ink-mute)" }}
+          >
             Choose how to pay
           </p>
-          <p className="svika-headline mt-1 truncate text-svika-teal">
+          <p
+            className="svika-headline mt-1 truncate"
+            style={{ color: "var(--color-ink)" }}
+          >
             {routeLabel}
           </p>
-          <p className="svika-meta mt-0.5 text-svika-mute" style={{ textTransform: "none" }}>
+          <p
+            className="svika-meta mt-0.5"
+            style={{ textTransform: "none", color: "var(--color-ink-mute)" }}
+          >
             {option.total_duration_minutes} min · {fareLabel}
           </p>
         </div>
@@ -60,7 +69,11 @@ export default function PaymentChoiceSheet({
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-white/70 text-svika-mute hover:text-svika-teal"
+          className="flex h-8 w-8 items-center justify-center rounded-full"
+          style={{
+            backgroundColor: "rgba(255, 255, 255, 0.06)",
+            color: "var(--color-ink-mute)",
+          }}
         >
           ×
         </button>
@@ -72,7 +85,11 @@ export default function PaymentChoiceSheet({
             type="button"
             onClick={onWallet}
             disabled={busyMethod !== null}
-            className="flex h-14 w-full items-center justify-between rounded-2xl bg-svika-rust px-4 text-white shadow-[0_4px_16px_rgba(217,98,42,0.25)] transition-opacity disabled:opacity-60"
+            className="flex h-14 w-full items-center justify-between rounded-2xl px-4 text-white transition-opacity disabled:opacity-60"
+            style={{
+              backgroundColor: "var(--color-action)",
+              boxShadow: "0 8px 24px rgba(0, 122, 255, 0.32)",
+            }}
             data-testid="payment-wallet"
           >
             <span className="svika-body font-semibold">
@@ -80,7 +97,10 @@ export default function PaymentChoiceSheet({
                 ? "Charging wallet…"
                 : `Pay ${fareLabel} from wallet`}
             </span>
-            <span className="svika-mono-code opacity-90" style={{ fontSize: "13px" }}>
+            <span
+              className="svika-mono-code opacity-90"
+              style={{ fontSize: "13px" }}
+            >
               you have {balanceLabel}
             </span>
           </button>
@@ -89,13 +109,20 @@ export default function PaymentChoiceSheet({
             type="button"
             onClick={onTopUp}
             disabled={busyMethod !== null}
-            className="flex h-14 w-full items-center justify-between rounded-2xl bg-svika-rust px-4 text-white shadow-[0_4px_16px_rgba(217,98,42,0.25)] transition-opacity disabled:opacity-60"
+            className="flex h-14 w-full items-center justify-between rounded-2xl px-4 text-white transition-opacity disabled:opacity-60"
+            style={{
+              backgroundColor: "var(--color-action)",
+              boxShadow: "0 8px 24px rgba(0, 122, 255, 0.32)",
+            }}
             data-testid="payment-topup"
           >
             <span className="svika-body font-semibold">
               Top up — you have {balanceLabel}
             </span>
-            <span className="svika-mono-code opacity-90" style={{ fontSize: "13px" }}>
+            <span
+              className="svika-mono-code opacity-90"
+              style={{ fontSize: "13px" }}
+            >
               need {fareLabel}
             </span>
           </button>
@@ -105,7 +132,11 @@ export default function PaymentChoiceSheet({
           type="button"
           onClick={onCash}
           disabled={busyMethod !== null}
-          className="flex h-14 w-full items-center justify-between rounded-2xl border-2 border-svika-teal bg-white/60 px-4 text-svika-teal transition-opacity disabled:opacity-60"
+          className="svika-glass flex h-14 w-full items-center justify-between rounded-2xl px-4 transition-opacity disabled:opacity-60"
+          style={{
+            borderColor: "var(--color-action)",
+            color: "var(--color-ink)",
+          }}
           data-testid="payment-cash"
         >
           <span className="svika-body font-semibold">
@@ -113,13 +144,19 @@ export default function PaymentChoiceSheet({
               ? "Reserving seat…"
               : `Pay ${fareLabel} cash on board`}
           </span>
-          <span className="svika-mono-code text-svika-mute" style={{ fontSize: "13px" }}>
+          <span
+            className="svika-mono-code"
+            style={{ fontSize: "13px", color: "var(--color-ink-mute)" }}
+          >
             {seats} of {capacity} seats today
           </span>
         </button>
       </div>
 
-      <p className="svika-meta mt-3 text-svika-mute" style={{ textTransform: "none" }}>
+      <p
+        className="svika-meta mt-3"
+        style={{ textTransform: "none", color: "var(--color-ink-mute)" }}
+      >
         Cash boarding still uses a 3-digit code.
       </p>
     </div>

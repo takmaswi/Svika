@@ -8,6 +8,7 @@ import ParcelSheet from "./ParcelSheet";
 import PaymentChoiceSheet from "./PaymentChoiceSheet";
 import PlanList from "./PlanList";
 import TopUpSheet from "./TopUpSheet";
+import TripPreviewCard from "./TripPreviewCard";
 import Wallet from "./Wallet";
 import type { ActiveJourney, JourneyStage } from "@/lib/passenger/journey-types";
 import type { WalletTicket } from "@/lib/passenger/wallet";
@@ -17,6 +18,7 @@ import type { TripPlan } from "@/lib/trip-planner";
 export type SheetState =
   | "idle"
   | "searching"
+  | "trip-preview"
   | "plans-returned"
   | "choosing-payment"
   | "topping-up"
@@ -37,6 +39,11 @@ interface JourneySheetContentProps {
   searchBusy: boolean;
   searchError: string | null;
   onSearch: (text: string) => Promise<void>;
+  // quick-pick preview (idle → trip-preview → choosing-payment)
+  quickPickPreview: TripPlan | null;
+  onConfirmQuickPick: () => void;
+  onCancelQuickPick: () => void;
+  onPickPreviewFromIdle: (plan: TripPlan) => void;
   // plans-returned
   plansOptions: TripPlan[];
   busyOptionLabel: string | null;
@@ -169,6 +176,19 @@ export default function JourneySheetContent(
     );
   }
 
+  if (state === "trip-preview" && props.quickPickPreview) {
+    return (
+      <div data-testid="journey-sheet-content" data-state="trip-preview">
+        <TripPreviewCard
+          plan={props.quickPickPreview}
+          busy={props.searchBusy}
+          onConfirm={props.onConfirmQuickPick}
+          onClose={props.onCancelQuickPick}
+        />
+      </div>
+    );
+  }
+
   if (state === "plans-returned") {
     return (
       <div data-testid="journey-sheet-content" data-state="plans-returned">
@@ -243,6 +263,7 @@ export default function JourneySheetContent(
         personaName={props.personaName}
         nextHeightsMinutes={props.nextHeightsMinutes}
         onSubmit={props.onSearch}
+        onPickPreview={props.onPickPreviewFromIdle}
         busy={props.searchBusy}
       />
     </div>

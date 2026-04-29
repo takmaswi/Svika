@@ -96,6 +96,9 @@ export default function PassengerShell({
   const [bookingFlash, setBookingFlash] = useState<BookingFlash | null>(null);
   const [busyMethod, setBusyMethod] = useState<PaymentMethod | null>(null);
   const [pickedOption, setPickedOption] = useState<TripPlan | null>(null);
+  const [quickPickPreview, setQuickPickPreview] = useState<TripPlan | null>(
+    null,
+  );
   const [topUpOpen, setTopUpOpen] = useState(false);
   const [topUpBusy, setTopUpBusy] = useState(false);
   const [parcelOpen, setParcelOpen] = useState(false);
@@ -230,13 +233,29 @@ export default function PassengerShell({
   }
 
   async function handleBook(option: TripPlan, method: PaymentMethod) {
-    if (!plans) return;
+    // Typed-search path carries `plans` with explicit endpoints; the
+    // quick-pick path doesn't, so derive endpoints from the first/last
+    // kombi leg of the picked option. bookTripAction needs both ids.
+    let originStopId: string | null = plans?.origin_stop_id ?? null;
+    let destinationStopId: string | null = plans?.destination_stop_id ?? null;
+    if (!originStopId || !destinationStopId) {
+      const firstKombi = option.legs.find((l) => l.type === "kombi");
+      const lastKombi = [...option.legs]
+        .reverse()
+        .find((l) => l.type === "kombi");
+      originStopId = firstKombi?.board_at_stop_id ?? null;
+      destinationStopId = lastKombi?.alight_at_stop_id ?? null;
+    }
+    if (!originStopId || !destinationStopId) {
+      setBookingFlash({ kind: "err", message: "Trip plan missing endpoints." });
+      return;
+    }
     setBusyMethod(method);
     setBookingFlash(null);
     const result = await bookTripAction({
       persona_slug: personaSlug,
-      origin_stop_id: plans.origin_stop_id,
-      destination_stop_id: plans.destination_stop_id,
+      origin_stop_id: originStopId,
+      destination_stop_id: destinationStopId,
       option,
       payment_method: method,
     });
@@ -315,8 +334,26 @@ export default function PassengerShell({
     setStage(null);
     setBookingFlash(null);
     setSearchError(null);
+    setQuickPickPreview(null);
     router.refresh();
   }, [initialJourney, router]);
+
+  const handlePickPreview = useCallback((plan: TripPlan) => {
+    setQuickPickPreview(plan);
+    setSearchError(null);
+  }, []);
+
+  const handleConfirmQuickPick = useCallback(() => {
+    if (quickPickPreview === null) return;
+    // Promote preview → pickedOption. The sheetState ladder will land on
+    // "choosing-payment" on the next render, mounting PaymentChoiceSheet.
+    setPickedOption(quickPickPreview);
+    setQuickPickPreview(null);
+  }, [quickPickPreview]);
+
+  const handleCancelQuickPick = useCallback(() => {
+    setQuickPickPreview(null);
+  }, []);
 
   const handleEndTrip = useCallback(async (): Promise<{
     ok: boolean;
@@ -358,6 +395,7 @@ export default function PassengerShell({
     if (parcelOpen) return "parcel";
     if (topUpOpen) return "topping-up";
     if (pickedOption !== null) return "choosing-payment";
+    if (quickPickPreview !== null) return "trip-preview";
     if (plans !== null) return "plans-returned";
     if (searchBusy) return "searching";
     if (journey) {
@@ -376,6 +414,7 @@ export default function PassengerShell({
     parcelOpen,
     topUpOpen,
     pickedOption,
+    quickPickPreview,
     plans,
     searchBusy,
     journey,
@@ -400,6 +439,7 @@ export default function PassengerShell({
     } else {
       switch (sheetState) {
         case "plans-returned":
+        case "trip-preview":
         case "choosing-payment":
         case "topping-up":
         case "parcel":
@@ -468,6 +508,7 @@ export default function PassengerShell({
               journey={journey}
               stage={stage}
               initialKombis={initialKombis}
+              previewPlan={quickPickPreview}
             />
           </div>
         ) : (
@@ -491,6 +532,10 @@ export default function PassengerShell({
           searchBusy={searchBusy}
           searchError={searchError}
           onSearch={handleSearch}
+          quickPickPreview={quickPickPreview}
+          onConfirmQuickPick={handleConfirmQuickPick}
+          onCancelQuickPick={handleCancelQuickPick}
+          onPickPreviewFromIdle={handlePickPreview}
           plansOptions={plans?.options ?? []}
           busyOptionLabel={busyMethod ? pickedOption?.label ?? null : null}
           onChoose={handleChoose}

@@ -13,6 +13,7 @@ import { createClient } from "@/lib/supabase/client";
 import { SIM_CHANNEL, SIM_EVENT, type KombiTickPayload } from "@/lib/sim/simRunner";
 import type { NetworkPayload, RouteForMap, StopForMap } from "@/lib/network/loadNetwork";
 import type { ActiveJourney, JourneyStage } from "@/lib/passenger/journey-types";
+import type { TripPlan } from "@/lib/trip-planner";
 
 const ROUTES_SOURCE = "svika-routes";
 const ROUTES_LAYER_BASE = "svika-routes-base";
@@ -186,6 +187,14 @@ interface PassengerMapProps {
    * sim is broadcasting; live broadcasts continue to override.
    */
   initialKombis?: KombiTickPayload[];
+  /**
+   * R3 — Hardcoded quick-pick TripPlan currently being previewed. When set,
+   * the map fits the trip corridor (user dot + every kombi-leg endpoint) so
+   * the rider can see what they're about to buy before tapping Buy. Cleared
+   * once the preview is confirmed (journey-active fitBounds takes over) or
+   * dismissed.
+   */
+  previewPlan?: TripPlan | null;
 }
 
 interface SelectedRouteInfo {
@@ -340,6 +349,7 @@ export default function PassengerMap({
   journey,
   stage,
   initialKombis,
+  previewPlan,
 }: PassengerMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -557,6 +567,74 @@ export default function PassengerMap({
       m.off("load", onLoad);
     };
   }, [journey, stage?.kind]);
+
+  // R3 — Quick-pick trip preview fitBounds. Fires when `previewPlan` is set
+  // (the rider tapped a quick pick on the idle sheet) and frames the user
+  // dot + every kombi-leg boarding/alighting stop. Walks in the seed plan
+  // shape carry only `transfer_id`, so walking endpoints are inferred from
+  // the surrounding kombi legs (alight of leg n-1 → board of leg n+1).
+  // Independent of the journey-active fitBounds — that effect's dep array
+  // keys off `journey?.trip_id`, which never changes for previews, so the
+  // two effects can't fight.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (!previewPlan) return;
+
+    function applyPreviewBounds(): void {
+      if (!map || !previewPlan) return;
+      const stops = networkRef.current.stops;
+      const stopById = new Map(stops.map((s) => [s.id, s] as const));
+      const points: Array<[number, number]> = [];
+      points.push([USER_LOCATION.lng, USER_LOCATION.lat]);
+      for (const leg of previewPlan.legs) {
+        if (leg.type !== "kombi") continue;
+        if (leg.board_at_stop_id) {
+          const board = stopById.get(leg.board_at_stop_id);
+          if (board) points.push([board.lng, board.lat]);
+        }
+        if (leg.alight_at_stop_id) {
+          const alight = stopById.get(leg.alight_at_stop_id);
+          if (alight) points.push([alight.lng, alight.lat]);
+        }
+      }
+      if (points.length < 2) return;
+      let west = points[0][0];
+      let east = points[0][0];
+      let south = points[0][1];
+      let north = points[0][1];
+      for (const [lng, lat] of points) {
+        if (lng < west) west = lng;
+        if (lng > east) east = lng;
+        if (lat < south) south = lat;
+        if (lat > north) north = lat;
+      }
+      map.fitBounds(
+        [
+          [west, south],
+          [east, north],
+        ],
+        {
+          // Reserve bottom space for the half-snap sheet so the trip preview
+          // card and the framed corridor don't fight for the same pixels.
+          padding: { top: 80, right: 60, bottom: 320, left: 60 },
+          duration: 700,
+          maxZoom: 14.5,
+          essential: true,
+        },
+      );
+    }
+
+    if (map.isStyleLoaded()) {
+      applyPreviewBounds();
+      return;
+    }
+    const onLoad = () => applyPreviewBounds();
+    map.once("load", onLoad);
+    return () => {
+      map.off("load", onLoad);
+    };
+  }, [previewPlan]);
 
   // Build the map exactly once. Subsequent network changes would require a
   // full restyle; for the demo the network is frozen after Phase 1. Reading
