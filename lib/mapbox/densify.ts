@@ -50,6 +50,15 @@ export async function densifyPolyline(
     process.env.MAPBOX_SECRET_TOKEN ??
     process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
   if (!token || raw.length < 2 || raw.length > MAX_WAYPOINTS) {
+    const reason = !token
+      ? "no-token"
+      : raw.length < 2
+        ? "polyline-too-short"
+        : "polyline-too-long";
+    console.warn(
+      "[densify] Falling back to raw polyline — kombis may go off-road.",
+      { reason, points: raw.length },
+    );
     return { coordinates: [...raw], source: "raw" };
   }
 
@@ -66,15 +75,29 @@ export async function densifyPolyline(
 
   try {
     const res = await fetch(url, { signal: controller.signal });
-    if (!res.ok) return { coordinates: [...raw], source: "raw" };
+    if (!res.ok) {
+      console.warn(
+        "[densify] Falling back to raw polyline — kombis may go off-road.",
+        { reason: "http-error", status: res.status, statusText: res.statusText },
+      );
+      return { coordinates: [...raw], source: "raw" };
+    }
     const body = (await res.json()) as MapboxDirectionsResponse;
     const coords = body.routes?.[0]?.geometry?.coordinates;
     if (!Array.isArray(coords) || coords.length < 2) {
+      console.warn(
+        "[densify] Falling back to raw polyline — kombis may go off-road.",
+        { reason: "malformed-body", points: Array.isArray(coords) ? coords.length : null },
+      );
       return { coordinates: [...raw], source: "raw" };
     }
     const flipped: LatLng[] = coords.map(([lng, lat]) => [lat, lng] as const);
     return { coordinates: flipped, source: "mapbox" };
-  } catch {
+  } catch (err) {
+    console.warn(
+      "[densify] Falling back to raw polyline — kombis may go off-road.",
+      { reason: "exception", error: err instanceof Error ? err.message : String(err) },
+    );
     return { coordinates: [...raw], source: "raw" };
   } finally {
     clearTimeout(timeout);

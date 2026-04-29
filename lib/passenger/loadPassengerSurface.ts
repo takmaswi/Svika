@@ -80,6 +80,7 @@ async function loadInitialKombis(): Promise<KombiTickPayload[]> {
         lng: point.lng,
         direction: row.direction ?? "outbound",
         bearing: 0,
+        progressMeters: 0,
         at: row.last_position_at ?? new Date().toISOString(),
       });
     }
@@ -209,6 +210,7 @@ function applyR2CorridorFilter(
     lng: R2_UZ_GATE.lng,
     direction: "inbound",
     bearing: 0,
+    progressMeters: 0,
     at: new Date().toISOString(),
   });
   return corridor;

@@ -49,6 +49,12 @@ export interface KombiTickPayload {
   direction: "outbound" | "inbound";
   /** Compass bearing (0–359, clockwise from north) — drives icon-rotate. */
   bearing: number;
+  /**
+   * Distance along the densified route polyline, in meters from start.
+   * Drives sub-segment road-following interpolation in PassengerMap RAF —
+   * same value the sim uses internally to step the kombi via advance().
+   */
+  progressMeters: number;
   at: string;
 }
 
@@ -80,7 +86,14 @@ async function loadRoutePolylines(): Promise<Map<string, RoutePolyline>> {
   await Promise.all(
     seed.routes.map(async (route) => {
       const raw = route.polyline.map(([lat, lng]) => [lat, lng] as LatLng);
-      const { coordinates } = await densifyPolyline(raw);
+      const { coordinates, source } = await densifyPolyline(raw);
+      if (source === "raw") {
+        console.warn(
+          `[sim] Route ${route.id} using raw polyline (${coordinates.length} pts). ` +
+            `Kombis on this route will move in straight chord lines, not road-following arcs. ` +
+            `Re-run pnpm db:seed with a working MAPBOX_SECRET_TOKEN to densify.`,
+        );
+      }
       out.set(route.id, {
         route_id: route.id,
         polyline: coordinates,
@@ -191,6 +204,7 @@ export async function startSim(opts: SimRunnerOptions): Promise<SimHandle> {
         lng: result.position[1],
         direction: v.state.direction,
         bearing,
+        progressMeters: v.state.progressMeters,
         at: now,
       });
       pingInserts.push({

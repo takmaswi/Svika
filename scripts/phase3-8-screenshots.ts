@@ -75,6 +75,7 @@ function tickPayload(
     lng,
     direction: "outbound",
     bearing: 180,
+    progressMeters: 0,
     at: new Date().toISOString(),
   };
 }

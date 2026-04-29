@@ -92,6 +92,7 @@ function tickPayload(lat: number, lng: number, bearing: number): KombiTickPayloa
     lng,
     direction: "outbound",
     bearing,
+    progressMeters: 0,
     at: new Date().toISOString(),
   };
 }

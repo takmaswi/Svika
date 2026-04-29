@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import mapboxgl, {
   type GeoJSONSource,
   type LngLatBoundsLike,
@@ -10,6 +10,7 @@ import mapboxgl, {
 import "mapbox-gl/dist/mapbox-gl.css";
 
 import { createClient } from "@/lib/supabase/client";
+import { pointAtDistance } from "@/lib/sim/geometry";
 import { SIM_CHANNEL, SIM_EVENT, type KombiTickPayload } from "@/lib/sim/simRunner";
 import type { NetworkPayload, RouteForMap, StopForMap } from "@/lib/network/loadNetwork";
 import type { ActiveJourney, JourneyStage } from "@/lib/passenger/journey-types";
@@ -372,12 +373,22 @@ function kombisGeoJSON(
  * the previous "next" sample into "prev" and stores the new sample in
  * "next"; the RAF loop eases between them so on-screen motion runs at the
  * display refresh rate instead of jumping in 2 s steps.
+ *
+ * R4.5 — `prev`/`next` are stored as [lat, lng] (matching `lib/sim/geometry.ts`
+ * convention) so the RAF loop can hand them straight to `pointAtDistance`
+ * for road-following sub-segment interpolation. The chord-lerp fallback in
+ * the same loop reads them in the same order. `prev/nextProgressMeters`
+ * carry the cumulative distance along the densified polyline so the lerp
+ * happens in meters along the road instead of as a chord between corners.
  */
 interface InterpEntry {
   prev: [number, number];
   next: [number, number];
   prevBearing: number;
   nextBearing: number;
+  prevProgressMeters: number;
+  nextProgressMeters: number;
+  routeId: string;
   broadcastAt: number;
 }
 
@@ -438,6 +449,24 @@ export default function PassengerMap({
   const haloPhaseRef = useRef<number>(0);
   const [selected, setSelected] = useState<SelectedRouteInfo | null>(null);
 
+  // R4.5 — densified [lat, lng] polylines per route, keyed by route_id.
+  // The RAF loop hands this to `pointAtDistance` so kombi markers follow the
+  // road between broadcast samples instead of cutting chord lines between
+  // corners. `network.routes[*].geometry.coordinates` is GeoJSON [lng, lat];
+  // we flip on the way in to match the geometry.ts convention.
+  const routePolylines = useMemo(() => {
+    const m = new Map<string, ReadonlyArray<readonly [number, number]>>();
+    for (const route of network.routes) {
+      if (!route.geometry?.coordinates) continue;
+      const flipped: Array<readonly [number, number]> = route.geometry.coordinates.map(
+        ([lng, lat]) => [lat, lng] as const,
+      );
+      m.set(route.id, flipped);
+    }
+    return m;
+  }, [network]);
+  const routePolylinesRef = useRef(routePolylines);
+
   // Keep mutable refs synced. The build effect runs once and reads these so
   // a router.refresh() that returns a new (but content-identical) `network`
   // object reference doesn't tear down the map mid-flight.
@@ -447,6 +476,9 @@ export default function PassengerMap({
   useEffect(() => {
     networkRef.current = network;
   }, [network]);
+  useEffect(() => {
+    routePolylinesRef.current = routePolylines;
+  }, [routePolylines]);
   useEffect(() => {
     tokenRef.current = mapboxToken;
   }, [mapboxToken]);
@@ -1317,14 +1349,20 @@ export default function PassengerMap({
         // and never broadcasts, so no special case for it.
         if (!HEIGHTS_NATIVE_PLATES_CLIENT.has(t.vehicle_id)) continue;
         const existing = interpRef.current.get(t.vehicle_id);
-        const prev = existing?.next ?? [t.lng, t.lat];
+        const prev = existing?.next ?? [t.lat, t.lng];
         const prevBearing =
           existing?.nextBearing ?? (typeof t.bearing === "number" ? t.bearing : 0);
+        const tickProgress =
+          typeof t.progressMeters === "number" ? t.progressMeters : 0;
+        const prevProgress = existing?.nextProgressMeters ?? tickProgress;
         interpRef.current.set(t.vehicle_id, {
           prev,
-          next: [t.lng, t.lat],
+          next: [t.lat, t.lng],
           prevBearing,
           nextBearing: typeof t.bearing === "number" ? t.bearing : prevBearing,
+          prevProgressMeters: prevProgress,
+          nextProgressMeters: tickProgress,
+          routeId: t.route_id,
           broadcastAt: at,
         });
         positionsRef.current.set(t.vehicle_id, t);
@@ -1424,6 +1462,7 @@ export default function PassengerMap({
           lng,
           bearing,
           direction: existing?.direction ?? "outbound",
+          progressMeters: existing?.progressMeters ?? 0,
           at: existing?.at ?? new Date().toISOString(),
         });
         rebuildSource();
@@ -1441,6 +1480,7 @@ export default function PassengerMap({
             lng: finalLng,
             bearing: bearingDeg(finalA, finalB),
             direction: existing?.direction ?? "outbound",
+            progressMeters: existing?.progressMeters ?? 0,
             at: new Date().toISOString(),
           });
           rebuildSource();
@@ -1487,8 +1527,26 @@ export default function PassengerMap({
         const t = Math.max(0, Math.min(1, (now - entry.broadcastAt) / TICK_PERIOD_MS));
         if (t < 1) stillEasing = true;
         const eased = easeInOut(t);
-        const lng = entry.prev[0] + (entry.next[0] - entry.prev[0]) * eased;
-        const lat = entry.prev[1] + (entry.next[1] - entry.prev[1]) * eased;
+        // R4.5 — progress-aware road-following lerp. Lerp meters along the
+        // densified polyline, then resolve to a [lat, lng] via pointAtDistance
+        // so the marker walks the road. Falls back to chord lerp if the
+        // route's polyline isn't in the cache (defensive — a kombi tick for a
+        // route the seed didn't include) so the marker doesn't disappear.
+        const lerpedMeters =
+          entry.prevProgressMeters +
+          (entry.nextProgressMeters - entry.prevProgressMeters) * eased;
+        const polyline = routePolylinesRef.current.get(entry.routeId);
+        let lat: number;
+        let lng: number;
+        if (polyline && polyline.length >= 2) {
+          const point = pointAtDistance(polyline, lerpedMeters);
+          lat = point[0];
+          lng = point[1];
+        } else {
+          // Fallback: chord lerp on the [lat, lng] envelope.
+          lat = entry.prev[0] + (entry.next[0] - entry.prev[0]) * eased;
+          lng = entry.prev[1] + (entry.next[1] - entry.prev[1]) * eased;
+        }
         const bearing = lerpBearing(entry.prevBearing, entry.nextBearing, eased);
         const orig = positionsRef.current.get(id);
         if (!orig) continue;
@@ -1514,7 +1572,7 @@ export default function PassengerMap({
   }, []);
 
   return (
-    <div className="absolute inset-0">
+    <div className="absolute inset-0" data-phase="r45">
       <div ref={containerRef} className="h-full w-full" />
 
       {journey && stage && stage.assigned_vehicle_id ? (
