@@ -126,11 +126,27 @@ export default function SearchHero({ personaName, onSubmit, busy }: SearchHeroPr
 
   return (
     <section className="px-4 pb-3 pt-4" aria-label="Plan a trip">
-      <div className="rounded-2xl border border-svika-teal-100 bg-white p-4 shadow-sm">
-        <h2 className="text-[22px] font-semibold leading-snug text-svika-teal">
+      <div
+        className="rounded-2xl p-4 shadow-sm"
+        style={{
+          borderWidth: "1px",
+          borderStyle: "solid",
+          borderColor: "var(--color-hairline)",
+          backgroundColor: "var(--color-bg)",
+        }}
+      >
+        <h2
+          className="text-[22px] font-semibold leading-snug"
+          style={{ color: "var(--color-ink)" }}
+        >
           Where to, {personaName}?
         </h2>
-        <p className="mt-1 text-[11px] text-svika-mute">Type in Shona or English.</p>
+        <p
+          className="mt-1 text-[11px]"
+          style={{ color: "var(--color-ink-mute)" }}
+        >
+          Type in Shona or English.
+        </p>
 
         <div className="mt-3">
           <SearchBar
@@ -141,7 +157,10 @@ export default function SearchHero({ personaName, onSubmit, busy }: SearchHeroPr
           />
         </div>
 
-        <p className="mt-4 text-[10px] font-medium uppercase tracking-wide text-svika-mute">
+        <p
+          className="mt-4 text-[10px] font-medium uppercase tracking-wide"
+          style={{ color: "var(--color-ink-mute)" }}
+        >
           Quick picks
         </p>
         <div className="mt-2 grid grid-cols-1 gap-2">
@@ -153,23 +172,39 @@ export default function SearchHero({ personaName, onSubmit, busy }: SearchHeroPr
                 type="button"
                 onClick={() => void handlePreset(p)}
                 disabled={busy}
-                className="flex items-center gap-3 rounded-xl border border-svika-stone-dark bg-svika-stone px-3 py-3 text-left transition-colors hover:border-svika-rust disabled:opacity-60"
+                className="flex items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors disabled:opacity-60"
+                style={{
+                  borderWidth: "1px",
+                  borderStyle: "solid",
+                  borderColor: "var(--color-hairline)",
+                  backgroundColor: "var(--color-surface)",
+                }}
               >
                 <span
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-svika-teal"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full"
+                  style={{
+                    backgroundColor: "var(--color-bg)",
+                    color: "var(--color-action)",
+                  }}
                   aria-hidden
                 >
                   <p.Icon className="h-5 w-5" />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-semibold text-svika-teal">
+                  <span
+                    className="block truncate text-sm font-semibold"
+                    style={{ color: "var(--color-ink)" }}
+                  >
                     {p.destination}
                   </span>
-                  <span className="block truncate text-[11px] text-svika-mute">
+                  <span
+                    className="block truncate text-[11px]"
+                    style={{ color: "var(--color-ink-mute)" }}
+                  >
                     {p.via} · {p.duration_minutes} min · ${p.fare_usd.toFixed(2)}
                   </span>
                 </span>
-                <span className="text-svika-rust" aria-hidden>
+                <span style={{ color: "var(--color-action)" }} aria-hidden>
                   {loading ? "…" : "→"}
                 </span>
               </button>

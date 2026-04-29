@@ -11,7 +11,8 @@ export default function PersonaPicker() {
     <section className="px-5 pb-6 pt-2" aria-labelledby="svika-persona-heading">
       <p
         id="svika-persona-heading"
-        className="mb-2 text-[10px] font-medium uppercase tracking-[0.5px] text-svika-mute"
+        className="mb-2 text-[10px] font-medium uppercase tracking-[0.5px]"
+        style={{ color: "var(--color-ink-mute)" }}
       >
         Try the demo
       </p>
@@ -31,26 +32,33 @@ export default function PersonaPicker() {
           >
             <span
               aria-hidden
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-svika-teal text-white"
-              style={{ fontSize: "18px", fontWeight: 500 }}
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-white"
+              style={{
+                fontSize: "18px",
+                fontWeight: 500,
+                backgroundColor: "var(--color-action)",
+              }}
             >
               {persona.initial}
             </span>
             <span className="min-w-0 flex-1">
               <span
-                className="block truncate text-svika-teal"
-                style={{ fontSize: "16px", fontWeight: 600 }}
+                className="block truncate"
+                style={{ fontSize: "16px", fontWeight: 600, color: "var(--color-ink)" }}
               >
                 {persona.name}
               </span>
               <span
-                className="block truncate text-svika-mute"
-                style={{ fontSize: "12px" }}
+                className="block truncate"
+                style={{ fontSize: "12px", color: "var(--color-ink-mute)" }}
               >
                 {persona.role_label}
               </span>
             </span>
-            <span className="text-svika-rust" aria-hidden style={{ fontSize: "18px" }}>
+            <span
+              aria-hidden
+              style={{ fontSize: "18px", color: "var(--color-action)" }}
+            >
               →
             </span>
           </Link>

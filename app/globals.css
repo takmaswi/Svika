@@ -1,27 +1,24 @@
 @import "tailwindcss";
 
 /* ============================================================================
-   Svika brand tokens — Phase 3.7 visual rebuild
-   Mosi-oa-Tunya palette with cooler teal, salmon accent, off-white base.
-   Per CLAUDE.md "Locked decisions" → Brand row.
+   Svika brand tokens — R5 light-primary rebuild
+   Hozaan-style palette. Apple-blue accent on white surfaces by default.
+   Dark theme is a togglable variant via [data-theme="dark"] on <html>.
+   The bootstrap script in app/layout.tsx sets data-theme on first paint
+   from localStorage.svika-theme then prefers-color-scheme; static SSR
+   default is data-theme="light".
    ========================================================================= */
 @theme {
-  /* Surfaces */
-  --color-bg: #0a0a0c;
-  --color-surface: #14141a;
-
-  /* Ink ramp — white with alpha */
-  --color-ink: #ffffff;
-  --color-ink-soft: rgba(255, 255, 255, 0.72);
-  --color-ink-mute: rgba(255, 255, 255, 0.48);
-  --color-hairline: rgba(255, 255, 255, 0.08);
-
-  /* Accent — Apple blue, the only accent in the rebuild */
+  /* === Theme-agnostic === */
   --color-action: #007AFF;
   --color-action-hover: #0A66D1;
   --color-action-disabled: rgba(0, 122, 255, 0.32);
+  --color-action-soft: #E6F1FB;
 
-  /* Live dot stays green for the "kombis on the road" affordance */
+  /* Reserved (currently unused in product code; retained as brand color) */
+  --color-amber: #F59E0B;
+
+  /* Live dot stays green */
   --color-live: #16a34a;
 
   /* Typography */
@@ -33,39 +30,31 @@
   --radius: 0.875rem;
   --radius-lg: 1.375rem;
 
-  /* Sheet snaps — peek raised from 110px to 140px to clear the tab bar */
+  /* Sheet snaps */
   --sheet-peek: 140px;
   --sheet-half: 48vh;
   --sheet-full: 92vh;
+}
 
-  /* Legacy aliases — components still reference these by name (bg-svika-*,
-     text-svika-*). R3/R5 will purge usage; for R1 they map to the closest
-     new token so the build stays green and the booking flow stays
-     intentionally rough until R3 redesigns it. */
-  --color-svika-bg: #0a0a0c;
-  --color-svika-stone: #14141a;
-  --color-svika-stone-dark: #14141a;
-  --color-svika-ink: #ffffff;
-  --color-svika-mute: rgba(255, 255, 255, 0.48);
-  --color-svika-line: rgba(255, 255, 255, 0.08);
-  --color-svika-teal: #007AFF;
-  --color-svika-teal-50: rgba(0, 122, 255, 0.08);
-  --color-svika-teal-100: rgba(0, 122, 255, 0.16);
-  --color-svika-teal-200: rgba(0, 122, 255, 0.32);
-  --color-svika-teal-300: rgba(0, 122, 255, 0.48);
-  --color-svika-teal-400: rgba(0, 122, 255, 0.6);
-  --color-svika-teal-500: #0A66D1;
-  --color-svika-teal-600: #0A66D1;
-  --color-svika-teal-700: #0A66D1;
-  --color-svika-teal-800: #007AFF;
-  --color-svika-teal-900: #0a0a0c;
-  --color-svika-rust: #007AFF;
-  --color-svika-rust-light: rgba(0, 122, 255, 0.6);
-  --color-svika-rust-dark: #0A66D1;
-  --color-svika-salmon: #007AFF;
-  --color-svika-salmon-light: rgba(0, 122, 255, 0.5);
-  --color-accent: #007AFF;
-  --color-mark: #007AFF;
+:root,
+:root[data-theme="light"] {
+  --color-bg: #FFFFFF;
+  --color-surface: #F5F7FA;
+  --color-surface-dark: #1F2937; /* charcoal — for inverse stat-card headers */
+  --color-ink: #0F172A;
+  --color-ink-soft: #4B5563;
+  --color-ink-mute: #94A3B8;
+  --color-hairline: rgba(15, 23, 42, 0.08);
+}
+
+:root[data-theme="dark"] {
+  --color-bg: #0a0a0c;
+  --color-surface: #14141a;
+  --color-surface-dark: #14141a; /* same as surface in dark — no inverse needed */
+  --color-ink: #ffffff;
+  --color-ink-soft: rgba(255, 255, 255, 0.72);
+  --color-ink-mute: rgba(255, 255, 255, 0.48);
+  --color-hairline: rgba(255, 255, 255, 0.08);
 }
 
 html,
@@ -116,7 +105,7 @@ body {
   min-width: 56px;
 }
 
-/* WhatsApp companion bubble */
+/* WhatsApp companion bubble — WhatsApp brand green, theme-agnostic. */
 .wa-bubble {
   background: #dcf8c6;
   border-radius: 8px;
@@ -124,23 +113,24 @@ body {
   max-width: 80%;
 }
 
-/* Map markers */
+/* Map markers — used by RouteHeaderMap in /hwindi. */
 .kombi-marker {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: var(--color-svika-rust);
+  background: var(--color-action);
   border: 2px solid #ffffff;
-  box-shadow: 0 1px 4px rgba(15, 76, 92, 0.35);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.35);
   cursor: pointer;
 }
 
-/* ----- Glass surfaces — R1 dark / iOS liquid glass --------------------- */
+/* ----- Glass surfaces — R5 theme-aware ---------------------------------- */
+/* Light theme is the default; dark overrides live below. */
 .svika-glass {
-  background: rgba(20, 20, 26, 0.55);
-  backdrop-filter: blur(24px) saturate(1.7);
-  -webkit-backdrop-filter: blur(24px) saturate(1.7);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border: 1px solid var(--color-hairline);
   border-radius: 22px;
   position: relative;
   isolation: isolate;
@@ -153,17 +143,18 @@ body {
   pointer-events: none;
   background: radial-gradient(
     ellipse at 50% -20%,
-    rgba(255, 255, 255, 0.18) 0%,
+    rgba(255, 255, 255, 0.5) 0%,
     transparent 60%
   );
 }
 
 .svika-glass-strong {
-  background: rgba(20, 20, 26, 0.7);
-  backdrop-filter: blur(28px) saturate(1.7);
-  -webkit-backdrop-filter: blur(28px) saturate(1.7);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(24px) saturate(1.5);
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  border: 1px solid var(--color-hairline);
   border-radius: 22px;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.08);
   position: relative;
   isolation: isolate;
 }
@@ -175,21 +166,18 @@ body {
   pointer-events: none;
   background: radial-gradient(
     ellipse at 50% -20%,
-    rgba(255, 255, 255, 0.22) 0%,
+    rgba(255, 255, 255, 0.55) 0%,
     transparent 60%
   );
 }
 
-/* Tab-bar variant — slightly stronger blur, a touch more opaque,
-   tighter highlight so it reads as a floating "island" rather than
-   a translucent panel. */
 .svika-glass-tab {
-  background: rgba(14, 14, 18, 0.62);
-  backdrop-filter: blur(30px) saturate(1.8);
-  -webkit-backdrop-filter: blur(30px) saturate(1.8);
-  border: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(28px) saturate(1.6);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+  border: 1px solid var(--color-hairline);
   border-radius: 24px;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.48);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.10);
   position: relative;
   isolation: isolate;
 }
@@ -199,6 +187,43 @@ body {
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
+  background: radial-gradient(
+    ellipse at 50% -10%,
+    rgba(255, 255, 255, 0.35) 0%,
+    transparent 55%
+  );
+}
+
+/* Dark theme glass overrides — R1 dark / iOS liquid glass values. */
+:root[data-theme="dark"] .svika-glass {
+  background: rgba(20, 20, 26, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+:root[data-theme="dark"] .svika-glass::before {
+  background: radial-gradient(
+    ellipse at 50% -20%,
+    rgba(255, 255, 255, 0.18) 0%,
+    transparent 60%
+  );
+}
+:root[data-theme="dark"] .svika-glass-strong {
+  background: rgba(20, 20, 26, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.48);
+}
+:root[data-theme="dark"] .svika-glass-strong::before {
+  background: radial-gradient(
+    ellipse at 50% -20%,
+    rgba(255, 255, 255, 0.22) 0%,
+    transparent 60%
+  );
+}
+:root[data-theme="dark"] .svika-glass-tab {
+  background: rgba(14, 14, 18, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.48);
+}
+:root[data-theme="dark"] .svika-glass-tab::before {
   background: radial-gradient(
     ellipse at 50% -10%,
     rgba(255, 255, 255, 0.14) 0%,
@@ -307,19 +332,19 @@ body {
   }
 }
 
-/* ----- Bottom sheet primitive — Phase B ---------------------------------- */
+/* ----- Bottom sheet primitive — R5 theme-aware -------------------------- */
 .svika-sheet {
   position: fixed;
   inset-inline: 0;
   bottom: 0;
   z-index: 30;
-  background: rgba(20, 20, 26, 0.85);
-  backdrop-filter: blur(28px) saturate(1.7);
-  -webkit-backdrop-filter: blur(28px) saturate(1.7);
-  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(24px) saturate(1.5);
+  -webkit-backdrop-filter: blur(24px) saturate(1.5);
+  border-top: 1px solid var(--color-hairline);
   border-top-left-radius: 22px;
   border-top-right-radius: 22px;
-  box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.10);
   transition:
     height 320ms cubic-bezier(0.32, 0.72, 0, 1),
     transform 320ms cubic-bezier(0.32, 0.72, 0, 1);
@@ -348,7 +373,7 @@ body {
   width: 40px;
   height: 4px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(15, 23, 42, 0.18);
 }
 
 .svika-sheet-body {
@@ -374,6 +399,15 @@ body {
   pointer-events: auto;
 }
 
+:root[data-theme="dark"] .svika-sheet {
+  background: rgba(20, 20, 26, 0.85);
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.55);
+}
+:root[data-theme="dark"] .svika-sheet-handle {
+  background: rgba(255, 255, 255, 0.22);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .svika-sheet,
   .svika-sheet-scrim {
@@ -381,7 +415,7 @@ body {
   }
 }
 
-/* ----- Persona drawer — Phase C ------------------------------------------- */
+/* ----- Persona drawer — R5 theme-aware ---------------------------------- */
 .svika-persona-drawer {
   position: fixed;
   inset-block: 0;
@@ -390,17 +424,23 @@ body {
   width: min(360px, 88vw);
   display: flex;
   flex-direction: column;
-  background: rgba(20, 20, 26, 0.88);
-  backdrop-filter: blur(28px) saturate(1.7);
-  -webkit-backdrop-filter: blur(28px) saturate(1.7);
-  border-inline-start: 1px solid rgba(255, 255, 255, 0.07);
-  box-shadow: -12px 0 32px rgba(0, 0, 0, 0.55);
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(28px) saturate(1.5);
+  -webkit-backdrop-filter: blur(28px) saturate(1.5);
+  border-inline-start: 1px solid var(--color-hairline);
+  box-shadow: -12px 0 32px rgba(15, 23, 42, 0.18);
   transform: translateX(100%);
   transition: transform 280ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 .svika-persona-drawer[data-open="true"] {
   transform: translateX(0);
+}
+
+:root[data-theme="dark"] .svika-persona-drawer {
+  background: rgba(20, 20, 26, 0.88);
+  border-inline-start: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: -12px 0 32px rgba(0, 0, 0, 0.55);
 }
 
 @media (prefers-reduced-motion: reduce) {

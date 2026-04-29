@@ -171,8 +171,14 @@ export default function ConductorShell({
   }
 
   return (
-    <main className="min-h-dvh bg-svika-stone-dark">
-      <header className="bg-svika-teal px-4 py-3 text-svika-stone">
+    <main
+      className="min-h-dvh"
+      style={{ backgroundColor: "var(--color-surface)" }}
+    >
+      <header
+        className="px-4 py-3 text-white"
+        style={{ backgroundColor: "var(--color-action)" }}
+      >
         <div className="flex items-baseline justify-between gap-4">
           <h1 className="svika-headline">Hwindi · {persona.name}</h1>
           <span className="svika-meta opacity-80" style={{ textTransform: "none" }}>
@@ -198,13 +204,30 @@ export default function ConductorShell({
 
       {!activeVehicle ? (
         <section className="px-4 pt-4">
-          <h2 className="text-sm font-medium text-svika-teal">Pick your kombi</h2>
-          <p className="mt-1 text-xs text-svika-mute">
+          <h2
+            className="text-sm font-medium"
+            style={{ color: "var(--color-ink)" }}
+          >
+            Pick your kombi
+          </h2>
+          <p
+            className="mt-1 text-xs"
+            style={{ color: "var(--color-ink-mute)" }}
+          >
             Choose the plate you are working on today. You can re-claim it tomorrow.
           </p>
           <ul className="mt-3 space-y-2" aria-label="Available kombis">
             {state.vehicles.length === 0 ? (
-              <li className="rounded-md border border-svika-teal-100 bg-white p-3 text-sm text-svika-mute">
+              <li
+                className="rounded-md p-3 text-sm"
+                style={{
+                  borderWidth: "1px",
+                  borderStyle: "solid",
+                  borderColor: "var(--color-hairline)",
+                  backgroundColor: "var(--color-bg)",
+                  color: "var(--color-ink-mute)",
+                }}
+              >
                 No kombis available. Run the seed loader first.
               </li>
             ) : (
@@ -216,16 +239,28 @@ export default function ConductorShell({
                       type="button"
                       disabled={blocked || pending}
                       onClick={() => handleAssign(v.id)}
-                      className={`flex w-full items-center justify-between rounded-md border p-3 text-left ${
-                        blocked
-                          ? "border-svika-stone-dark bg-svika-stone text-svika-mute"
-                          : "border-svika-teal-100 bg-white text-svika-teal hover:bg-svika-stone"
-                      }`}
+                      className="flex w-full items-center justify-between rounded-md p-3 text-left transition-colors"
+                      style={{
+                        borderWidth: "1px",
+                        borderStyle: "solid",
+                        borderColor: "var(--color-hairline)",
+                        backgroundColor: blocked
+                          ? "var(--color-surface)"
+                          : "var(--color-bg)",
+                        color: blocked
+                          ? "var(--color-ink-mute)"
+                          : "var(--color-ink)",
+                      }}
                       data-testid={`hwindi-vehicle-${v.id.replace(/\s+/g, "-")}`}
                     >
                       <span>
                         <span className="font-mono text-base">{v.id}</span>
-                        <span className="ml-3 text-xs text-svika-mute">{v.route_name}</span>
+                        <span
+                          className="ml-3 text-xs"
+                          style={{ color: "var(--color-ink-mute)" }}
+                        >
+                          {v.route_name}
+                        </span>
                       </span>
                       <span className="text-xs">
                         {blocked
@@ -245,26 +280,34 @@ export default function ConductorShell({
             {feedback ? (
               <div
                 role="status"
-                className={`rounded-md border p-3 text-sm ${
-                  feedback.kind === "ok"
-                    ? "border-svika-rust bg-white text-svika-rust"
-                    : feedback.kind === "info"
-                      ? "border-svika-teal-100 bg-white text-svika-teal"
-                      : "border-svika-rust bg-white text-svika-rust"
-                }`}
+                className="rounded-md p-3 text-sm"
+                style={{
+                  borderWidth: "1px",
+                  borderStyle: "solid",
+                  borderColor:
+                    feedback.kind === "info"
+                      ? "var(--color-hairline)"
+                      : "var(--color-action)",
+                  backgroundColor: "var(--color-bg)",
+                  color: "var(--color-ink)",
+                }}
                 data-testid="hwindi-feedback"
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-medium">{feedback.text}</p>
                   {feedback.payment_method === "cash" ? (
                     <span
-                      className="rounded-full bg-svika-salmon px-2 py-0.5 text-[11px] font-medium uppercase tracking-[0.5px] text-white"
+                      className="rounded-full px-2 py-0.5 text-[11px] font-medium uppercase tracking-[0.5px] text-white"
+                      style={{ backgroundColor: "var(--color-amber)" }}
                       data-testid="hwindi-cash-badge"
                     >
                       $ Cash
                     </span>
                   ) : feedback.payment_method === "wallet" ? (
-                    <span className="rounded-full bg-svika-teal px-2 py-0.5 text-[11px] font-medium uppercase tracking-[0.5px] text-white">
+                    <span
+                      className="rounded-full px-2 py-0.5 text-[11px] font-medium uppercase tracking-[0.5px] text-white"
+                      style={{ backgroundColor: "var(--color-action)" }}
+                    >
                       Cleared
                     </span>
                   ) : null}
@@ -272,7 +315,8 @@ export default function ConductorShell({
                 {feedback.meta ? <p className="text-xs opacity-80">{feedback.meta}</p> : null}
                 {feedback.payment_method === "cash" && typeof feedback.fare_usd === "number" ? (
                   <p
-                    className="mt-1 text-xs text-svika-mute"
+                    className="mt-1 text-xs"
+                    style={{ color: "var(--color-ink-mute)" }}
                     data-testid="hwindi-cash-collect"
                   >
                     Collect ${feedback.fare_usd.toFixed(2)} from passenger
@@ -287,20 +331,28 @@ export default function ConductorShell({
             data-testid="hwindi-pin-keypad"
             data-mode={mode}
           >
-            <h2 className="svika-headline text-svika-teal">
+            <h2 className="svika-headline" style={{ color: "var(--color-ink)" }}>
               {mode === "parcel" ? "Parcel code" : "Code"}
             </h2>
-            <p className="svika-meta mt-1 text-svika-mute" style={{ textTransform: "none" }}>
+            <p
+              className="svika-meta mt-1"
+              style={{ textTransform: "none", color: "var(--color-ink-mute)" }}
+            >
               {mode === "parcel"
                 ? "Type the sender's 3-digit parcel code. Tap Enter to accept."
                 : "Type the passenger's 3-digit code. Tap Enter when full."}
             </p>
             <div
-              className={`mt-3 rounded-lg border p-3 ${
-                mode === "parcel"
-                  ? "border-svika-rust bg-white"
-                  : "border-svika-teal-100 bg-svika-stone"
-              }`}
+              className="mt-3 rounded-lg p-3"
+              style={{
+                borderWidth: "1px",
+                borderStyle: "solid",
+                borderColor:
+                  mode === "parcel"
+                    ? "var(--color-action)"
+                    : "var(--color-hairline)",
+                backgroundColor: "var(--color-bg)",
+              }}
             >
               <PinKeypad value={code} onChange={setCode} onSubmit={handleSubmitCode} disabled={pending} />
             </div>
@@ -311,7 +363,8 @@ export default function ConductorShell({
               type="button"
               onClick={handleCash}
               disabled={pending || mode === "parcel"}
-              className="touch-target rounded-md bg-svika-rust px-4 py-6 text-lg font-semibold text-white disabled:opacity-50"
+              className="touch-target rounded-md px-4 py-6 text-lg font-semibold text-white disabled:opacity-50"
+              style={{ backgroundColor: "var(--color-action)" }}
               data-testid="hwindi-cash"
             >
               + Cash $1
@@ -320,9 +373,13 @@ export default function ConductorShell({
               type="button"
               onClick={handleParcel}
               disabled={pending}
-              className={`touch-target rounded-md px-4 py-6 text-lg font-semibold text-white disabled:opacity-50 ${
-                mode === "parcel" ? "bg-svika-rust" : "bg-svika-teal-600"
-              }`}
+              className="touch-target rounded-md px-4 py-6 text-lg font-semibold text-white disabled:opacity-50"
+              style={{
+                backgroundColor:
+                  mode === "parcel"
+                    ? "var(--color-action)"
+                    : "var(--color-action-hover)",
+              }}
               data-testid="hwindi-parcel"
             >
               {mode === "parcel" ? "Cancel parcel" : "Parcel"}
@@ -330,9 +387,14 @@ export default function ConductorShell({
           </section>
 
           <section className="px-4 pb-6" data-testid="hwindi-activity">
-            <h2 className="svika-headline text-svika-teal">Today&apos;s clears</h2>
+            <h2 className="svika-headline" style={{ color: "var(--color-ink)" }}>
+              Today&apos;s clears
+            </h2>
             {state.recent_activity.length === 0 ? (
-              <p className="svika-meta mt-2 text-svika-mute" style={{ textTransform: "none" }}>
+              <p
+                className="svika-meta mt-2"
+                style={{ textTransform: "none", color: "var(--color-ink-mute)" }}
+              >
                 No fares cleared yet today on {activeVehicle.id}.
               </p>
             ) : (
@@ -340,14 +402,27 @@ export default function ConductorShell({
                 {state.recent_activity.map((a) => (
                   <li
                     key={a.ticket_id}
-                    className="flex items-center justify-between rounded-md border border-svika-teal-100 bg-white px-3 py-2 text-xs"
+                    className="flex items-center justify-between rounded-md px-3 py-2 text-xs"
+                    style={{
+                      borderWidth: "1px",
+                      borderStyle: "solid",
+                      borderColor: "var(--color-hairline)",
+                      backgroundColor: "var(--color-bg)",
+                    }}
                   >
-                    <span className="svika-mono-code text-svika-rust" style={{ fontSize: "13px" }}>{a.access_code}</span>
-                    <span className="text-svika-teal">
+                    <span
+                      className="svika-mono-code"
+                      style={{ fontSize: "13px", color: "var(--color-action)" }}
+                    >
+                      {a.access_code}
+                    </span>
+                    <span style={{ color: "var(--color-ink)" }}>
                       {a.board_at_stop_name} → {a.alight_at_stop_name}
                     </span>
-                    <span className="text-svika-mute">${a.fare_usd.toFixed(2)}</span>
-                    <span className="text-svika-mute">
+                    <span style={{ color: "var(--color-ink-mute)" }}>
+                      ${a.fare_usd.toFixed(2)}
+                    </span>
+                    <span style={{ color: "var(--color-ink-mute)" }}>
                       {prettyTime(a.redeemed_at ?? a.completed_at)}
                     </span>
                   </li>

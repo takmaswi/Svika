@@ -36,37 +36,71 @@ const FIXTURE: { vehicle_id: string; route_label: string; contacts: EmergencyCon
 export default function EmergencyContactsCard() {
   return (
     <article
-      className="rounded-lg border border-svika-teal-100 bg-white p-5 shadow-sm"
+      className="rounded-lg p-5 shadow-sm"
+      style={{
+        borderWidth: "1px",
+        borderStyle: "solid",
+        borderColor: "var(--color-hairline)",
+        backgroundColor: "var(--color-bg)",
+      }}
       data-testid="emergency-contacts-card"
     >
       <header className="flex items-baseline justify-between">
-        <h2 className="text-sm font-medium text-svika-mute">Emergency contacts</h2>
-        <span className="rounded-full bg-svika-stone px-2 py-0.5 text-[10px] text-svika-mute">
+        <h2
+          className="text-sm font-medium"
+          style={{ color: "var(--color-ink-mute)" }}
+        >
+          Emergency contacts
+        </h2>
+        <span
+          className="rounded-full px-2 py-0.5 text-[10px]"
+          style={{
+            backgroundColor: "var(--color-surface)",
+            color: "var(--color-ink-mute)",
+          }}
+        >
           Static · roadmap
         </span>
       </header>
-      <p className="mt-1 text-xs text-svika-mute">
+      <p
+        className="mt-1 text-xs"
+        style={{ color: "var(--color-ink-mute)" }}
+      >
         Active trip · {FIXTURE.vehicle_id} · {FIXTURE.route_label}
       </p>
       <ul className="mt-3 space-y-2">
         {FIXTURE.contacts.map((c) => (
           <li
             key={c.phone}
-            className="flex items-center justify-between rounded-md border border-svika-line bg-svika-bg px-3 py-2 text-xs"
+            className="flex items-center justify-between rounded-md px-3 py-2 text-xs"
+            style={{
+              borderWidth: "1px",
+              borderStyle: "solid",
+              borderColor: "var(--color-hairline)",
+              backgroundColor: "var(--color-surface)",
+            }}
           >
             <span className="flex flex-col">
-              <span className="text-svika-teal" style={{ fontWeight: 500 }}>
+              <span style={{ fontWeight: 500, color: "var(--color-ink)" }}>
                 {c.name}
               </span>
-              <span className="text-svika-mute">
+              <span style={{ color: "var(--color-ink-mute)" }}>
                 {c.relation} · {c.preferred_language}
               </span>
             </span>
-            <span className="font-mono text-svika-rust">{c.phone}</span>
+            <span
+              className="font-mono"
+              style={{ color: "var(--color-action)" }}
+            >
+              {c.phone}
+            </span>
           </li>
         ))}
       </ul>
-      <p className="mt-3 text-[11px] text-svika-mute">
+      <p
+        className="mt-3 text-[11px]"
+        style={{ color: "var(--color-ink-mute)" }}
+      >
         Designed to fire on speeding events or panic-button presses. Real wiring
         is roadmap.
       </p>

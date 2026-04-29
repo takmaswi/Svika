@@ -51,11 +51,16 @@ export default function PinKeypad({ value, onChange, onSubmit, disabled }: PinKe
           return (
             <span
               key={i}
-              className={`flex h-16 w-12 items-center justify-center rounded-md border-2 font-mono text-3xl ${
-                hasDigit
-                  ? "border-svika-rust bg-white text-svika-rust"
-                  : "border-svika-teal-100 bg-white text-svika-teal-100"
-              }`}
+              className="flex h-16 w-12 items-center justify-center rounded-md border-2 font-mono text-3xl"
+              style={{
+                borderColor: hasDigit
+                  ? "var(--color-action)"
+                  : "var(--color-hairline)",
+                backgroundColor: "var(--color-bg)",
+                color: hasDigit
+                  ? "var(--color-action)"
+                  : "var(--color-ink-mute)",
+              }}
             >
               {hasDigit ? c : "•"}
             </span>
@@ -75,19 +80,26 @@ export default function PinKeypad({ value, onChange, onSubmit, disabled }: PinKe
               : isSubmit
                 ? value.length === 3
                 : value.length < 3);
+          const baseStyle: React.CSSProperties = isSubmit
+            ? {
+                backgroundColor: "var(--color-action)",
+                color: "white",
+              }
+            : {
+                borderWidth: "1px",
+                borderStyle: "solid",
+                borderColor: "var(--color-hairline)",
+                backgroundColor: "var(--color-bg)",
+                color: "var(--color-ink)",
+              };
           return (
             <button
               key={k}
               type="button"
               onClick={() => handlePress(k)}
               disabled={!enabled}
-              className={`touch-target rounded-md text-2xl font-semibold ${
-                isSubmit
-                  ? "bg-svika-rust text-white disabled:opacity-40"
-                  : isClear
-                    ? "border border-svika-teal-100 bg-white text-svika-teal disabled:opacity-40"
-                    : "border border-svika-teal-100 bg-white text-svika-teal disabled:opacity-40"
-              }`}
+              className="touch-target rounded-md text-2xl font-semibold disabled:opacity-40"
+              style={baseStyle}
               aria-label={isSubmit ? "Submit code" : isClear ? "Clear code" : `Digit ${k}`}
             >
               {label}

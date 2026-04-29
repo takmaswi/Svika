@@ -192,7 +192,10 @@ export default function JourneySheetContent(
   if (state === "plans-returned") {
     return (
       <div data-testid="journey-sheet-content" data-state="plans-returned">
-        <p className="pt-1 text-[10px] font-medium uppercase tracking-[0.5px] text-svika-mute">
+        <p
+          className="pt-1 text-[10px] font-medium uppercase tracking-[0.5px]"
+          style={{ color: "var(--color-ink-mute)" }}
+        >
           Pick a way
         </p>
         <div className="mt-2">
@@ -215,12 +218,14 @@ export default function JourneySheetContent(
         className="pt-2"
       >
         <p
-          className="text-svika-teal"
-          style={{ fontSize: "14px", fontWeight: 500 }}
+          style={{ fontSize: "14px", fontWeight: 500, color: "var(--color-ink)" }}
         >
           Working out the best route…
         </p>
-        <p className="mt-1 text-[11px] text-svika-mute">
+        <p
+          className="mt-1 text-[11px]"
+          style={{ color: "var(--color-ink-mute)" }}
+        >
           Type heard so far: &quot;{props.personaName}&apos;s plan&quot;
         </p>
       </div>
@@ -255,7 +260,13 @@ export default function JourneySheetContent(
   return (
     <div data-testid="journey-sheet-content" data-state="idle">
       {props.searchError ? (
-        <p className="mb-2 mt-1 rounded-md bg-white/80 px-2 py-1.5 text-[11px] text-svika-rust">
+        <p
+          className="mb-2 mt-1 rounded-md px-2 py-1.5 text-[11px]"
+          style={{
+            backgroundColor: "var(--color-surface)",
+            color: "var(--color-action)",
+          }}
+        >
           {props.searchError}
         </p>
       ) : null}

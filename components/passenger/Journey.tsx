@@ -65,7 +65,8 @@ interface JourneyProps {
   onSimulateEnd?: () => void;
 }
 
-const RUST = "#d9622a";
+// R5: action-blue is the only accent. Was rust (#d9622a) pre-R5.
+const ACTION = "#007AFF";
 /**
  * Hard-coded vehicle make/colour for the demo's Uber-style driver chip.
  * The `vehicles` table only stores plate + route + capacity, so the make
@@ -349,17 +350,30 @@ export default function Journey({
         />
         <div className="flex items-center justify-between gap-3 pr-9">
           <div className="flex min-w-0 flex-col">
-            <p className="text-base font-semibold text-svika-teal">
+            <p
+              className="text-base font-semibold"
+              style={{ color: "var(--color-ink)" }}
+            >
               You&apos;ve arrived
             </p>
-            <p className="truncate text-xs text-svika-mute">
+            <p
+              className="truncate text-xs"
+              style={{ color: "var(--color-ink-mute)" }}
+            >
               {journey.total_duration_minutes} min · ${totalSpent}
             </p>
           </div>
           <button
             type="button"
             onClick={onPlanAnother}
-            className="shrink-0 rounded-md border border-svika-rust px-3 py-1.5 text-xs font-medium text-svika-rust hover:bg-svika-rust hover:text-white"
+            className="shrink-0 rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+            style={{
+              borderWidth: "1px",
+              borderStyle: "solid",
+              borderColor: "var(--color-action)",
+              color: "var(--color-action)",
+              backgroundColor: "transparent",
+            }}
           >
             Plan another
           </button>
@@ -441,12 +455,16 @@ export default function Journey({
         >
           <span
             aria-hidden
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-svika-teal text-sm font-semibold text-white"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"
+            style={{ backgroundColor: "var(--color-action)" }}
           >
             {CONDUCTOR_NAME.charAt(0)}
           </span>
           <span className="flex min-w-0 flex-1 flex-col leading-tight">
-            <span className="svika-body truncate font-semibold text-svika-teal">
+            <span
+              className="svika-body truncate font-semibold"
+              style={{ color: "var(--color-ink)" }}
+            >
               {CONDUCTOR_NAME} · Conductor
             </span>
             {/* Phase E: when no plate is yet pinned (walk-to-board, pre-PIN),
@@ -455,18 +473,24 @@ export default function Journey({
                 "— · Toyota Hiace · cream", which had been reading like a
                 missing field on the demo. */}
             {vehiclePlate === "—" ? (
-              <span className="svika-meta truncate text-svika-mute">
+              <span
+                className="svika-meta truncate"
+                style={{ color: "var(--color-ink-mute)" }}
+              >
                 Vehicle assigned when your code clears
               </span>
             ) : (
-              <span className="svika-meta truncate text-svika-mute">
+              <span
+                className="svika-meta truncate"
+                style={{ color: "var(--color-ink-mute)" }}
+              >
                 {vehiclePlate} · {VEHICLE_MAKE} · {VEHICLE_COLOR}
               </span>
             )}
             {isParcel ? (
               <span
                 className="mt-0.5 inline-flex w-fit rounded-full px-1.5 py-px text-[10px] font-medium text-white"
-                style={{ background: RUST }}
+                style={{ background: ACTION }}
                 data-testid="journey-parcel-pill"
               >
                 Carrying parcel
@@ -483,8 +507,8 @@ export default function Journey({
             }`}
             style={
               stage.flashing
-                ? { background: RUST, color: "#fff" }
-                : { border: "1.5px solid " + RUST, color: RUST, background: "transparent" }
+                ? { background: ACTION, color: "#fff" }
+                : { border: "1.5px solid " + ACTION, color: ACTION, background: "transparent" }
             }
             aria-hidden
           >
@@ -493,31 +517,37 @@ export default function Journey({
           <div className="min-w-0 flex-1">
             {isParcel ? (
               <FadingText
-                className="svika-headline text-svika-teal"
+                className="svika-headline"
+                style={{ color: "var(--color-ink)" }}
                 text={parcelStageLine()}
               />
             ) : stage.kind === "walking-transfer" && transferDetail && walkLeg ? (
               <>
                 <FadingText
-                  className="svika-headline text-svika-teal"
+                  className="svika-headline"
+                  style={{ color: "var(--color-ink)" }}
                   text={transferDetail.heading}
                 />
                 <FadingText
-                  className="svika-meta mt-0.5 text-svika-mute"
+                  className="svika-meta mt-0.5"
+                  style={{ color: "var(--color-ink-mute)" }}
                   text={`From: ${walkLeg.from_stop.name} (${transferDetail.from_note})`}
                 />
                 <FadingText
-                  className="svika-meta mt-0.5 text-svika-mute"
+                  className="svika-meta mt-0.5"
+                  style={{ color: "var(--color-ink-mute)" }}
                   text={`To: ${walkLeg.to_stop.name} (${transferDetail.to_note})`}
                 />
                 <FadingText
-                  className="svika-meta mt-0.5 font-mono text-svika-teal"
+                  className="svika-meta mt-0.5 font-mono"
+                  style={{ color: "var(--color-ink)" }}
                   text={`${transferDetail.walking_duration_minutes} min · ${transferDetail.walking_distance_meters} m`}
                 />
               </>
             ) : (
               <FadingText
-                className="svika-headline text-svika-teal"
+                className="svika-headline"
+                style={{ color: "var(--color-ink)" }}
                 text={stage.title}
               />
             )}
@@ -526,7 +556,7 @@ export default function Journey({
             {liveEtaMinutes !== null ? (
               <p
                 className="svika-body mt-1 font-mono font-semibold"
-                style={{ color: "var(--color-accent)" }}
+                style={{ color: "var(--color-action)" }}
                 data-testid="journey-eta-minutes"
               >
                 Arriving in {liveEtaMinutes} min
@@ -536,19 +566,34 @@ export default function Journey({
             {/* Drop-off line */}
             {currentLeg ? (
               isParcel ? (
-                <p className="mt-1 text-[12px] text-svika-mute">
+                <p
+                  className="mt-1 text-[12px]"
+                  style={{ color: "var(--color-ink-mute)" }}
+                >
                   Receiver: {parcelMeta?.receiver_phone || "phone"}&apos;s phone will get a code when{" "}
                   {vehiclePlate} arrives at {currentLeg.alight_stop.name}
                 </p>
               ) : (
-                <p className="mt-1 text-[12px] text-svika-mute">
+                <p
+                  className="mt-1 text-[12px]"
+                  style={{ color: "var(--color-ink-mute)" }}
+                >
                   Drop off: {currentLeg.alight_stop.name}
                 </p>
               )
             ) : null}
           </div>
           {eta && !isParcel && stage.kind !== "in-transit" ? (
-            <span className="shrink-0 rounded-full border border-svika-teal-100 bg-white px-2 py-0.5 text-[11px] font-medium text-svika-teal">
+            <span
+              className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium"
+              style={{
+                borderWidth: "1px",
+                borderStyle: "solid",
+                borderColor: "var(--color-hairline)",
+                backgroundColor: "var(--color-bg)",
+                color: "var(--color-action)",
+              }}
+            >
               ETA {eta}
             </span>
           ) : null}
@@ -556,12 +601,15 @@ export default function Journey({
 
         {/* Animated progress bar — 700 ms ease-out so the accent fill glides
             forward rather than snapping when the stage advances. */}
-        <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-svika-teal-50">
+        <div
+          className="mt-2 h-1 w-full overflow-hidden rounded-full"
+          style={{ backgroundColor: "var(--color-action-soft)" }}
+        >
           <div
             className="h-full rounded-full"
             style={{
               width: Math.round(stage.progress * 100) + "%",
-              background: "var(--color-accent)",
+              background: "var(--color-action)",
               transition: "width 700ms cubic-bezier(0.16, 1, 0.3, 1)",
             }}
           />
@@ -572,21 +620,30 @@ export default function Journey({
         {currentLeg ? (
           isParcel ? (
             <div className="mt-2 text-xs">
-              <span className="text-svika-mute">Parcel code: </span>
-              <span className="svika-mono-code text-svika-rust">
+              <span style={{ color: "var(--color-ink-mute)" }}>Parcel code: </span>
+              <span
+                className="svika-mono-code"
+                style={{ color: "var(--color-action)" }}
+              >
                 {currentLeg.access_code}
               </span>
-              <span className="text-svika-mute"> · revealed to receiver on arrival</span>
+              <span style={{ color: "var(--color-ink-mute)" }}>
+                {" "}
+                · revealed to receiver on arrival
+              </span>
             </div>
           ) : (
             <div className="mt-2 flex items-center justify-between text-xs">
               <span>
-                <span className="text-svika-mute">Show </span>
-                <span className="svika-mono-code text-svika-rust">
+                <span style={{ color: "var(--color-ink-mute)" }}>Show </span>
+                <span
+                  className="svika-mono-code"
+                  style={{ color: "var(--color-action)" }}
+                >
                   {currentLeg.access_code}
                 </span>
               </span>
-              <span className="text-svika-mute">
+              <span style={{ color: "var(--color-ink-mute)" }}>
                 ${currentLeg.fare_usd.toFixed(2)} paid · ${totalSpent} trip total
               </span>
             </div>
@@ -594,7 +651,14 @@ export default function Journey({
         ) : null}
 
         {expanded ? (
-          <div className="mt-3 border-t border-svika-teal-100 pt-3">
+          <div
+            className="mt-3 pt-3"
+            style={{
+              borderTopWidth: "1px",
+              borderTopStyle: "solid",
+              borderTopColor: "var(--color-hairline)",
+            }}
+          >
             <ol className="space-y-2 text-xs">
               {journey.legs.map((leg, idx) => {
                 const active = stage.active_kombi_leg_index === idx;
@@ -602,11 +666,17 @@ export default function Journey({
                   return (
                     <li
                       key={"k-" + idx}
-                      className={`flex items-baseline gap-2 ${
-                        active ? "text-svika-teal" : "text-svika-mute"
-                      }`}
+                      className="flex items-baseline gap-2"
+                      style={{
+                        color: active
+                          ? "var(--color-ink)"
+                          : "var(--color-ink-mute)",
+                      }}
                     >
-                      <span className="font-mono text-svika-rust">
+                      <span
+                        className="font-mono"
+                        style={{ color: "var(--color-action)" }}
+                      >
                         {leg.access_code}
                       </span>
                       <span className="flex-1">
@@ -619,7 +689,8 @@ export default function Journey({
                 return (
                   <li
                     key={"w-" + idx}
-                    className="flex items-baseline gap-2 text-svika-mute"
+                    className="flex items-baseline gap-2"
+                    style={{ color: "var(--color-ink-mute)" }}
                   >
                     <span className="font-mono">·</span>
                     <span className="flex-1">
@@ -644,13 +715,20 @@ export default function Journey({
                 onClick={handleSimulateNext}
                 disabled={simBusy}
                 className="w-full rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-sm transition-transform active:scale-[0.99] disabled:opacity-60"
-                style={{ background: RUST }}
+                style={{
+                  background: ACTION,
+                  boxShadow: "0 8px 24px rgba(0, 122, 255, 0.32)",
+                }}
                 data-testid="journey-simulate-next"
               >
                 {simBusy ? "Working…" : label}
               </button>
               {simError ? (
-                <p className="mt-1 text-[11px] text-svika-rust" data-testid="journey-simulate-error">
+                <p
+                  className="mt-1 text-[11px]"
+                  style={{ color: "var(--color-action)" }}
+                  data-testid="journey-simulate-error"
+                >
                   {simError}
                 </p>
               ) : null}
@@ -687,15 +765,34 @@ function EndTripControl({
 }: EndTripControlProps) {
   if (confirming) {
     return (
-      <div className="mb-2 rounded-md border border-svika-rust bg-white px-3 py-2 text-xs text-svika-teal">
+      <div
+        className="mb-2 rounded-md px-3 py-2 text-xs"
+        style={{
+          borderWidth: "1px",
+          borderStyle: "solid",
+          borderColor: "var(--color-action)",
+          backgroundColor: "var(--color-surface)",
+          color: "var(--color-ink)",
+        }}
+      >
         <p>End this trip? Tickets won&apos;t be refunded for the demo.</p>
-        {error ? <p className="mt-1 text-svika-rust">{error}</p> : null}
+        {error ? (
+          <p className="mt-1" style={{ color: "var(--color-action)" }}>
+            {error}
+          </p>
+        ) : null}
         <div className="mt-2 flex justify-end gap-2">
           <button
             type="button"
             onClick={onCancel}
             disabled={busy}
-            className="rounded border border-svika-teal-100 px-2 py-1 text-svika-mute hover:text-svika-teal disabled:opacity-60"
+            className="rounded px-2 py-1 disabled:opacity-60"
+            style={{
+              borderWidth: "1px",
+              borderStyle: "solid",
+              borderColor: "var(--color-hairline)",
+              color: "var(--color-ink-mute)",
+            }}
           >
             Cancel
           </button>
@@ -703,7 +800,13 @@ function EndTripControl({
             type="button"
             onClick={onConfirm}
             disabled={busy}
-            className="rounded border border-svika-rust bg-svika-rust px-2 py-1 font-medium text-white hover:bg-[#b8501f] disabled:opacity-60"
+            className="rounded px-2 py-1 font-medium text-white disabled:opacity-60"
+            style={{
+              borderWidth: "1px",
+              borderStyle: "solid",
+              borderColor: "var(--color-action)",
+              backgroundColor: "var(--color-action)",
+            }}
             data-testid="journey-end-confirm"
           >
             {busy ? "Ending…" : "Yes, end trip"}
@@ -717,7 +820,14 @@ function EndTripControl({
       type="button"
       onClick={onAsk}
       aria-label="End trip"
-      className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full border border-svika-teal-100 bg-white text-svika-mute shadow-sm hover:text-svika-rust"
+      className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full shadow-sm"
+      style={{
+        borderWidth: "1px",
+        borderStyle: "solid",
+        borderColor: "var(--color-hairline)",
+        backgroundColor: "var(--color-bg)",
+        color: "var(--color-ink-mute)",
+      }}
       data-testid="journey-end-ask"
     >
       <span aria-hidden className="text-base leading-none">×</span>
@@ -728,6 +838,7 @@ function EndTripControl({
 interface FadingTextProps {
   text: string;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 /**
@@ -735,7 +846,7 @@ interface FadingTextProps {
  * when the new value differs, fade the old one out while the new one fades
  * in. Both span elements live in the same flex slot so layout doesn't jump.
  */
-function FadingText({ text, className }: FadingTextProps) {
+function FadingText({ text, className, style }: FadingTextProps) {
   return (
     <span
       key={text}
@@ -743,6 +854,7 @@ function FadingText({ text, className }: FadingTextProps) {
       style={{
         display: "block",
         animation: "svika-journey-fade 200ms ease both",
+        ...style,
       }}
     >
       {text}

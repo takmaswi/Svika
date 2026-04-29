@@ -52,10 +52,83 @@ const HEIGHTS_NATIVE_PLATES_CLIENT: ReadonlySet<string> = new Set([
   "ZH 4822",
 ]);
 
-const TEAL = "#0a4b5c";
-const TEAL_700 = "#144f5e";
-const RUST = "#d9622a";
-const STONE = "#f2ede6";
+// R5 — palette tokens are now theme-aware. Apple-blue is the actionable
+// brand colour and renders identically in both themes (matches the Hozaan
+// reference image). The rest fork by theme via `themeColors(theme)` below.
+const ACTION = "#007AFF";
+
+type MapTheme = "light" | "dark";
+
+interface MapPaintColors {
+  /** Mapbox base style id — streets-v12 (light) or dark-v11 (dark). */
+  styleUrl: string;
+  /** Stop-circle fill (the white/dark "puck" behind the colored ring). */
+  stopHaloFill: string;
+  /** Stop-circle stroke colour for inactive (non-trip) stops. */
+  stopStrokeInactive: string;
+  /** Inner stop-dot fill colour for inactive stops. */
+  stopDotInactive: string;
+  /** Stop label text colour for inactive stops. */
+  stopLabelInactive: string;
+  /** Halo behind stop label text — readable on the basemap. */
+  stopLabelHalo: string;
+  /** Secondary base routes (the three non-Heights corridors). */
+  routeBaseSecondary: string;
+  /** White-ish halo case underneath the active leg highlight. */
+  routeHighlightHalo: string;
+  /** Per-base-layer paint tunings to land after style.load. */
+  baseTunings: ReadonlyArray<readonly [string, string, string]>;
+}
+
+function readThemeAttr(): MapTheme {
+  if (typeof document === "undefined") return "light";
+  return document.documentElement.getAttribute("data-theme") === "dark"
+    ? "dark"
+    : "light";
+}
+
+function themeColors(theme: MapTheme): MapPaintColors {
+  if (theme === "dark") {
+    return {
+      styleUrl: "mapbox://styles/mapbox/dark-v11",
+      stopHaloFill: "#0f1419",
+      stopStrokeInactive: "rgba(255, 255, 255, 0.45)",
+      stopDotInactive: "rgba(255, 255, 255, 0.85)",
+      stopLabelInactive: "rgba(255, 255, 255, 0.78)",
+      stopLabelHalo: "#0a0a0c",
+      routeBaseSecondary: "rgba(255, 255, 255, 0.45)",
+      routeHighlightHalo: "rgba(255, 255, 255, 0.85)",
+      baseTunings: [
+        ["road-primary", "line-color", "#3a4555"],
+        ["road-secondary", "line-color", "#2f3a4a"],
+        ["road-street", "line-color", "#2a3340"],
+        ["road-major-link", "line-color", "#3a4555"],
+        ["water", "fill-color", "#142028"],
+        ["land", "background-color", "#0a0a0c"],
+        ["landuse", "fill-color", "#1c2a1c"],
+      ],
+    };
+  }
+  return {
+    styleUrl: "mapbox://styles/mapbox/streets-v12",
+    stopHaloFill: "#ffffff",
+    stopStrokeInactive: "rgba(15, 23, 42, 0.40)",
+    stopDotInactive: "#0F172A",
+    stopLabelInactive: "#4B5563",
+    stopLabelHalo: "#ffffff",
+    routeBaseSecondary: "rgba(15, 23, 42, 0.30)",
+    routeHighlightHalo: "rgba(15, 23, 42, 0.18)",
+    // Confirmed against the Hozaan reference (public/branding/Colour theme
+    // inspiration.png): light streets-v12 ships with a warm grey roads ramp
+    // that already reads well alongside Apple-blue routes — only water + landuse
+    // get a small nudge to softer, less saturated hues so the route line owns
+    // the visual hierarchy.
+    baseTunings: [
+      ["water", "fill-color", "#DCE7F0"],
+      ["landuse", "fill-color", "#EEF1EE"],
+    ],
+  };
+}
 
 const KOMBI_ICON_ID = "kombi-icon";
 const KOMBI_ICON_W = 128;
@@ -644,7 +717,6 @@ export default function PassengerMap({
   // down mid-load — that was the Phase 3.5 stage-2/5 blank-map regression.
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
-    const network = networkRef.current;
     const mapboxToken = tokenRef.current;
 
     // Seed last-known positions before the source is created so all kombis
@@ -656,6 +728,9 @@ export default function PassengerMap({
     }
 
     mapboxgl.accessToken = mapboxToken;
+    // R5 — initial style is theme-aware. The bootstrap script in
+    // app/layout.tsx writes data-theme on first paint; readThemeAttr reads
+    // that attribute synchronously so the map opens in the right palette.
     // R2 — idle view re-centered on Takunda's synthetic location at the
     // Bannockburn Rd North Terminus (zoom 13.5). 13.5 keeps the user dot
     // visible AND lands the upper half of the Heights→Rezende corridor
@@ -664,9 +739,10 @@ export default function PassengerMap({
     // reads at idle. The trip-active fitBounds useEffect still runs on
     // journey-change so a picked trip frames its own corridor; this
     // constructor only governs the idle landing view.
+    const initialTheme = readThemeAttr();
     const map = new mapboxgl.Map({
       container: containerRef.current,
-      style: "mapbox://styles/mapbox/dark-v11",
+      style: themeColors(initialTheme).styleUrl,
       center: [USER_LOCATION.lng, USER_LOCATION.lat],
       zoom: 13.5,
       attributionControl: false,
@@ -677,21 +753,22 @@ export default function PassengerMap({
     (window as unknown as { __svikaMap?: mapboxgl.Map }).__svikaMap = map;
     map.addControl(new mapboxgl.AttributionControl({ compact: true }));
 
-    map.on("load", () => {
-      // R1: paint overrides for dark-v11. The dark-v11 style ships its own
-      // layer ids — `map.getLayer(...)` guards each so a renamed/missing
-      // layer is harmless; check the live ids in dev tools if a tuning
-      // doesn't land.
-      const tunings: Array<[string, string, string]> = [
-        ["road-primary", "line-color", "#3a4555"],
-        ["road-secondary", "line-color", "#2f3a4a"],
-        ["road-street", "line-color", "#2a3340"],
-        ["road-major-link", "line-color", "#3a4555"],
-        ["water", "fill-color", "#142028"],
-        ["land", "background-color", "#0a0a0c"],
-        ["landuse", "fill-color", "#1c2a1c"],
-      ];
-      for (const [layerId, prop, value] of tunings) {
+    /**
+     * Re-mountable mount of every Svika source + layer + base-style tuning.
+     * Bound to `map.on("style.load", ...)` so it fires on initial load AND
+     * after every `map.setStyle(...)` call (e.g., the theme toggle). Each
+     * source/layer is added under a `getSource` / `getLayer` guard so the
+     * function is idempotent — Mapbox's own setStyle clears them between
+     * runs but the guards keep us safe against any other re-call path.
+     */
+    function mountAllSources(currentTheme: MapTheme): void {
+      const colors = themeColors(currentTheme);
+      const network = networkRef.current;
+
+      // Base style tuning per theme (water + landuse on light, the full road
+      // ramp on dark). Layer ids are style-private; getLayer guards keep us
+      // safe if Mapbox ever renames them.
+      for (const [layerId, prop, value] of colors.baseTunings) {
         if (map.getLayer(layerId)) {
           (
             map.setPaintProperty as (
@@ -703,218 +780,269 @@ export default function PassengerMap({
         }
       }
 
-      map.addSource(ROUTES_SOURCE, { type: "geojson", data: routesGeoJSON(network.routes) });
+      if (!map.getSource(ROUTES_SOURCE)) {
+        map.addSource(ROUTES_SOURCE, {
+          type: "geojson",
+          data: routesGeoJSON(network.routes),
+        });
+      }
       // R2 — split base routes into primary (Heights→Rezende, Apple-blue,
-      // prominent) and secondary (other three routes, faint white). The
-      // secondary layer keeps the existing `ROUTES_LAYER_BASE` id so the
-      // fade-on-journey-active logic in `repaintActiveLeg` still works
-      // (the active leg's route is highlighted by ROUTES_LAYER_HIGHLIGHT
-      // regardless of which base layer it lives on).
-      map.addLayer({
-        id: ROUTES_LAYER_BASE_PRIMARY,
-        type: "line",
-        source: ROUTES_SOURCE,
-        filter: ["==", ["get", "id"], HEIGHTS_ROUTE_ID],
-        layout: { "line-cap": "round", "line-join": "round" },
-        paint: {
-          "line-color": "#007AFF", // --color-action
-          "line-width": ["interpolate", ["linear"], ["zoom"], 10, 3, 14, 5, 16, 7],
-          "line-opacity": 0.95,
-        },
-      });
-      map.addLayer({
-        id: ROUTES_LAYER_BASE,
-        type: "line",
-        source: ROUTES_SOURCE,
-        filter: ["!=", ["get", "id"], HEIGHTS_ROUTE_ID],
-        layout: { "line-cap": "round", "line-join": "round" },
-        paint: {
-          "line-color": "rgba(255, 255, 255, 0.45)",
-          "line-width": ["interpolate", ["linear"], ["zoom"], 10, 2, 14, 4, 16, 6],
-          "line-opacity": 0.18,
-        },
-      });
-      // White halo underneath the active leg so basemap labels and street
-      // names stay legible when the rust line crosses dense type. Slightly
-      // wider than the rust line (case effect).
-      map.addLayer({
-        id: ROUTES_LAYER_HIGHLIGHT_HALO,
-        type: "line",
-        source: ROUTES_SOURCE,
-        layout: { "line-cap": "round", "line-join": "round" },
-        filter: ["in", ["get", "id"], ["literal", []]],
-        paint: {
-          "line-color": "#ffffff",
-          "line-width": ["interpolate", ["linear"], ["zoom"], 10, 7, 14, 11, 16, 14],
-          "line-opacity": 0.78,
-        },
-      });
-      map.addLayer({
-        id: ROUTES_LAYER_HIGHLIGHT,
-        type: "line",
-        source: ROUTES_SOURCE,
-        layout: { "line-cap": "round", "line-join": "round" },
-        filter: ["in", ["get", "id"], ["literal", []]],
-        paint: {
-          // Phase D: active route polyline switches to teal-700 with the
-          // existing white halo. Rust on the map is now confined to the
-          // moving kombi marker and the walking-transfer dashed line.
-          "line-color": TEAL_700,
-          "line-width": ["interpolate", ["linear"], ["zoom"], 10, 4, 14, 7, 16, 10],
-          "line-opacity": 0.85,
-        },
-      });
+      // prominent) and secondary (other three routes, faint ink-on-light or
+      // white-on-dark). The secondary layer keeps the existing
+      // `ROUTES_LAYER_BASE` id so the fade-on-journey-active logic in
+      // `repaintActiveLeg` still works (the active leg's route is highlighted
+      // by ROUTES_LAYER_HIGHLIGHT regardless of which base layer it lives on).
+      if (!map.getLayer(ROUTES_LAYER_BASE_PRIMARY)) {
+        map.addLayer({
+          id: ROUTES_LAYER_BASE_PRIMARY,
+          type: "line",
+          source: ROUTES_SOURCE,
+          filter: ["==", ["get", "id"], HEIGHTS_ROUTE_ID],
+          layout: { "line-cap": "round", "line-join": "round" },
+          paint: {
+            "line-color": ACTION,
+            "line-width": ["interpolate", ["linear"], ["zoom"], 10, 3, 14, 5, 16, 7],
+            "line-opacity": 0.95,
+          },
+        });
+      }
+      if (!map.getLayer(ROUTES_LAYER_BASE)) {
+        map.addLayer({
+          id: ROUTES_LAYER_BASE,
+          type: "line",
+          source: ROUTES_SOURCE,
+          filter: ["!=", ["get", "id"], HEIGHTS_ROUTE_ID],
+          layout: { "line-cap": "round", "line-join": "round" },
+          paint: {
+            "line-color": colors.routeBaseSecondary,
+            "line-width": ["interpolate", ["linear"], ["zoom"], 10, 2, 14, 4, 16, 6],
+            "line-opacity": 0.18,
+          },
+        });
+      }
+      // Halo case under the active leg highlight so the basemap labels and
+      // street names remain legible. White-on-dark, dark-on-light per theme.
+      if (!map.getLayer(ROUTES_LAYER_HIGHLIGHT_HALO)) {
+        map.addLayer({
+          id: ROUTES_LAYER_HIGHLIGHT_HALO,
+          type: "line",
+          source: ROUTES_SOURCE,
+          layout: { "line-cap": "round", "line-join": "round" },
+          filter: ["in", ["get", "id"], ["literal", []]],
+          paint: {
+            "line-color": colors.routeHighlightHalo,
+            "line-width": ["interpolate", ["linear"], ["zoom"], 10, 7, 14, 11, 16, 14],
+            "line-opacity": 0.78,
+          },
+        });
+      }
+      if (!map.getLayer(ROUTES_LAYER_HIGHLIGHT)) {
+        map.addLayer({
+          id: ROUTES_LAYER_HIGHLIGHT,
+          type: "line",
+          source: ROUTES_SOURCE,
+          layout: { "line-cap": "round", "line-join": "round" },
+          filter: ["in", ["get", "id"], ["literal", []]],
+          paint: {
+            "line-color": ACTION,
+            "line-width": ["interpolate", ["linear"], ["zoom"], 10, 4, 14, 7, 16, 10],
+            "line-opacity": 0.85,
+          },
+        });
+      }
 
-      map.addSource(WALKING_SOURCE, { type: "geojson", data: walkingGeoJSON(journeyRef.current) });
-      map.addLayer({
-        id: WALKING_LAYER,
-        type: "line",
-        source: WALKING_SOURCE,
-        layout: { "line-cap": "round", "line-join": "round" },
-        paint: {
-          "line-color": RUST,
-          "line-width": 3,
-          "line-opacity": 0.85,
-          "line-dasharray": [1.5, 1.5],
-        },
-      });
+      if (!map.getSource(WALKING_SOURCE)) {
+        map.addSource(WALKING_SOURCE, {
+          type: "geojson",
+          data: walkingGeoJSON(journeyRef.current),
+        });
+      }
+      if (!map.getLayer(WALKING_LAYER)) {
+        map.addLayer({
+          id: WALKING_LAYER,
+          type: "line",
+          source: WALKING_SOURCE,
+          layout: { "line-cap": "round", "line-join": "round" },
+          paint: {
+            // R5: walking-transfer dashes flip from rust to Apple-blue so the
+            // moving leg colour ties back to the route polyline + user dot.
+            "line-color": ACTION,
+            "line-width": 3,
+            "line-opacity": 0.85,
+            "line-dasharray": [1.5, 1.5],
+          },
+        });
+      }
 
-      map.addSource(STOPS_SOURCE, {
-        type: "geojson",
-        data: stopsGeoJSON(network.stops, activeStopIdsForJourney(journeyRef.current)),
-      });
-      map.addLayer({
-        id: STOPS_LAYER_HALO,
-        type: "circle",
-        source: STOPS_SOURCE,
-        paint: {
-          // Active boarding/alighting stops in the current trip get a larger
-          // halo so the eye locks onto where the passenger is heading.
-          "circle-radius": [
-            "case",
-            ["get", "is_active"],
-            ["case", ["get", "is_rank"], 13, ["get", "is_terminal"], 11, 9],
-            ["case", ["get", "is_rank"], 10, ["get", "is_terminal"], 8, 6],
-          ],
-          "circle-color": STONE,
-          // Phase D: active stops adopt the route polyline's teal-700 to
-          // keep map rust reserved for the moving kombi marker.
-          "circle-stroke-color": ["case", ["get", "is_active"], TEAL_700, TEAL],
-          "circle-stroke-width": ["case", ["get", "is_active"], 2.5, 2],
-          "circle-opacity": 0.95,
-        },
-      });
-      map.addLayer({
-        id: STOPS_LAYER_DOT,
-        type: "circle",
-        source: STOPS_SOURCE,
-        paint: {
-          "circle-radius": [
-            "case",
-            ["get", "is_active"],
-            ["case", ["get", "is_rank"], 5, 4],
-            ["case", ["get", "is_rank"], 4, 3],
-          ],
-          "circle-color": ["case", ["get", "is_active"], TEAL_700, TEAL],
-        },
-      });
+      if (!map.getSource(STOPS_SOURCE)) {
+        map.addSource(STOPS_SOURCE, {
+          type: "geojson",
+          data: stopsGeoJSON(network.stops, activeStopIdsForJourney(journeyRef.current)),
+        });
+      }
+      if (!map.getLayer(STOPS_LAYER_HALO)) {
+        map.addLayer({
+          id: STOPS_LAYER_HALO,
+          type: "circle",
+          source: STOPS_SOURCE,
+          paint: {
+            // Active boarding/alighting stops in the current trip get a larger
+            // halo so the eye locks onto where the passenger is heading.
+            "circle-radius": [
+              "case",
+              ["get", "is_active"],
+              ["case", ["get", "is_rank"], 13, ["get", "is_terminal"], 11, 9],
+              ["case", ["get", "is_rank"], 10, ["get", "is_terminal"], 8, 6],
+            ],
+            "circle-color": colors.stopHaloFill,
+            "circle-stroke-color": [
+              "case",
+              ["get", "is_active"],
+              ACTION,
+              colors.stopStrokeInactive,
+            ],
+            "circle-stroke-width": ["case", ["get", "is_active"], 2.5, 2],
+            "circle-opacity": 0.95,
+          },
+        });
+      }
+      if (!map.getLayer(STOPS_LAYER_DOT)) {
+        map.addLayer({
+          id: STOPS_LAYER_DOT,
+          type: "circle",
+          source: STOPS_SOURCE,
+          paint: {
+            "circle-radius": [
+              "case",
+              ["get", "is_active"],
+              ["case", ["get", "is_rank"], 5, 4],
+              ["case", ["get", "is_rank"], 4, 3],
+            ],
+            "circle-color": [
+              "case",
+              ["get", "is_active"],
+              ACTION,
+              colors.stopDotInactive,
+            ],
+          },
+        });
+      }
 
-      // R2 — Takunda's user dot. A pulsing Apple-blue halo + a solid blue
-      // dot with a white ring at the synthetic GPS position. Layered
-      // immediately above STOPS_LAYER_DOT so kombi markers (registered
-      // later in this same load callback) draw on top of it.
-      map.addSource(USER_SOURCE, {
-        type: "geojson",
-        data: {
-          type: "FeatureCollection",
-          features: [
-            {
-              type: "Feature",
-              geometry: {
-                type: "Point",
-                coordinates: [USER_LOCATION.lng, USER_LOCATION.lat],
+      // R2 — Takunda's user dot. Apple-blue in both themes, no fork.
+      if (!map.getSource(USER_SOURCE)) {
+        map.addSource(USER_SOURCE, {
+          type: "geojson",
+          data: {
+            type: "FeatureCollection",
+            features: [
+              {
+                type: "Feature",
+                geometry: {
+                  type: "Point",
+                  coordinates: [USER_LOCATION.lng, USER_LOCATION.lat],
+                },
+                properties: {},
               },
-              properties: {},
-            },
-          ],
-        },
-      });
-      map.addLayer({
-        id: USER_LAYER_HALO,
-        type: "circle",
-        source: USER_SOURCE,
-        paint: {
-          "circle-radius": 14,
-          "circle-color": "#007AFF",
-          "circle-opacity": 0.4,
-          "circle-stroke-width": 0,
-        },
-      });
-      map.addLayer({
-        id: USER_LAYER_DOT,
-        type: "circle",
-        source: USER_SOURCE,
-        paint: {
-          "circle-radius": 7,
-          "circle-color": "#007AFF",
-          "circle-stroke-color": "#ffffff",
-          "circle-stroke-width": 2,
-          "circle-opacity": 1,
-        },
-      });
+            ],
+          },
+        });
+      }
+      if (!map.getLayer(USER_LAYER_HALO)) {
+        map.addLayer({
+          id: USER_LAYER_HALO,
+          type: "circle",
+          source: USER_SOURCE,
+          paint: {
+            "circle-radius": 14,
+            "circle-color": ACTION,
+            "circle-opacity": 0.4,
+            "circle-stroke-width": 0,
+          },
+        });
+      }
+      if (!map.getLayer(USER_LAYER_DOT)) {
+        map.addLayer({
+          id: USER_LAYER_DOT,
+          type: "circle",
+          source: USER_SOURCE,
+          paint: {
+            "circle-radius": 7,
+            "circle-color": ACTION,
+            "circle-stroke-color": "#ffffff",
+            "circle-stroke-width": 2,
+            "circle-opacity": 1,
+          },
+        });
+      }
 
-      map.addLayer({
-        id: STOPS_LAYER_LABEL,
-        type: "symbol",
-        source: STOPS_SOURCE,
-        // Major stops (terminals + ranks) appear from zoom 11; mid-route
-        // stops only at zoom ≥ 13 to keep the basemap legible.
-        minzoom: 11,
-        filter: [
-          "any",
-          ["get", "is_major"],
-          [">=", ["zoom"], 13],
-        ],
-        layout: {
-          "text-field": ["get", "name"],
-          "text-size": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            11, 10,
-            14, 11.5,
-            16, 13,
+      if (!map.getLayer(STOPS_LAYER_LABEL)) {
+        map.addLayer({
+          id: STOPS_LAYER_LABEL,
+          type: "symbol",
+          source: STOPS_SOURCE,
+          // Major stops (terminals + ranks) appear from zoom 11; mid-route
+          // stops only at zoom ≥ 13 to keep the basemap legible.
+          minzoom: 11,
+          filter: [
+            "any",
+            ["get", "is_major"],
+            [">=", ["zoom"], 13],
           ],
-          "text-offset": [0, 1.2],
-          "text-anchor": "top",
-          "text-allow-overlap": false,
-          "text-optional": true,
-          "text-padding": 4,
-        },
-        paint: {
-          "text-color": ["case", ["get", "is_active"], TEAL_700, TEAL],
-          "text-halo-color": STONE,
-          "text-halo-width": 1.5,
-          "text-halo-blur": 0.5,
-        },
-      });
+          layout: {
+            "text-field": ["get", "name"],
+            "text-size": [
+              "interpolate",
+              ["linear"],
+              ["zoom"],
+              11, 10,
+              14, 11.5,
+              16, 13,
+            ],
+            "text-offset": [0, 1.2],
+            "text-anchor": "top",
+            "text-allow-overlap": false,
+            "text-optional": true,
+            "text-padding": 4,
+          },
+          paint: {
+            "text-color": [
+              "case",
+              ["get", "is_active"],
+              ACTION,
+              colors.stopLabelInactive,
+            ],
+            "text-halo-color": colors.stopLabelHalo,
+            "text-halo-width": 1.5,
+            "text-halo-blur": 0.5,
+          },
+        });
+      }
 
-      map.addSource(KOMBIS_SOURCE, {
-        type: "geojson",
-        data: kombisGeoJSON(positionsRef.current, assignedVehicleIdRef.current),
-      });
-      map.addLayer({
-        id: KOMBIS_LAYER_HALO,
-        type: "circle",
-        source: KOMBIS_SOURCE,
-        filter: ["==", ["get", "is_assigned"], true],
-        paint: {
-          "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 14, 14, 22, 16, 28],
-          "circle-color": RUST,
-          "circle-opacity": 0.25,
-          "circle-blur": 0.4,
-        },
-      });
+      if (!map.getSource(KOMBIS_SOURCE)) {
+        map.addSource(KOMBIS_SOURCE, {
+          type: "geojson",
+          data: kombisGeoJSON(positionsRef.current, assignedVehicleIdRef.current),
+        });
+      }
+      if (!map.getLayer(KOMBIS_LAYER_HALO)) {
+        map.addLayer({
+          id: KOMBIS_LAYER_HALO,
+          type: "circle",
+          source: KOMBIS_SOURCE,
+          filter: ["==", ["get", "is_assigned"], true],
+          paint: {
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], 10, 14, 14, 22, 16, 28],
+            // R5: assigned-kombi breathing halo flips from rust to Apple-blue
+            // so the active-vehicle ring matches the route polyline + walk
+            // line + user dot. The pulsing RAF effect overrides circle-radius
+            // and circle-opacity in real time; that effect doesn't touch
+            // circle-color, so this single token is the source of truth.
+            "circle-color": ACTION,
+            "circle-opacity": 0.25,
+            "circle-blur": 0.4,
+          },
+        });
+      }
       // Kombi minibus icon, rotated to direction-of-travel via the bearing
       // on each tick payload. Active (assigned) kombi renders larger and
       // fully opaque; pass-through kombis render slightly smaller and at
@@ -967,60 +1095,79 @@ export default function PassengerMap({
           });
         }
       });
+    }
 
-      // Click a route line to highlight it and reveal its named stops.
-      map.on("click", ROUTES_LAYER_BASE, handleRouteClick);
-      map.on("mouseenter", ROUTES_LAYER_BASE, () => {
-        map.getCanvas().style.cursor = "pointer";
-      });
-      map.on("mouseleave", ROUTES_LAYER_BASE, () => {
-        map.getCanvas().style.cursor = "";
-      });
-      // Click empty space clears the selection (only when no journey is active).
-      map.on("click", (e: MapMouseEvent) => {
-        if (journeyRef.current) return;
-        const hits = map.queryRenderedFeatures(e.point, {
-          layers: [ROUTES_LAYER_BASE, STOPS_LAYER_HALO, STOPS_LAYER_DOT, KOMBIS_LAYER],
-        });
-        if (hits.length === 0) {
-          setSelected(null);
-          map.setFilter(ROUTES_LAYER_HIGHLIGHT, ["in", ["get", "id"], ["literal", []]]);
-          if (map.getLayer(ROUTES_LAYER_HIGHLIGHT_HALO)) {
-            map.setFilter(ROUTES_LAYER_HIGHLIGHT_HALO, [
-              "in",
-              ["get", "id"],
-              ["literal", []],
-            ]);
-          }
-        }
-      });
-
-      // Now the layers exist — apply current journey/stage paint via refs so
-      // the build effect can have stable deps (re-running it would tear the
-      // map down mid-load and leave the canvas blank).
+    // Bind to style.load so the mount fires on the initial load AND on every
+    // setStyle (theme toggle wipes layers; re-mount restores them).
+    map.on("style.load", () => {
+      const t = readThemeAttr();
+      mountAllSources(t);
+      // Re-apply current journey/stage paint via refs so the build effect
+      // can have stable deps (re-running it would tear the map down mid-load
+      // and leave the canvas blank).
       repaintActiveLeg(map, journeyRef.current, stageRef.current);
       repaintAssignedHighlight(map, assignedVehicleIdRef.current);
     });
 
-    function handleRouteClick(e: mapboxgl.MapLayerMouseEvent) {
-      // Suppress route inspection when there's an active journey — the active
-      // leg is already telling the right story.
+    /**
+     * Single click handler — survives setStyle because it's not layer-bound.
+     * On click: route hit → inspector; empty space (no route/stop/kombi
+     * features under the click) → clear selection. Suppressed entirely while
+     * a journey is active (the active leg already tells the right story).
+     */
+    map.on("click", (e: MapMouseEvent) => {
       if (journeyRef.current) return;
-      const feature = e.features?.[0];
-      if (!feature) return;
-      const id = feature.properties?.id as string | undefined;
-      if (!id) return;
-      const net = networkRef.current;
-      const route = net.routes.find((r) => r.id === id);
-      if (!route) return;
-      const stops = net.routeStops
-        .filter((rs) => rs.route_id === id)
-        .sort((a, b) => a.sequence - b.sequence)
-        .map((rs) => net.stops.find((s) => s.id === rs.stop_id))
-        .filter((s): s is StopForMap => Boolean(s));
-      setSelected({ route, stops });
-      map.setFilter(ROUTES_LAYER_HIGHLIGHT, ["in", ["get", "id"], ["literal", [id]]]);
-    }
+      const routeHits = map.queryRenderedFeatures(e.point, {
+        layers: [ROUTES_LAYER_BASE, ROUTES_LAYER_BASE_PRIMARY],
+      });
+      if (routeHits.length > 0) {
+        const id = routeHits[0].properties?.id as string | undefined;
+        if (id) {
+          const net = networkRef.current;
+          const route = net.routes.find((r) => r.id === id);
+          if (route) {
+            const stops = net.routeStops
+              .filter((rs) => rs.route_id === id)
+              .sort((a, b) => a.sequence - b.sequence)
+              .map((rs) => net.stops.find((s) => s.id === rs.stop_id))
+              .filter((s): s is StopForMap => Boolean(s));
+            setSelected({ route, stops });
+            map.setFilter(ROUTES_LAYER_HIGHLIGHT, [
+              "in",
+              ["get", "id"],
+              ["literal", [id]],
+            ]);
+          }
+        }
+        return;
+      }
+      const otherHits = map.queryRenderedFeatures(e.point, {
+        layers: [STOPS_LAYER_HALO, STOPS_LAYER_DOT, KOMBIS_LAYER],
+      });
+      if (otherHits.length === 0) {
+        setSelected(null);
+        if (map.getLayer(ROUTES_LAYER_HIGHLIGHT)) {
+          map.setFilter(ROUTES_LAYER_HIGHLIGHT, ["in", ["get", "id"], ["literal", []]]);
+        }
+        if (map.getLayer(ROUTES_LAYER_HIGHLIGHT_HALO)) {
+          map.setFilter(ROUTES_LAYER_HIGHLIGHT_HALO, [
+            "in",
+            ["get", "id"],
+            ["literal", []],
+          ]);
+        }
+      }
+    });
+
+    // Cursor on route hover — generic mousemove + queryRenderedFeatures so it
+    // survives setStyle. Cheap enough at four routes; if it ever shows up in
+    // a profile, throttle.
+    map.on("mousemove", (e: MapMouseEvent) => {
+      const hits = map.queryRenderedFeatures(e.point, {
+        layers: [ROUTES_LAYER_BASE, ROUTES_LAYER_BASE_PRIMARY],
+      });
+      map.getCanvas().style.cursor = hits.length > 0 ? "pointer" : "";
+    });
 
     return () => {
       map.remove();
@@ -1031,6 +1178,29 @@ export default function PassengerMap({
     // Build the map exactly once per component mount. `network`, `mapboxToken`,
     // `stage`, and `journey` are all read via refs so server-driven prop
     // refreshes don't tear the map down mid-load.
+  }, []);
+
+  // R5 — theme MutationObserver. Watches <html data-theme> for changes
+  // (driven by the ThemeToggle component) and swaps the Mapbox base style.
+  // The style.load handler above re-runs mountAllSources after the new style
+  // settles, restoring every Svika source/layer with theme-correct paint.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const observer = new MutationObserver(() => {
+      const map = mapRef.current;
+      if (!map) return;
+      const newTheme = readThemeAttr();
+      const styleUrl = themeColors(newTheme).styleUrl;
+      // Mapbox compares string identity for the style URL; setStyle is a
+      // no-op when the value matches the current style. Safe to call on
+      // every observation.
+      map.setStyle(styleUrl);
+    });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+    return () => observer.disconnect();
   }, []);
 
   // Pulsing halo on the assigned vehicle. ~2.2s breathing cycle, lightweight
@@ -1349,7 +1519,14 @@ export default function PassengerMap({
 
       {journey && stage && stage.assigned_vehicle_id ? (
         <div
-          className="pointer-events-none absolute left-3 top-3 z-10 rounded-full border border-svika-teal-100 bg-white/95 px-3 py-1 text-xs font-medium text-svika-teal shadow-sm"
+          className="pointer-events-none absolute left-3 top-3 z-10 rounded-full px-3 py-1 text-xs font-medium shadow-sm"
+          style={{
+            borderWidth: "1px",
+            borderStyle: "solid",
+            borderColor: "var(--color-hairline)",
+            backgroundColor: "var(--color-bg)",
+            color: "var(--color-ink)",
+          }}
           data-testid="journey-eta-chip"
         >
           {stage.assigned_vehicle_id}
@@ -1360,9 +1537,22 @@ export default function PassengerMap({
       ) : null}
 
       {selected && !journey ? (
-        <aside className="pointer-events-auto absolute right-3 top-3 max-w-xs rounded-lg border border-svika-teal-100 bg-svika-stone/95 p-3 text-sm shadow-md backdrop-blur">
+        <aside
+          className="pointer-events-auto absolute right-3 top-3 max-w-xs rounded-lg p-3 text-sm shadow-md backdrop-blur"
+          style={{
+            borderWidth: "1px",
+            borderStyle: "solid",
+            borderColor: "var(--color-hairline)",
+            backgroundColor: "var(--color-surface)",
+          }}
+        >
           <header className="mb-2 flex items-baseline justify-between gap-2">
-            <h2 className="text-sm font-semibold text-svika-teal">{selected.route.name}</h2>
+            <h2
+              className="text-sm font-semibold"
+              style={{ color: "var(--color-ink)" }}
+            >
+              {selected.route.name}
+            </h2>
             <button
               type="button"
               onClick={() => {
@@ -1379,21 +1569,31 @@ export default function PassengerMap({
                   }
                 }
               }}
-              className="text-svika-mute hover:text-svika-teal"
+              style={{ color: "var(--color-ink-mute)" }}
               aria-label="Close route details"
             >
               ×
             </button>
           </header>
-          <p className="mb-2 text-xs text-svika-mute">
+          <p className="mb-2 text-xs" style={{ color: "var(--color-ink-mute)" }}>
             ${selected.route.default_fare_usd.toFixed(2)} end to end ·{" "}
             {selected.route.typical_duration_minutes} min
           </p>
           <ol className="space-y-1 text-xs">
             {selected.stops.map((s, idx) => (
               <li key={s.id} className="flex items-baseline gap-2">
-                <span className="w-4 text-right text-svika-mute">{idx + 1}.</span>
-                <span className={s.is_rank ? "font-medium text-svika-teal" : "text-svika-ink"}>
+                <span
+                  className="w-4 text-right"
+                  style={{ color: "var(--color-ink-mute)" }}
+                >
+                  {idx + 1}.
+                </span>
+                <span
+                  className={s.is_rank ? "font-medium" : ""}
+                  style={{
+                    color: s.is_rank ? "var(--color-action)" : "var(--color-ink)",
+                  }}
+                >
                   {s.name}
                   {s.is_rank ? " · rank" : null}
                   {s.is_terminal && !s.is_rank ? " · terminal" : null}
@@ -1425,8 +1625,8 @@ function repaintAssignedHighlight(map: mapboxgl.Map, assignedVehicleId: string |
 
 /**
  * When a journey is active:
- *   - Fade all base routes to 0.22 opacity.
- *   - Highlight the active kombi leg's route in rust.
+ *   - Fade all base routes to 0.10 opacity.
+ *   - Highlight the active kombi leg's route in Apple-blue (R5: was teal-700).
  * When no journey:
  *   - Restore normal opacity. Highlight is empty until the user clicks a route.
  */

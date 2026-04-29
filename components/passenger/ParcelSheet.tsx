@@ -69,30 +69,45 @@ export default function ParcelSheet({
     setDescription("");
   }
 
+  const fieldStyle: React.CSSProperties = {
+    borderWidth: "1px",
+    borderStyle: "solid",
+    borderColor: "var(--color-hairline)",
+    backgroundColor: "var(--color-surface)",
+    color: "var(--color-ink)",
+  };
+  const labelStyle: React.CSSProperties = { color: "var(--color-ink-mute)" };
+
   return (
     <div className="pt-1" data-testid="parcel-sheet">
       <header className="flex items-baseline justify-between gap-2">
-        <h2 className="text-base font-semibold text-svika-teal">Send a parcel</h2>
+        <h2
+          className="text-base font-semibold"
+          style={{ color: "var(--color-ink)" }}
+        >
+          Send a parcel
+        </h2>
         <button
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="text-svika-mute hover:text-svika-teal"
+          style={{ color: "var(--color-ink-mute)" }}
         >
           ×
         </button>
       </header>
-      <p className="mt-1 text-xs text-svika-mute">
+      <p className="mt-1 text-xs" style={labelStyle}>
         Same kombi, same code. Hand it to the hwindi at Bannockburn Rd.
       </p>
 
       <div className="mt-3 space-y-3">
         <label className="block text-xs">
-          <span className="text-svika-mute">Drop at</span>
+          <span style={labelStyle}>Drop at</span>
           <select
             value={alightId}
             onChange={(e) => setAlightId(e.target.value)}
-            className="mt-1 w-full rounded-md border border-svika-line bg-white px-2 py-2 text-sm text-svika-teal"
+            className="mt-1 w-full rounded-md px-2 py-2 text-sm"
+            style={fieldStyle}
             data-testid="parcel-alight"
           >
             {DESTINATIONS.map((d) => (
@@ -104,25 +119,27 @@ export default function ParcelSheet({
         </label>
 
         <label className="block text-xs">
-          <span className="text-svika-mute">Receiver phone</span>
+          <span style={labelStyle}>Receiver phone</span>
           <input
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             placeholder="+263772000002"
-            className="mt-1 w-full rounded-md border border-svika-line bg-white px-2 py-2 text-sm text-svika-teal"
+            className="mt-1 w-full rounded-md px-2 py-2 text-sm"
+            style={fieldStyle}
             data-testid="parcel-phone"
           />
         </label>
 
         <label className="block text-xs">
-          <span className="text-svika-mute">What is in the parcel?</span>
+          <span style={labelStyle}>What is in the parcel?</span>
           <input
             type="text"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="School books for Rudo"
-            className="mt-1 w-full rounded-md border border-svika-line bg-white px-2 py-2 text-sm text-svika-teal"
+            className="mt-1 w-full rounded-md px-2 py-2 text-sm"
+            style={fieldStyle}
             data-testid="parcel-desc"
             maxLength={120}
           />
@@ -133,11 +150,21 @@ export default function ParcelSheet({
             type="button"
             onClick={() => setPaymentMethod("wallet")}
             disabled={busy}
-            className={`rounded-md border px-3 py-2 text-xs ${
-              paymentMethod === "wallet"
-                ? "border-svika-teal bg-svika-teal text-white"
-                : "border-svika-line bg-white text-svika-teal"
-            }`}
+            className="rounded-md px-3 py-2 text-xs disabled:opacity-50"
+            style={{
+              borderWidth: "1px",
+              borderStyle: "solid",
+              borderColor:
+                paymentMethod === "wallet"
+                  ? "var(--color-action)"
+                  : "var(--color-hairline)",
+              backgroundColor:
+                paymentMethod === "wallet"
+                  ? "var(--color-action)"
+                  : "var(--color-surface)",
+              color:
+                paymentMethod === "wallet" ? "white" : "var(--color-ink)",
+            }}
             data-testid="parcel-pay-wallet"
           >
             Wallet · ${walletBalance.toFixed(2)}
@@ -146,11 +173,20 @@ export default function ParcelSheet({
             type="button"
             onClick={() => setPaymentMethod("cash")}
             disabled={busy}
-            className={`rounded-md border px-3 py-2 text-xs ${
-              paymentMethod === "cash"
-                ? "border-svika-rust bg-svika-rust text-white"
-                : "border-svika-line bg-white text-svika-rust"
-            }`}
+            className="rounded-md px-3 py-2 text-xs disabled:opacity-50"
+            style={{
+              borderWidth: "1px",
+              borderStyle: "solid",
+              borderColor:
+                paymentMethod === "cash"
+                  ? "var(--color-action)"
+                  : "var(--color-hairline)",
+              backgroundColor:
+                paymentMethod === "cash"
+                  ? "var(--color-action)"
+                  : "var(--color-surface)",
+              color: paymentMethod === "cash" ? "white" : "var(--color-ink)",
+            }}
             data-testid="parcel-pay-cash"
           >
             Cash on board
@@ -158,7 +194,13 @@ export default function ParcelSheet({
         </div>
 
         {cannotPayWallet ? (
-          <p className="rounded-md bg-white/80 px-2 py-1.5 text-xs text-svika-rust">
+          <p
+            className="rounded-md px-2 py-1.5 text-xs"
+            style={{
+              backgroundColor: "var(--color-surface)",
+              color: "var(--color-action)",
+            }}
+          >
             Wallet balance is below ${dest.fare_usd.toFixed(2)}. Switch to cash or
             top up.
           </p>
@@ -166,7 +208,11 @@ export default function ParcelSheet({
 
         {error ? (
           <p
-            className="rounded-md bg-white/80 px-2 py-1.5 text-xs text-svika-rust"
+            className="rounded-md px-2 py-1.5 text-xs"
+            style={{
+              backgroundColor: "var(--color-surface)",
+              color: "var(--color-action)",
+            }}
             data-testid="parcel-error"
           >
             {error}
@@ -177,7 +223,11 @@ export default function ParcelSheet({
           type="button"
           onClick={handleSend}
           disabled={busy || cannotPayWallet}
-          className="w-full rounded-md bg-svika-rust px-4 py-3 text-sm font-semibold text-white disabled:opacity-50"
+          className="w-full rounded-md px-4 py-3 text-sm font-semibold text-white shadow-sm transition-opacity disabled:opacity-50"
+          style={{
+            backgroundColor: "var(--color-action)",
+            boxShadow: "0 8px 24px rgba(0, 122, 255, 0.32)",
+          }}
           data-testid="parcel-submit"
         >
           {busy ? "Sending…" : `Send parcel · $${dest.fare_usd.toFixed(2)}`}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import ThemeToggle from "@/components/passenger/ThemeToggle";
 import type { Persona } from "@/lib/personas";
 
 interface PersonaDrawerProps {
@@ -39,16 +40,25 @@ function TileButton({
       className="svika-glass flex min-h-[56px] w-full items-center justify-between gap-3 px-4 py-3 text-left transition-transform active:scale-[0.99]"
     >
       <span className="min-w-0 flex-1">
-        <span className="svika-body block font-semibold text-svika-teal">
+        <span
+          className="svika-body block font-semibold"
+          style={{ color: "var(--color-ink)" }}
+        >
           {label}
         </span>
         {detail ? (
-          <span className="svika-meta mt-0.5 block text-svika-mute" style={{ textTransform: "none" }}>
+          <span
+            className="svika-meta mt-0.5 block"
+            style={{ textTransform: "none", color: "var(--color-ink-mute)" }}
+          >
             {detail}
           </span>
         ) : null}
       </span>
-      <span aria-hidden className="text-svika-rust" style={{ fontSize: "16px" }}>
+      <span
+        aria-hidden
+        style={{ fontSize: "16px", color: "var(--color-action)" }}
+      >
         {external ? "↗" : "›"}
       </span>
     </button>
@@ -72,16 +82,25 @@ function TileLink({ label, detail, href, testid }: TileLinkProps) {
       className="svika-glass flex min-h-[56px] w-full items-center justify-between gap-3 px-4 py-3 text-left transition-transform active:scale-[0.99]"
     >
       <span className="min-w-0 flex-1">
-        <span className="svika-body block font-semibold text-svika-teal">
+        <span
+          className="svika-body block font-semibold"
+          style={{ color: "var(--color-ink)" }}
+        >
           {label}
         </span>
         {detail ? (
-          <span className="svika-meta mt-0.5 block text-svika-mute" style={{ textTransform: "none" }}>
+          <span
+            className="svika-meta mt-0.5 block"
+            style={{ textTransform: "none", color: "var(--color-ink-mute)" }}
+          >
             {detail}
           </span>
         ) : null}
       </span>
-      <span aria-hidden className="text-svika-rust" style={{ fontSize: "16px" }}>
+      <span
+        aria-hidden
+        style={{ fontSize: "16px", color: "var(--color-action)" }}
+      >
         ↗
       </span>
     </a>
@@ -90,7 +109,10 @@ function TileLink({ label, detail, href, testid }: TileLinkProps) {
 
 function SectionHeader({ children }: { children: React.ReactNode }) {
   return (
-    <p className="svika-meta mt-5 px-1 uppercase text-svika-mute">
+    <p
+      className="svika-meta mt-5 px-1 uppercase"
+      style={{ color: "var(--color-ink-mute)" }}
+    >
       {children}
     </p>
   );
@@ -135,20 +157,41 @@ export default function PersonaDrawer({
         aria-hidden={!open}
         aria-label="Persona menu"
       >
-        <header className="flex items-center justify-between border-b border-svika-line px-4 py-3">
+        <header
+          className="flex items-center justify-between px-4 py-3"
+          style={{
+            borderBottomWidth: "1px",
+            borderBottomStyle: "solid",
+            borderBottomColor: "var(--color-hairline)",
+          }}
+        >
           <div className="flex items-center gap-2">
             <span
               aria-hidden
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-svika-teal text-white"
-              style={{ fontSize: "13px", fontWeight: 600 }}
+              className="flex h-8 w-8 items-center justify-center rounded-full text-white"
+              style={{
+                fontSize: "13px",
+                fontWeight: 600,
+                backgroundColor: "var(--color-action)",
+              }}
             >
               {persona.name.charAt(0).toUpperCase()}
             </span>
             <span className="flex flex-col leading-tight">
-              <span className="svika-headline text-svika-teal">
+              <span
+                className="svika-headline"
+                style={{ color: "var(--color-ink)" }}
+              >
                 {persona.name}
               </span>
-              <span className="svika-meta text-svika-mute" style={{ textTransform: "none", fontSize: "10px" }}>
+              <span
+                className="svika-meta"
+                style={{
+                  textTransform: "none",
+                  fontSize: "10px",
+                  color: "var(--color-ink-mute)",
+                }}
+              >
                 signed in as {personaSlug}
               </span>
             </span>
@@ -157,8 +200,7 @@ export default function PersonaDrawer({
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="text-svika-mute hover:text-svika-teal"
-            style={{ fontSize: "18px" }}
+            style={{ fontSize: "18px", color: "var(--color-ink-mute)" }}
           >
             ×
           </button>
@@ -200,8 +242,16 @@ export default function PersonaDrawer({
             />
           </div>
 
+          <SectionHeader>Display</SectionHeader>
+          <div className="mt-2 space-y-2">
+            <ThemeToggle variant="row" />
+          </div>
+
           <SectionHeader>Behind the scenes</SectionHeader>
-          <p className="mt-1 px-1 text-[11px] text-svika-mute">
+          <p
+            className="mt-1 px-1 text-[11px]"
+            style={{ color: "var(--color-ink-mute)" }}
+          >
             Demonstration surfaces — not personas you switch into.
           </p>
           <div className="mt-2 space-y-2">
@@ -234,7 +284,16 @@ export default function PersonaDrawer({
               onClick={() => setAboutOpen((v) => !v)}
             />
             {aboutOpen ? (
-              <div className="rounded-2xl border border-svika-line bg-white/70 px-3 py-3 text-[12px] leading-relaxed text-svika-teal">
+              <div
+                className="rounded-2xl px-3 py-3 text-[12px] leading-relaxed"
+                style={{
+                  borderWidth: "1px",
+                  borderStyle: "solid",
+                  borderColor: "var(--color-hairline)",
+                  backgroundColor: "var(--color-surface)",
+                  color: "var(--color-ink)",
+                }}
+              >
                 Built for Harare. Same kombi, same hwindi — only the ticket
                 changes. Tickets transfer between users. Balances do not. The
                 three-digit code is the only thing the conductor needs to

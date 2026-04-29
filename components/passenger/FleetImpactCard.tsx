@@ -52,16 +52,23 @@ export default function FleetImpactCard({ fareUsd }: FleetImpactCardProps) {
         type="button"
         onClick={handleToggle}
         aria-expanded={expanded}
-        className="flex w-full items-center justify-between gap-2 rounded-md border border-svika-teal-100 bg-white px-3 py-2 text-left text-xs text-svika-teal hover:bg-svika-stone-dark"
+        className="flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-left text-xs"
+        style={{
+          borderWidth: "1px",
+          borderStyle: "solid",
+          borderColor: "var(--color-hairline)",
+          backgroundColor: "var(--color-surface)",
+          color: "var(--color-ink)",
+        }}
       >
         <span>
           Your ${fareUsd.toFixed(2)} just landed in Baba Tino&apos;s ledger
         </span>
         <span
           aria-hidden
-          className="text-svika-rust"
           style={{
             fontSize: "14px",
+            color: "var(--color-action)",
             transform: expanded ? "rotate(90deg)" : "rotate(0deg)",
             transition: "transform 200ms ease",
           }}
@@ -70,15 +77,27 @@ export default function FleetImpactCard({ fareUsd }: FleetImpactCardProps) {
         </span>
       </button>
       {expanded ? (
-        <div className="mt-2 rounded-md border border-svika-teal-100 bg-svika-stone px-3 py-2 text-xs text-svika-teal">
+        <div
+          className="mt-2 rounded-md px-3 py-2 text-xs"
+          style={{
+            borderWidth: "1px",
+            borderStyle: "solid",
+            borderColor: "var(--color-hairline)",
+            backgroundColor: "var(--color-surface)",
+            color: "var(--color-ink)",
+          }}
+        >
           {state.loading ? (
-            <p className="text-svika-mute">Loading…</p>
+            <p style={{ color: "var(--color-ink-mute)" }}>Loading…</p>
           ) : state.error ? (
-            <p className="text-svika-rust">{state.error}</p>
+            <p style={{ color: "var(--color-action)" }}>{state.error}</p>
           ) : state.stats ? (
             <>
               <p>
-                <span className="font-mono text-base text-svika-rust">
+                <span
+                  className="font-mono text-base"
+                  style={{ color: "var(--color-action)" }}
+                >
                   ${state.stats.total_today_usd.toFixed(2)}
                 </span>{" "}
                 today · {state.stats.digital_count} digital fares ·{" "}
@@ -88,7 +107,8 @@ export default function FleetImpactCard({ fareUsd }: FleetImpactCardProps) {
                 href="/fleet?as=baba_tino"
                 target="_blank"
                 rel="noopener"
-                className="mt-1 inline-block text-[11px] text-svika-rust underline"
+                className="mt-1 inline-block text-[11px] underline"
+                style={{ color: "var(--color-action)" }}
               >
                 See full fleet dashboard →
               </a>

@@ -23,8 +23,26 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#0a0a0c",
+  themeColor: "#FFFFFF",
 };
+
+// Inline-injected before body renders so the first paint matches the user's
+// stored or system preference. Hits localStorage svika-theme first, then
+// prefers-color-scheme. Falls back to "light" when storage is unavailable
+// (private mode etc).
+const themeBootstrap = `
+(function () {
+  try {
+    var stored = localStorage.getItem('svika-theme');
+    var system = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
+      ? 'dark' : 'light';
+    var theme = stored === 'dark' || stored === 'light' ? stored : system;
+    document.documentElement.setAttribute('data-theme', theme);
+  } catch (_) {
+    document.documentElement.setAttribute('data-theme', 'light');
+  }
+})();
+`;
 
 export default function RootLayout({
   children,
@@ -32,8 +50,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>{children}</body>
+    <html lang="en" data-theme="light">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
+      </head>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        {children}
+      </body>
     </html>
   );
 }

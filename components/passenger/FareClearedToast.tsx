@@ -36,19 +36,30 @@ export default function FareClearedToast({ state, onDismiss }: FareClearedToastP
       >
         <span
           aria-hidden
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-svika-rust text-white"
-          style={{ fontSize: "14px", fontWeight: 700 }}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white"
+          style={{
+            fontSize: "14px",
+            fontWeight: 700,
+            backgroundColor: "var(--color-action)",
+          }}
         >
           ✓
         </span>
         <div className="min-w-0 flex-1">
           <p
-            className="text-svika-teal"
-            style={{ fontSize: "13px", fontWeight: 600, lineHeight: 1.2 }}
+            style={{
+              fontSize: "13px",
+              fontWeight: 600,
+              lineHeight: 1.2,
+              color: "var(--color-ink)",
+            }}
           >
             Fare cleared by {state.conductor_name}
           </p>
-          <p className="mt-0.5 text-[11px] text-svika-mute">
+          <p
+            className="mt-0.5 text-[11px]"
+            style={{ color: "var(--color-ink-mute)" }}
+          >
             {state.vehicle_id} · seat {state.seat} of {state.capacity}
           </p>
         </div>
@@ -56,8 +67,7 @@ export default function FareClearedToast({ state, onDismiss }: FareClearedToastP
           type="button"
           onClick={onDismiss}
           aria-label="Dismiss"
-          className="text-svika-mute hover:text-svika-teal"
-          style={{ fontSize: "16px" }}
+          style={{ fontSize: "16px", color: "var(--color-ink-mute)" }}
         >
           ×
         </button>

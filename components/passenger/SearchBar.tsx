@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type CSSProperties } from "react";
 
 interface SearchBarProps {
   onSubmit: (text: string) => Promise<void>;
@@ -24,15 +24,25 @@ export default function SearchBar({
     await onSubmit(text.trim());
   }
 
-  const inputCls =
+  const inputBase =
     size === "hero"
-      ? "flex-1 rounded-lg border border-svika-teal-100 bg-white px-4 py-3 text-base text-svika-ink shadow-sm placeholder:text-svika-mute focus:border-svika-teal focus:outline-none focus:ring-2 focus:ring-svika-rust/30"
-      : "flex-1 rounded-md border border-svika-teal-100 bg-white px-3 py-2 text-sm text-svika-ink shadow-sm placeholder:text-svika-mute focus:border-svika-teal focus:outline-none";
+      ? "flex-1 rounded-lg px-4 py-3 text-base shadow-sm focus:outline-none focus:ring-2"
+      : "flex-1 rounded-md px-3 py-2 text-sm shadow-sm focus:outline-none";
+  const inputStyle: CSSProperties = {
+    borderWidth: "1px",
+    borderStyle: "solid",
+    borderColor: "var(--color-hairline)",
+    backgroundColor: "var(--color-surface)",
+    color: "var(--color-ink)",
+  };
 
-  const buttonCls =
+  const buttonBase =
     size === "hero"
-      ? "w-full rounded-lg bg-svika-rust px-5 py-3 text-sm font-semibold text-white shadow-sm transition-opacity disabled:opacity-50"
-      : "rounded-md bg-svika-teal px-4 py-2 text-sm font-medium text-svika-stone shadow-sm transition-opacity disabled:opacity-50";
+      ? "w-full rounded-lg px-5 py-3 text-sm font-semibold text-white shadow-sm transition-opacity disabled:opacity-50"
+      : "rounded-md px-4 py-2 text-sm font-medium text-white shadow-sm transition-opacity disabled:opacity-50";
+  const buttonStyle: CSSProperties = {
+    backgroundColor: "var(--color-action)",
+  };
 
   const formCls = size === "hero" ? "flex flex-col gap-2" : "flex gap-2";
 
@@ -47,13 +57,15 @@ export default function SearchBar({
         value={text}
         onChange={(e) => setText(e.target.value)}
         placeholder={placeholder ?? "Where to? Try 'Heights to Avondale'"}
-        className={inputCls}
+        className={inputBase}
+        style={inputStyle}
         disabled={disabled}
       />
       <button
         type="submit"
         disabled={disabled || !text.trim()}
-        className={buttonCls}
+        className={buttonBase}
+        style={buttonStyle}
       >
         {disabled ? "..." : "Plan"}
       </button>

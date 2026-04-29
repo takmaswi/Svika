@@ -30,9 +30,20 @@ export default function FleetShell({ persona, state, narratives }: FleetShellPro
     [narratives, selectedId],
   );
 
+  const cardStyle: React.CSSProperties = {
+    borderWidth: "1px",
+    borderStyle: "solid",
+    borderColor: "var(--color-hairline)",
+    backgroundColor: "var(--color-bg)",
+  };
+  const inverseHeaderStyle: React.CSSProperties = {
+    backgroundColor: "var(--color-surface-dark)",
+    color: "#ffffff",
+  };
+
   return (
     <main className="min-h-dvh">
-      <header className="border-b border-svika-teal-100 bg-svika-teal px-6 py-4 text-svika-stone">
+      <header className="px-6 py-4" style={inverseHeaderStyle}>
         <h1 className="svika-display">Fleet · {persona.name}</h1>
         <p className="svika-meta opacity-80">
           {state.for_date} · {state.vehicles.length} kombi
@@ -41,33 +52,56 @@ export default function FleetShell({ persona, state, narratives }: FleetShellPro
       </header>
 
       <section className="grid grid-cols-1 gap-4 p-6 lg:grid-cols-3">
-        <article className="rounded-lg border border-svika-teal-100 bg-white p-5 shadow-sm">
-          <h2 className="svika-meta text-svika-mute">Today&apos;s revenue</h2>
+        <article className="rounded-lg p-5 shadow-sm" style={cardStyle}>
+          <h2
+            className="svika-meta"
+            style={{ color: "var(--color-ink-mute)" }}
+          >
+            Today&apos;s revenue
+          </h2>
           <p
-            className="svika-display mt-2 font-mono text-svika-teal"
+            className="svika-display mt-2 font-mono"
+            style={{ color: "var(--color-ink)" }}
             data-testid="fleet-revenue"
           >
             ${state.totals.revenue_usd.toFixed(2)}
           </p>
-          <p className="svika-meta mt-1 text-svika-mute">
+          <p
+            className="svika-meta mt-1"
+            style={{ color: "var(--color-ink-mute)" }}
+          >
             Digital {state.totals.digital_fares_logged} · Cash {state.totals.cash_walkons_logged}
           </p>
         </article>
-        <article className="rounded-lg border border-svika-teal-100 bg-white p-5 shadow-sm">
-          <h2 className="svika-meta text-svika-mute">Stops vs fares logged</h2>
-          <p className="svika-display mt-2 font-mono text-svika-teal">
+        <article className="rounded-lg p-5 shadow-sm" style={cardStyle}>
+          <h2
+            className="svika-meta"
+            style={{ color: "var(--color-ink-mute)" }}
+          >
+            Stops vs fares logged
+          </h2>
+          <p
+            className="svika-display mt-2 font-mono"
+            style={{ color: "var(--color-ink)" }}
+          >
             {state.totals.stops_made}
-            <span className="text-base text-svika-mute">
+            <span
+              className="text-base"
+              style={{ color: "var(--color-ink-mute)" }}
+            >
               {" "}
               / {state.totals.digital_fares_logged + state.totals.cash_walkons_logged}
             </span>
           </p>
           <p
-            className={`svika-meta mt-1 ${
-              // Phase D: only escalate to rust when the gap crosses the $5
-              // threshold; below that, mute teal keeps the card calm.
-              state.totals.revenue_gap_usd > 5 ? "font-medium text-svika-rust" : "text-svika-mute"
-            }`}
+            className="svika-meta mt-1"
+            style={{
+              fontWeight: state.totals.revenue_gap_usd > 5 ? 500 : undefined,
+              color:
+                state.totals.revenue_gap_usd > 5
+                  ? "var(--color-action)"
+                  : "var(--color-ink-mute)",
+            }}
             data-testid="fleet-gap"
           >
             Estimated gap ${state.totals.revenue_gap_usd.toFixed(2)}
@@ -80,8 +114,10 @@ export default function FleetShell({ persona, state, narratives }: FleetShellPro
       </section>
 
       <section className="px-6 pb-2">
-        <h2 className="svika-headline text-svika-teal">Per-kombi</h2>
-        <p className="svika-meta text-svika-mute">
+        <h2 className="svika-headline" style={{ color: "var(--color-ink)" }}>
+          Per-kombi
+        </h2>
+        <p className="svika-meta" style={{ color: "var(--color-ink-mute)" }}>
           Tap a kombi to see its bilingual audit narrative.
         </p>
         <div
@@ -89,7 +125,10 @@ export default function FleetShell({ persona, state, narratives }: FleetShellPro
           data-testid="fleet-vehicle-grid"
         >
           {state.vehicles.length === 0 ? (
-            <p className="rounded-md border border-svika-teal-100 bg-white p-4 text-sm text-svika-mute">
+            <p
+              className="rounded-md p-4 text-sm"
+              style={{ ...cardStyle, color: "var(--color-ink-mute)" }}
+            >
               No vehicles for this owner. Run the seed loader.
             </p>
           ) : (
@@ -114,7 +153,16 @@ export default function FleetShell({ persona, state, narratives }: FleetShellPro
               routeName={selectedStats.route_name}
             />
           ) : (
-            <article className="rounded-lg border border-dashed border-svika-teal-100 bg-white p-5 text-sm text-svika-mute">
+            <article
+              className="rounded-lg p-5 text-sm"
+              style={{
+                borderWidth: "1px",
+                borderStyle: "dashed",
+                borderColor: "var(--color-hairline)",
+                backgroundColor: "var(--color-bg)",
+                color: "var(--color-ink-mute)",
+              }}
+            >
               Select a kombi to load its audit narrative.
             </article>
           )}

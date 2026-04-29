@@ -121,7 +121,12 @@ export default function Wallet({
   return (
     <div className="pt-1" data-testid="wallet-content">
       <header className="flex items-center justify-between pb-2">
-        <h2 className="text-base font-semibold text-svika-teal">Wallet</h2>
+        <h2
+          className="text-base font-semibold"
+          style={{ color: "var(--color-ink)" }}
+        >
+          Wallet
+        </h2>
         <button
           type="button"
           onClick={() => {
@@ -130,7 +135,7 @@ export default function Wallet({
             onClose();
           }}
           aria-label="Close wallet"
-          className="text-svika-mute hover:text-svika-teal"
+          style={{ color: "var(--color-ink-mute)" }}
         >
           ×
         </button>
@@ -138,11 +143,17 @@ export default function Wallet({
 
       {feedback ? (
         <div
-          className={`mt-1 rounded-md px-3 py-2 text-xs ${
-            feedback.kind === "ok"
-              ? "border border-svika-teal-100 bg-white text-svika-teal"
-              : "border border-svika-rust bg-white text-svika-rust"
-          }`}
+          className="mt-1 rounded-md px-3 py-2 text-xs"
+          style={{
+            borderWidth: "1px",
+            borderStyle: "solid",
+            borderColor: "var(--color-hairline)",
+            backgroundColor: "var(--color-surface)",
+            color:
+              feedback.kind === "ok"
+                ? "var(--color-ink)"
+                : "var(--color-action)",
+          }}
         >
           <p>{feedback.text}</p>
           {feedback.share_url ? (
@@ -159,7 +170,10 @@ export default function Wallet({
 
       <div className="mt-2 space-y-2">
         {tickets.length === 0 ? (
-          <p className="px-1 text-sm text-svika-mute">
+          <p
+            className="px-1 text-sm"
+            style={{ color: "var(--color-ink-mute)" }}
+          >
             No active tickets. Plan a trip to buy your first ride.
           </p>
         ) : (
@@ -169,29 +183,46 @@ export default function Wallet({
             return (
               <article
                 key={t.id}
-                className={`rounded-md border bg-white p-3 shadow-sm transition-opacity ${
-                  dimmed
-                    ? "border-svika-stone-dark opacity-70"
-                    : "border-svika-teal-100"
-                }`}
+                className="svika-glass p-3 text-sm transition-opacity"
+                style={{
+                  opacity: dimmed ? 0.7 : 1,
+                  borderRadius: 14,
+                }}
               >
                 <header className="flex items-baseline justify-between gap-2">
-                  <h3 className="text-sm font-medium text-svika-teal">
+                  <h3
+                    className="text-sm font-medium"
+                    style={{ color: "var(--color-ink)" }}
+                  >
                     {t.board_at_stop_name} → {t.alight_at_stop_name}
                   </h3>
-                  <span className="font-mono text-2xl text-svika-rust">
+                  <span
+                    className="font-mono text-2xl"
+                    style={{ color: "var(--color-action)" }}
+                  >
                     {t.access_code}
                   </span>
                 </header>
-                <p className="mt-0.5 text-xs text-svika-mute">{t.route_name}</p>
+                <p
+                  className="mt-0.5 text-xs"
+                  style={{ color: "var(--color-ink-mute)" }}
+                >
+                  {t.route_name}
+                </p>
                 <div className="mt-2 flex items-center justify-between text-xs">
-                  <span className="text-svika-mute">${t.fare_usd.toFixed(2)}</span>
+                  <span style={{ color: "var(--color-ink-mute)" }}>
+                    ${t.fare_usd.toFixed(2)}
+                  </span>
                   <span
-                    className={`rounded-full px-2 py-0.5 ${
-                      dimmed
-                        ? "bg-svika-stone-dark text-svika-mute"
-                        : "bg-svika-teal-50 text-svika-teal"
-                    }`}
+                    className="rounded-full px-2 py-0.5"
+                    style={{
+                      backgroundColor: dimmed
+                        ? "var(--color-hairline)"
+                        : "var(--color-action-soft)",
+                      color: dimmed
+                        ? "var(--color-ink-mute)"
+                        : "var(--color-action)",
+                    }}
                   >
                     {statusLabel(t)}
                   </span>
@@ -201,14 +232,26 @@ export default function Wallet({
                   <div className="mt-3">
                     {expanded ? (
                       <div className="space-y-1.5">
-                        <p className="text-xs text-svika-mute">Send to:</p>
+                        <p
+                          className="text-xs"
+                          style={{ color: "var(--color-ink-mute)" }}
+                        >
+                          Send to:
+                        </p>
                         {recipients.map((r) => (
                           <button
                             key={r.slug}
                             type="button"
                             disabled={busy}
                             onClick={() => handleTransfer(t.id, r.slug)}
-                            className="w-full rounded-md border border-svika-teal-100 bg-svika-stone px-2.5 py-1.5 text-left text-xs text-svika-teal hover:bg-svika-stone-dark disabled:opacity-50"
+                            className="w-full rounded-md px-2.5 py-1.5 text-left text-xs transition-colors disabled:opacity-50"
+                            style={{
+                              borderWidth: "1px",
+                              borderStyle: "solid",
+                              borderColor: "var(--color-hairline)",
+                              backgroundColor: "var(--color-surface)",
+                              color: "var(--color-ink)",
+                            }}
                           >
                             Transfer to {r.label}
                           </button>
@@ -216,7 +259,8 @@ export default function Wallet({
                         <button
                           type="button"
                           onClick={() => setActiveTicketId(null)}
-                          className="w-full text-center text-xs text-svika-mute hover:text-svika-teal"
+                          className="w-full text-center text-xs"
+                          style={{ color: "var(--color-ink-mute)" }}
                         >
                           Cancel
                         </button>
@@ -228,7 +272,14 @@ export default function Wallet({
                           setActiveTicketId(t.id);
                           setFeedback(null);
                         }}
-                        className="w-full rounded-md border border-svika-rust px-3 py-1.5 text-xs font-medium text-svika-rust hover:bg-svika-rust hover:text-white"
+                        className="w-full rounded-md px-3 py-1.5 text-xs font-medium transition-colors"
+                        style={{
+                          borderWidth: "1px",
+                          borderStyle: "solid",
+                          borderColor: "var(--color-action)",
+                          color: "var(--color-action)",
+                          backgroundColor: "transparent",
+                        }}
                       >
                         Share / transfer
                       </button>

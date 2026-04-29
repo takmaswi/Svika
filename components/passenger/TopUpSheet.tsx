@@ -35,12 +35,15 @@ export default function TopUpSheet({
     <div className="pt-1" data-testid="top-up-sheet">
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[10px] font-medium uppercase tracking-[0.5px] text-svika-mute">
+          <p
+            className="text-[10px] font-medium uppercase tracking-[0.5px]"
+            style={{ color: "var(--color-ink-mute)" }}
+          >
             Top up your wallet
           </p>
           <p
-            className="mt-1 truncate text-svika-teal"
-            style={{ fontSize: "16px", fontWeight: 600 }}
+            className="mt-1 truncate"
+            style={{ fontSize: "16px", fontWeight: 600, color: "var(--color-ink)" }}
           >
             ${walletBalance.toFixed(2)} in wallet · need ${fareUsd.toFixed(2)} for
             this trip
@@ -51,7 +54,11 @@ export default function TopUpSheet({
           onClick={onClose}
           disabled={busy}
           aria-label="Close"
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-white/70 text-svika-mute hover:text-svika-teal disabled:opacity-50"
+          className="flex h-8 w-8 items-center justify-center rounded-full disabled:opacity-50"
+          style={{
+            backgroundColor: "var(--color-surface)",
+            color: "var(--color-ink-mute)",
+          }}
         >
           ×
         </button>
@@ -67,16 +74,20 @@ export default function TopUpSheet({
               type="button"
               onClick={() => void handle(amount)}
               disabled={busy}
-              className="rounded-2xl border border-svika-line bg-white/70 px-4 py-4 text-left transition-opacity disabled:opacity-60"
+              className="svika-glass px-4 py-4 text-left transition-opacity disabled:opacity-60"
+              style={{ borderRadius: 18 }}
               data-testid={`topup-${amount}`}
             >
               <p
-                className="font-mono text-svika-teal"
-                style={{ fontSize: "22px", fontWeight: 600 }}
+                className="font-mono"
+                style={{ fontSize: "22px", fontWeight: 600, color: "var(--color-ink)" }}
               >
                 ${amount}
               </p>
-              <p className="mt-1 text-[11px] text-svika-mute">
+              <p
+                className="mt-1 text-[11px]"
+                style={{ color: "var(--color-ink-mute)" }}
+              >
                 {isPicked ? "Adding…" : `New balance $${newBalance.toFixed(2)}`}
               </p>
             </button>
@@ -84,7 +95,10 @@ export default function TopUpSheet({
         })}
       </div>
 
-      <p className="mt-3 text-[10px] text-svika-mute">
+      <p
+        className="mt-3 text-[10px]"
+        style={{ color: "var(--color-ink-mute)" }}
+      >
         Top-up via EcoCash · roadmap. This is mocked for the demo.
       </p>
     </div>

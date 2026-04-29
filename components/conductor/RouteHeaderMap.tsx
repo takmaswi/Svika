@@ -11,9 +11,10 @@ interface RouteHeaderMapProps {
   mapboxToken: string;
 }
 
-const TEAL = "#0a4b5c";
-const RUST = "#d9622a";
-const STONE = "#f2ede6";
+// R5: Apple-blue accent in both themes for the conductor's at-a-glance route
+// preview. Marker stays white-ringed so it pops on streets-v12 base.
+const ACTION = "#007AFF";
+const MARKER_RING = "#ffffff";
 
 function bounds(coords: Array<[number, number]>): LngLatBoundsLike | null {
   if (coords.length === 0) return null;
@@ -70,7 +71,7 @@ export default function RouteHeaderMap({ routeGeometry, position, mapboxToken }:
         source: "route",
         layout: { "line-cap": "round", "line-join": "round" },
         paint: {
-          "line-color": TEAL,
+          "line-color": ACTION,
           "line-width": 4,
         },
       });
@@ -78,8 +79,8 @@ export default function RouteHeaderMap({ routeGeometry, position, mapboxToken }:
       if (position) {
         const el = document.createElement("div");
         el.className = "kombi-marker";
-        el.style.background = RUST;
-        el.style.borderColor = STONE;
+        el.style.background = ACTION;
+        el.style.borderColor = MARKER_RING;
         markerRef.current = new mapboxgl.Marker({ element: el }).setLngLat(position).addTo(map);
       }
     });
@@ -102,7 +103,13 @@ export default function RouteHeaderMap({ routeGeometry, position, mapboxToken }:
 
   if (!mapboxToken) {
     return (
-      <div className="flex h-32 items-center justify-center bg-svika-stone-dark text-xs text-svika-mute">
+      <div
+        className="flex h-32 items-center justify-center text-xs"
+        style={{
+          backgroundColor: "var(--color-surface)",
+          color: "var(--color-ink-mute)",
+        }}
+      >
         Map preview disabled (no Mapbox token).
       </div>
     );
