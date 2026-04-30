@@ -34,13 +34,37 @@ const KOMBIS_LAYER_HALO = "svika-kombis-halo";
 const WALKING_SOURCE = "svika-walking";
 const WALKING_LAYER = "svika-walking-line";
 
-// R2 — Takunda's synthetic GPS at Bannockburn Rd North Terminus. The blue
-// user dot is hardcoded here; no `navigator.geolocation` call. The idle map
-// view re-centers on this position at zoom 15.5.
-const USER_LOCATION = { lat: -17.74980, lng: 31.04250 } as const;
+// V1 — synthetic user dot fallback when no location URL params are present.
+// The dot used to be hardcoded at Bannockburn Rd North Terminus (R2). With
+// the location-first landing flow live, an incoming `location` prop now
+// overrides this fallback so the dot tracks the rider's chosen suburb /
+// browser-reported position. Direct deep links like `/?as=takunda` (no
+// lat/lng) still land on this fallback so the older walkthroughs keep
+// working.
+const USER_LOCATION_FALLBACK = { lat: -17.74980, lng: 31.04250 } as const;
 const USER_SOURCE = "svika-user";
 const USER_LAYER_HALO = "svika-user-halo";
 const USER_LAYER_DOT = "svika-user-dot";
+
+/**
+ * V1 — 5 km bbox filter helper. 1 deg lat ≈ 111 km, 1 deg lng at Harare's
+ * ~-17.8° latitude ≈ 106 km. Same arithmetic used on the server side
+ * (lib/passenger/loadPassengerSurface.ts) so the seed and the live broadcast
+ * agree on which vehicles are "near".
+ */
+const V1_BBOX_RADIUS_KM = 5;
+
+function withinBbox(
+  vehicleLat: number,
+  vehicleLng: number,
+  centerLat: number,
+  centerLng: number,
+  radiusKm: number,
+): boolean {
+  const dLat = Math.abs(vehicleLat - centerLat) * 111;
+  const dLng = Math.abs(vehicleLng - centerLng) * 106;
+  return dLat <= radiusKm && dLng <= radiusKm;
+}
 
 // R2 — Heights→Rezende is the corridor that owns the rebuilt empty state.
 // Native plates ZH 4821 and ZH 4822 stay DB-backed and broadcast-driven;
@@ -53,10 +77,11 @@ const HEIGHTS_NATIVE_PLATES_CLIENT: ReadonlySet<string> = new Set([
   "ZH 4822",
 ]);
 
-// R5 — palette tokens are now theme-aware. Apple-blue is the actionable
-// brand colour and renders identically in both themes (matches the Hozaan
-// reference image). The rest fork by theme via `themeColors(theme)` below.
-const ACTION = "#007AFF";
+// V1 — Forest is the actionable brand colour, replacing R5's Apple-blue.
+// The rest of the basemap palette still forks by theme via themeColors()
+// because the data-theme infrastructure is left in place for a future
+// dark-mode revisit, but only the light branch is reachable from V1's UI.
+const ACTION = "#1F4D2E";
 
 type MapTheme = "light" | "dark";
 
@@ -110,23 +135,23 @@ function themeColors(theme: MapTheme): MapPaintColors {
       ],
     };
   }
+  // V1 — light-only palette tuned for warm Bone background. Stop halos use
+  // Bone (#FFFCEF) so they read against the Linen surface; ink colours map
+  // to Char (#0E1A12) and Moss (#4D5C44) so the basemap matches the rest of
+  // the app. Water/landuse tweaks keep the streets-v12 base from going
+  // peach-on-peach against the warmer page background.
   return {
     styleUrl: "mapbox://styles/mapbox/streets-v12",
-    stopHaloFill: "#ffffff",
-    stopStrokeInactive: "rgba(15, 23, 42, 0.40)",
-    stopDotInactive: "#0F172A",
-    stopLabelInactive: "#4B5563",
-    stopLabelHalo: "#ffffff",
-    routeBaseSecondary: "rgba(15, 23, 42, 0.30)",
-    routeHighlightHalo: "rgba(15, 23, 42, 0.18)",
-    // Confirmed against the Hozaan reference (public/branding/Colour theme
-    // inspiration.png): light streets-v12 ships with a warm grey roads ramp
-    // that already reads well alongside Apple-blue routes — only water + landuse
-    // get a small nudge to softer, less saturated hues so the route line owns
-    // the visual hierarchy.
+    stopHaloFill: "#FFFCEF",
+    stopStrokeInactive: "rgba(14, 26, 18, 0.40)",
+    stopDotInactive: "#0E1A12",
+    stopLabelInactive: "#4D5C44",
+    stopLabelHalo: "#FFFCEF",
+    routeBaseSecondary: "rgba(14, 26, 18, 0.30)",
+    routeHighlightHalo: "rgba(14, 26, 18, 0.18)",
     baseTunings: [
-      ["water", "fill-color", "#DCE7F0"],
-      ["landuse", "fill-color", "#EEF1EE"],
+      ["water", "fill-color", "#D8E3DD"],
+      ["landuse", "fill-color", "#EEEAD8"],
     ],
   };
 }
@@ -269,6 +294,13 @@ interface PassengerMapProps {
    * dismissed.
    */
   previewPlan?: TripPlan | null;
+  /**
+   * V1 — chosen location forwarded from the landing page. Drives the user
+   * dot position, the initial map center, and a 5 km bbox filter applied to
+   * every kombi broadcast. Null when the surface is reached without a
+   * lat/lng (the older R2 corridor framing remains as a fallback).
+   */
+  location?: { lat: number; lng: number } | null;
 }
 
 interface SelectedRouteInfo {
@@ -467,11 +499,46 @@ export default function PassengerMap({
   stage,
   initialKombis,
   previewPlan,
+  location,
 }: PassengerMapProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const positionsRef = useRef<Map<string, KombiTickPayload>>(new Map());
   const initialKombisRef = useRef<KombiTickPayload[]>(initialKombis ?? []);
+  // V1 — keep the user dot's position AND the "has user-supplied location"
+  // flag in refs so the broadcast handler can pick the right filter mode
+  // (bbox vs R2 corridor) without re-subscribing on every navigation.
+  const userLocationRef = useRef<{ lat: number; lng: number }>(
+    location ?? USER_LOCATION_FALLBACK,
+  );
+  const hasUserLocationRef = useRef<boolean>(Boolean(location));
+  useEffect(() => {
+    userLocationRef.current = location ?? USER_LOCATION_FALLBACK;
+    hasUserLocationRef.current = Boolean(location);
+    const map = mapRef.current;
+    if (!map || !map.isStyleLoaded()) return;
+    const src = map.getSource(USER_SOURCE) as GeoJSONSource | undefined;
+    if (!src) return;
+    const { lat, lng } = userLocationRef.current;
+    src.setData({
+      type: "FeatureCollection",
+      features: [
+        {
+          type: "Feature",
+          geometry: { type: "Point", coordinates: [lng, lat] },
+          properties: {},
+        },
+      ],
+    });
+  }, [location]);
+  // V1 — empty-state overlay shown when a location is supplied but the bbox
+  // filter returned zero kombis. Auto-hides once a broadcast tick lands a
+  // vehicle inside the bbox; the broadcast handler flips this back to false
+  // via setShowEmptyState. Initial value tracks the seed feed so the
+  // overlay never appears for direct deep-link entries.
+  const [showEmptyState, setShowEmptyState] = useState<boolean>(
+    Boolean(location) && (initialKombis?.length ?? 0) === 0,
+  );
   /** Lerp buffer fed by Realtime broadcasts, drained by the RAF loop. */
   const interpRef = useRef<Map<string, InterpEntry>>(new Map());
   const assignedVehicleIdRef = useRef<string | null>(null);
@@ -724,7 +791,8 @@ export default function PassengerMap({
       const stops = networkRef.current.stops;
       const stopById = new Map(stops.map((s) => [s.id, s] as const));
       const points: Array<[number, number]> = [];
-      points.push([USER_LOCATION.lng, USER_LOCATION.lat]);
+      const { lat: userLat, lng: userLng } = userLocationRef.current;
+      points.push([userLng, userLat]);
       for (const leg of previewPlan.legs) {
         if (leg.type !== "kombi") continue;
         if (leg.board_at_stop_id) {
@@ -793,23 +861,19 @@ export default function PassengerMap({
     }
 
     mapboxgl.accessToken = mapboxToken;
-    // R5 — initial style is theme-aware. The bootstrap script in
-    // app/layout.tsx writes data-theme on first paint; readThemeAttr reads
-    // that attribute synchronously so the map opens in the right palette.
-    // R2 — idle view re-centered on Takunda's synthetic location at the
-    // Bannockburn Rd North Terminus (zoom 13.5). 13.5 keeps the user dot
-    // visible AND lands the upper half of the Heights→Rezende corridor
-    // (UZ Gate + ZH 4823 + at least one moving native plate) in frame, so
-    // the brand framing — Takunda + the kombis that matter to him —
-    // reads at idle. The trip-active fitBounds useEffect still runs on
-    // journey-change so a picked trip frames its own corridor; this
-    // constructor only governs the idle landing view.
+    // V1 — initial centre tracks the chosen location when present, otherwise
+    // falls back to Bannockburn Rd North Terminus (the R2 framing). With a
+    // user-supplied location the zoom tightens to 14 so kombis inside the
+    // 5 km bbox land at a usable scale; the deep-link fallback keeps the
+    // older 13.5 framing so the existing rehearsals still match.
     const initialTheme = readThemeAttr();
+    const initialCenter = userLocationRef.current;
+    const initialZoom = hasUserLocationRef.current ? 14 : 13.5;
     const map = new mapboxgl.Map({
       container: containerRef.current,
       style: themeColors(initialTheme).styleUrl,
-      center: [USER_LOCATION.lng, USER_LOCATION.lat],
-      zoom: 13.5,
+      center: [initialCenter.lng, initialCenter.lat],
+      zoom: initialZoom,
       attributionControl: false,
     });
     mapRef.current = map;
@@ -993,8 +1057,10 @@ export default function PassengerMap({
         });
       }
 
-      // R2 — Takunda's user dot. Apple-blue in both themes, no fork.
+      // V1 — user dot now reflects the chosen location (or the R2 fallback
+      // when no location is supplied). Forest fill in light theme.
       if (!map.getSource(USER_SOURCE)) {
+        const { lat, lng } = userLocationRef.current;
         map.addSource(USER_SOURCE, {
           type: "geojson",
           data: {
@@ -1004,7 +1070,7 @@ export default function PassengerMap({
                 type: "Feature",
                 geometry: {
                   type: "Point",
-                  coordinates: [USER_LOCATION.lng, USER_LOCATION.lat],
+                  coordinates: [lng, lat],
                 },
                 properties: {},
               },
@@ -1033,7 +1099,7 @@ export default function PassengerMap({
           paint: {
             "circle-radius": 7,
             "circle-color": ACTION,
-            "circle-stroke-color": "#ffffff",
+            "circle-stroke-color": "#FFFCEF",
             "circle-stroke-width": 2,
             "circle-opacity": 1,
           },
@@ -1375,12 +1441,26 @@ export default function PassengerMap({
       if (!Array.isArray(ticks)) return;
       const at = performance.now();
       for (const t of ticks) {
-        // R2 — corridor filter. Drop ticks for fleet plates not on the
-        // Heights→Rezende corridor so even if `pnpm sim` ticks for
-        // ZH 4901/4902/5001/5002/5101/5102, those vehicles never reach
-        // interpRef and never render. Synthetic ZH 4823 is server-injected
-        // and never broadcasts, so no special case for it.
-        if (!HEIGHTS_NATIVE_PLATES_CLIENT.has(t.vehicle_id)) continue;
+        // V1 — when a location is supplied (location-first landing flow), the
+        // 5 km bbox is the source of truth for "near". Any tick outside the
+        // bbox is dropped before it reaches interpRef so the rider only sees
+        // kombis near their suburb. Without a location we fall back to the R2
+        // Heights→Rezende corridor filter so deep-link entry points keep
+        // working unchanged.
+        const userLoc = userLocationRef.current;
+        const usingBbox = hasUserLocationRef.current;
+        if (usingBbox) {
+          if (
+            !withinBbox(t.lat, t.lng, userLoc.lat, userLoc.lng, V1_BBOX_RADIUS_KM)
+          ) {
+            continue;
+          }
+          // First in-bbox tick clears the empty-state overlay so the rider
+          // sees the kombi as soon as it appears.
+          setShowEmptyState(false);
+        } else if (!HEIGHTS_NATIVE_PLATES_CLIENT.has(t.vehicle_id)) {
+          continue;
+        }
         const existing = interpRef.current.get(t.vehicle_id);
         const prev = existing?.next ?? [t.lat, t.lng];
         const prevBearing =
@@ -1629,6 +1709,22 @@ export default function PassengerMap({
   return (
     <div className="absolute inset-0" data-phase="r45">
       <div ref={containerRef} className="h-full w-full" />
+
+      {showEmptyState && !journey ? (
+        <div
+          className="pointer-events-none absolute left-1/2 top-3 z-10 -translate-x-1/2 rounded-full px-3 py-1.5 text-xs shadow-sm"
+          style={{
+            backgroundColor: "var(--color-bone)",
+            border: "1px solid var(--color-hairline)",
+            color: "var(--color-moss)",
+            fontFamily: "var(--font-sans)",
+            fontWeight: 500,
+          }}
+          data-testid="map-empty-state"
+        >
+          No kombis nearby right now.
+        </div>
+      ) : null}
 
       {journey && stage && stage.assigned_vehicle_id ? (
         <div

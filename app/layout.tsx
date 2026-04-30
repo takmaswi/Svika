@@ -1,21 +1,32 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { DM_Sans, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const ibmPlexSans = IBM_Plex_Sans({
+  variable: "--font-ibm-plex-sans",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+const ibmPlexMono = IBM_Plex_Mono({
+  variable: "--font-ibm-plex-mono",
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Svika — digital tickets, real revenue, same kombi",
+  title: "Svika, find your kombi",
   description:
-    "Digital ticketing and trip-planning for Harare's informal kombi network. Transferable tickets, walking-transfer trip plans, real fleet revenue.",
+    "Live kombi map, digital tickets, and bilingual fleet revenue for Harare's informal transit network.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "https://svika.vercel.app"),
 };
 
@@ -23,26 +34,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#FFFFFF",
+  themeColor: "#FFFCEF",
 };
-
-// Inline-injected before body renders so the first paint matches the user's
-// stored or system preference. Hits localStorage svika-theme first, then
-// prefers-color-scheme. Falls back to "light" when storage is unavailable
-// (private mode etc).
-const themeBootstrap = `
-(function () {
-  try {
-    var stored = localStorage.getItem('svika-theme');
-    var system = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
-      ? 'dark' : 'light';
-    var theme = stored === 'dark' || stored === 'light' ? stored : system;
-    document.documentElement.setAttribute('data-theme', theme);
-  } catch (_) {
-    document.documentElement.setAttribute('data-theme', 'light');
-  }
-})();
-`;
 
 export default function RootLayout({
   children,
@@ -51,10 +44,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" data-theme="light">
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeBootstrap }} />
-      </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body
+        className={`${dmSans.variable} ${ibmPlexSans.variable} ${ibmPlexMono.variable} antialiased`}
+      >
         {children}
       </body>
     </html>

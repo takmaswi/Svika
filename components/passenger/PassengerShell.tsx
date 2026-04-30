@@ -49,6 +49,13 @@ interface PassengerShellProps {
   initialKombis: KombiTickPayload[];
   pendingClaim: string | null;
   liveStats: LiveStats;
+  /**
+   * V1 — chosen location forwarded by the landing page (geolocation success
+   * or suburb pick). Drives the kombi-feed bbox filter and the initial map
+   * center. Null when the surface is reached via a direct deep link without
+   * lat/lng, in which case the R2 corridor framing remains.
+   */
+  location: { lat: number; lng: number } | null;
 }
 
 interface PlansState {
@@ -87,6 +94,7 @@ export default function PassengerShell({
   initialKombis,
   pendingClaim,
   liveStats,
+  location,
 }: PassengerShellProps) {
   const router = useRouter();
   const tickets = initialTickets;
@@ -509,6 +517,7 @@ export default function PassengerShell({
               stage={stage}
               initialKombis={initialKombis}
               previewPlan={quickPickPreview}
+              location={location}
             />
           </div>
         ) : (

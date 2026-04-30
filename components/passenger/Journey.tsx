@@ -65,8 +65,8 @@ interface JourneyProps {
   onSimulateEnd?: () => void;
 }
 
-// R5: action-blue is the only accent. Was rust (#d9622a) pre-R5.
-const ACTION = "#007AFF";
+// V1: Forest is the actionable brand colour, replacing R5's Apple-blue.
+const ACTION = "#1F4D2E";
 /**
  * Hard-coded vehicle make/colour for the demo's Uber-style driver chip.
  * The `vehicles` table only stores plate + route + capacity, so the make
@@ -507,7 +507,7 @@ export default function Journey({
             }`}
             style={
               stage.flashing
-                ? { background: ACTION, color: "#fff" }
+                ? { background: ACTION, color: "#FFFCEF" }
                 : { border: "1.5px solid " + ACTION, color: ACTION, background: "transparent" }
             }
             aria-hidden
@@ -714,10 +714,11 @@ export default function Journey({
                 type="button"
                 onClick={handleSimulateNext}
                 disabled={simBusy}
-                className="w-full rounded-xl px-4 py-3 text-sm font-semibold text-white shadow-sm transition-transform active:scale-[0.99] disabled:opacity-60"
+                className="w-full rounded-xl px-4 py-3 text-sm font-semibold shadow-sm transition-transform active:scale-[0.99] disabled:opacity-60"
                 style={{
                   background: ACTION,
-                  boxShadow: "0 8px 24px rgba(0, 122, 255, 0.32)",
+                  color: "var(--color-bone)",
+                  boxShadow: "0 8px 24px rgba(31, 77, 46, 0.28)",
                 }}
                 data-testid="journey-simulate-next"
               >

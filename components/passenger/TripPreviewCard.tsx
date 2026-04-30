@@ -65,7 +65,7 @@ export default function TripPreviewCard({
           aria-label="Close preview"
           className="flex h-8 w-8 items-center justify-center rounded-full"
           style={{
-            backgroundColor: "rgba(255, 255, 255, 0.06)",
+            backgroundColor: "rgba(14, 26, 18, 0.06)",
             color: "var(--color-ink-mute)",
           }}
         >
@@ -84,8 +84,8 @@ export default function TripPreviewCard({
               style={{
                 backgroundColor:
                   leg.kind === "kombi"
-                    ? "rgba(0, 122, 255, 0.16)"
-                    : "rgba(255, 255, 255, 0.08)",
+                    ? "rgba(31, 77, 46, 0.12)"
+                    : "rgba(14, 26, 18, 0.06)",
                 color:
                   leg.kind === "kombi"
                     ? "var(--color-action)"
@@ -128,10 +128,11 @@ export default function TripPreviewCard({
         onClick={onConfirm}
         disabled={busy}
         data-testid="trip-preview-buy"
-        className="mt-4 flex h-14 w-full items-center justify-center gap-2 rounded-2xl text-white shadow-lg transition-opacity disabled:opacity-60"
+        className="mt-4 flex h-14 w-full items-center justify-center gap-2 rounded-2xl shadow-lg transition-opacity disabled:opacity-60"
         style={{
           backgroundColor: "var(--color-action)",
-          boxShadow: "0 8px 24px rgba(0, 122, 255, 0.32)",
+          color: "var(--color-bone)",
+          boxShadow: "0 8px 24px rgba(31, 77, 46, 0.28)",
         }}
       >
         <span className="svika-body font-semibold">

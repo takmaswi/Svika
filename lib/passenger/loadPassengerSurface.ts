@@ -216,6 +216,32 @@ function applyR2CorridorFilter(
   return corridor;
 }
 
+/* ============================================================================
+ * V1 — bbox filter
+ *
+ * When the landing page forwards a chosen location (geolocation success or
+ * suburb pick), the passenger surface filters its initial kombi feed to a
+ * 5 km square bounding box around that point so the rider only sees kombis
+ * relevant to where they are. Approximation: 1 deg lat ≈ 111 km, 1 deg lng
+ * at Harare's ~-17.8° latitude ≈ 106 km. Same arithmetic as the client-side
+ * filter in PassengerMap.tsx so the seed and the live broadcast stay in
+ * sync about which vehicles are "near".
+ * =========================================================================*/
+
+const V1_BBOX_RADIUS_KM = 5;
+
+function applyV1BboxFilter(
+  kombis: ReadonlyArray<KombiTickPayload>,
+  centerLat: number,
+  centerLng: number,
+): KombiTickPayload[] {
+  return kombis.filter((k) => {
+    const dLat = Math.abs(k.lat - centerLat) * 111;
+    const dLng = Math.abs(k.lng - centerLng) * 106;
+    return dLat <= V1_BBOX_RADIUS_KM && dLng <= V1_BBOX_RADIUS_KM;
+  });
+}
+
 /**
  * Server-side composition for the passenger surface. Shared between the
  * landing dispatcher and any future deep-linked entry points so the data
@@ -224,6 +250,13 @@ function applyR2CorridorFilter(
 export async function loadPassengerSurface(args: {
   asParam?: string;
   claimParam?: string;
+  /**
+   * V1 — when the landing page forwards a chosen location (geolocation
+   * success or suburb pick), the seed kombis are filtered to a 5 km bbox
+   * around it. Falling back to the R2 corridor filter when absent keeps
+   * direct deep links like `/?as=takunda` working without a location.
+   */
+  location?: { lat: number; lng: number } | null;
 }): Promise<PassengerSurfaceData> {
   const personaSlug = (args.asParam ?? "takunda").toLowerCase();
   const persona = await resolvePersona(personaSlug, "passenger");
@@ -236,7 +269,9 @@ export async function loadPassengerSurface(args: {
       loadInitialKombis(),
     ]);
   const spread = spreadColocatedAlongRoutes(rawKombis, network);
-  const initialKombis = applyR2CorridorFilter(spread);
+  const initialKombis = args.location
+    ? applyV1BboxFilter(spread, args.location.lat, args.location.lng)
+    : applyR2CorridorFilter(spread);
   return {
     persona,
     personaSlug,

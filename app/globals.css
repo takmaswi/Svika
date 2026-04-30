@@ -1,56 +1,73 @@
 @import "tailwindcss";
 
 /* ============================================================================
-   Svika brand tokens — R5 light-primary rebuild
-   Hozaan-style palette. Apple-blue accent on white surfaces by default.
-   Dark theme is a togglable variant via [data-theme="dark"] on <html>.
-   The bootstrap script in app/layout.tsx sets data-theme on first paint
-   from localStorage.svika-theme then prefers-color-scheme; static SSR
-   default is data-theme="light".
+   Svika brand tokens — V1 video brand pass
+   v2 palette: Forest, Bone, Signal, Linen + Pine/Char/Moss support tones.
+   Light theme is the only user-reachable theme; the data-theme="dark" hook
+   below is left in place for future work but no UI exposes it in V1.
    ========================================================================= */
 @theme {
-  /* === Theme-agnostic === */
-  --color-action: #007AFF;
-  --color-action-hover: #0A66D1;
-  --color-action-disabled: rgba(0, 122, 255, 0.32);
-  --color-action-soft: #E6F1FB;
+  /* Brand (v2) */
+  --color-forest: #1F4D2E;
+  --color-pine: #0E3A1E;
+  --color-char: #0E1A12;
+  --color-bone: #FFFCEF;
+  --color-linen: #E9E2C8;
+  --color-signal: #E84C30;
+  --color-moss: #4D5C44;
+
+  /* Live dot stays signal red — same accent as the brand */
+  --color-live: var(--color-signal);
 
   /* Reserved (currently unused in product code; retained as brand color) */
   --color-amber: #F59E0B;
 
-  /* Live dot stays green */
-  --color-live: #16a34a;
-
-  /* Typography */
-  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "Geist Mono", ui-monospace, monospace;
+  /* Typography (next/font sets the actual variable values; these are the cascade names) */
+  --font-display: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-ibm-plex-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-ibm-plex-mono), ui-monospace, monospace;
 
   /* Radii */
   --radius-sm: 0.5rem;
   --radius: 0.875rem;
   --radius-lg: 1.375rem;
 
-  /* Sheet snaps */
-  --sheet-peek: 140px;
+  /* Sheet snaps. Peek raised from R5's 140 → V1's 200 so the idle sheet's
+     "Where to, …?" heading clears the floating TabBar at peek. TabBar is
+     h-16 (64px) with bottom 1rem and safe-area-inset → ~80px occluded; the
+     200px peek leaves 120px above the TabBar (40px drag zone + 80px usable
+     content). The brand swap shifted the headline metric (IBM Plex Sans
+     instead of Geist) so R5's 140 no longer covers it. */
+  --sheet-peek: 200px;
   --sheet-half: 48vh;
   --sheet-full: 92vh;
 }
 
 :root,
 :root[data-theme="light"] {
-  --color-bg: #FFFFFF;
-  --color-surface: #F5F7FA;
-  --color-surface-dark: #1F2937; /* charcoal — for inverse stat-card headers */
-  --color-ink: #0F172A;
-  --color-ink-soft: #4B5563;
-  --color-ink-mute: #94A3B8;
-  --color-hairline: rgba(15, 23, 42, 0.08);
+  --color-bg: var(--color-bone);
+  --color-surface: var(--color-linen);
+  --color-surface-dark: var(--color-forest);
+  --color-ink: var(--color-char);
+  --color-ink-soft: var(--color-moss);
+  --color-ink-mute: rgba(14, 26, 18, 0.55);
+  --color-hairline: rgba(14, 26, 18, 0.10);
+
+  --color-action: var(--color-forest);
+  --color-action-hover: var(--color-pine);
+  --color-action-disabled: rgba(31, 77, 46, 0.32);
+  --color-action-soft: rgba(31, 77, 46, 0.10);
+
+  --color-accent: var(--color-signal);
 }
 
+/* Left in place but unreachable from V1 UI (ThemeToggle is removed from
+   user-facing surfaces). Do not update for V1; revisit if dark theme is
+   reintroduced. */
 :root[data-theme="dark"] {
   --color-bg: #0a0a0c;
   --color-surface: #14141a;
-  --color-surface-dark: #14141a; /* same as surface in dark — no inverse needed */
+  --color-surface-dark: #14141a;
   --color-ink: #ffffff;
   --color-ink-soft: rgba(255, 255, 255, 0.72);
   --color-ink-mute: rgba(255, 255, 255, 0.48);
@@ -65,21 +82,22 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* ----- Type ramp — Phase D --------------------------------------------- */
-/* Geist ramp consolidating ad-hoc inline fontSize declarations across the
-   four surfaces. Five sizes only; anything outside the ramp keeps an inline
-   override but should still align family + weight to the nearest step. */
+/* ----- Type ramp — V1 ---------------------------------------------------- */
+/* Display ramp uses DM Sans 700 voice (the wordmark family). Body and meta
+   inherit IBM Plex Sans from <body>. Mono uses IBM Plex Mono. */
 .svika-display {
+  font-family: var(--font-display);
   font-size: 32px;
   line-height: 1.15;
-  font-weight: 600;
-  letter-spacing: -0.5px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 .svika-headline {
+  font-family: var(--font-display);
   font-size: 18px;
   line-height: 1.3;
-  font-weight: 600;
-  letter-spacing: -0.2px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 .svika-body {
   font-size: 15px;
@@ -119,15 +137,14 @@ body {
   height: 18px;
   border-radius: 50%;
   background: var(--color-action);
-  border: 2px solid #ffffff;
-  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.35);
+  border: 2px solid var(--color-bone);
+  box-shadow: 0 1px 4px rgba(14, 26, 18, 0.35);
   cursor: pointer;
 }
 
-/* ----- Glass surfaces — R5 theme-aware ---------------------------------- */
-/* Light theme is the default; dark overrides live below. */
+/* ----- Glass surfaces — V1 light, on Bone -------------------------------- */
 .svika-glass {
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 252, 239, 0.85);
   backdrop-filter: blur(20px) saturate(1.4);
   -webkit-backdrop-filter: blur(20px) saturate(1.4);
   border: 1px solid var(--color-hairline);
@@ -135,100 +152,27 @@ body {
   position: relative;
   isolation: isolate;
 }
-.svika-glass::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  background: radial-gradient(
-    ellipse at 50% -20%,
-    rgba(255, 255, 255, 0.5) 0%,
-    transparent 60%
-  );
-}
 
 .svika-glass-strong {
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 252, 239, 0.94);
   backdrop-filter: blur(24px) saturate(1.5);
   -webkit-backdrop-filter: blur(24px) saturate(1.5);
   border: 1px solid var(--color-hairline);
   border-radius: 22px;
-  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 4px 18px rgba(14, 26, 18, 0.08);
   position: relative;
   isolation: isolate;
 }
-.svika-glass-strong::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  background: radial-gradient(
-    ellipse at 50% -20%,
-    rgba(255, 255, 255, 0.55) 0%,
-    transparent 60%
-  );
-}
 
 .svika-glass-tab {
-  background: rgba(255, 255, 255, 0.94);
+  background: rgba(255, 252, 239, 0.96);
   backdrop-filter: blur(28px) saturate(1.6);
   -webkit-backdrop-filter: blur(28px) saturate(1.6);
   border: 1px solid var(--color-hairline);
   border-radius: 24px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.10);
+  box-shadow: 0 8px 24px rgba(14, 26, 18, 0.10);
   position: relative;
   isolation: isolate;
-}
-.svika-glass-tab::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  background: radial-gradient(
-    ellipse at 50% -10%,
-    rgba(255, 255, 255, 0.35) 0%,
-    transparent 55%
-  );
-}
-
-/* Dark theme glass overrides — R1 dark / iOS liquid glass values. */
-:root[data-theme="dark"] .svika-glass {
-  background: rgba(20, 20, 26, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-}
-:root[data-theme="dark"] .svika-glass::before {
-  background: radial-gradient(
-    ellipse at 50% -20%,
-    rgba(255, 255, 255, 0.18) 0%,
-    transparent 60%
-  );
-}
-:root[data-theme="dark"] .svika-glass-strong {
-  background: rgba(20, 20, 26, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.48);
-}
-:root[data-theme="dark"] .svika-glass-strong::before {
-  background: radial-gradient(
-    ellipse at 50% -20%,
-    rgba(255, 255, 255, 0.22) 0%,
-    transparent 60%
-  );
-}
-:root[data-theme="dark"] .svika-glass-tab {
-  background: rgba(14, 14, 18, 0.62);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.48);
-}
-:root[data-theme="dark"] .svika-glass-tab::before {
-  background: radial-gradient(
-    ellipse at 50% -10%,
-    rgba(255, 255, 255, 0.14) 0%,
-    transparent 55%
-  );
 }
 
 /* Live pulsing dot — header, "X on the road" pill */
@@ -241,7 +185,7 @@ body {
   animation: svika-pulse-dot 1.6s ease-in-out infinite;
 }
 
-/* ----- Animations — Phase 3.7 ------------------------------------------- */
+/* ----- Animations -------------------------------------------------------- */
 @keyframes svika-pulse-dot {
   0%,
   100% {
@@ -332,19 +276,19 @@ body {
   }
 }
 
-/* ----- Bottom sheet primitive — R5 theme-aware -------------------------- */
+/* ----- Bottom sheet primitive — V1 -------------------------------------- */
 .svika-sheet {
   position: fixed;
   inset-inline: 0;
   bottom: 0;
   z-index: 30;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 252, 239, 0.96);
   backdrop-filter: blur(24px) saturate(1.5);
   -webkit-backdrop-filter: blur(24px) saturate(1.5);
   border-top: 1px solid var(--color-hairline);
   border-top-left-radius: 22px;
   border-top-right-radius: 22px;
-  box-shadow: 0 -8px 24px rgba(15, 23, 42, 0.10);
+  box-shadow: 0 -8px 24px rgba(14, 26, 18, 0.10);
   transition:
     height 320ms cubic-bezier(0.32, 0.72, 0, 1),
     transform 320ms cubic-bezier(0.32, 0.72, 0, 1);
@@ -373,7 +317,7 @@ body {
   width: 40px;
   height: 4px;
   border-radius: 999px;
-  background: rgba(15, 23, 42, 0.18);
+  background: rgba(14, 26, 18, 0.18);
 }
 
 .svika-sheet-body {
@@ -399,15 +343,6 @@ body {
   pointer-events: auto;
 }
 
-:root[data-theme="dark"] .svika-sheet {
-  background: rgba(20, 20, 26, 0.85);
-  border-top: 1px solid rgba(255, 255, 255, 0.07);
-  box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.55);
-}
-:root[data-theme="dark"] .svika-sheet-handle {
-  background: rgba(255, 255, 255, 0.22);
-}
-
 @media (prefers-reduced-motion: reduce) {
   .svika-sheet,
   .svika-sheet-scrim {
@@ -415,7 +350,7 @@ body {
   }
 }
 
-/* ----- Persona drawer — R5 theme-aware ---------------------------------- */
+/* ----- Persona drawer — V1 ---------------------------------------------- */
 .svika-persona-drawer {
   position: fixed;
   inset-block: 0;
@@ -424,23 +359,17 @@ body {
   width: min(360px, 88vw);
   display: flex;
   flex-direction: column;
-  background: rgba(255, 255, 255, 0.97);
+  background: rgba(255, 252, 239, 0.97);
   backdrop-filter: blur(28px) saturate(1.5);
   -webkit-backdrop-filter: blur(28px) saturate(1.5);
   border-inline-start: 1px solid var(--color-hairline);
-  box-shadow: -12px 0 32px rgba(15, 23, 42, 0.18);
+  box-shadow: -12px 0 32px rgba(14, 26, 18, 0.18);
   transform: translateX(100%);
   transition: transform 280ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 .svika-persona-drawer[data-open="true"] {
   transform: translateX(0);
-}
-
-:root[data-theme="dark"] .svika-persona-drawer {
-  background: rgba(20, 20, 26, 0.88);
-  border-inline-start: 1px solid rgba(255, 255, 255, 0.07);
-  box-shadow: -12px 0 32px rgba(0, 0, 0, 0.55);
 }
 
 @media (prefers-reduced-motion: reduce) {

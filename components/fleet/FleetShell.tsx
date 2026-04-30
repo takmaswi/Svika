@@ -38,7 +38,7 @@ export default function FleetShell({ persona, state, narratives }: FleetShellPro
   };
   const inverseHeaderStyle: React.CSSProperties = {
     backgroundColor: "var(--color-surface-dark)",
-    color: "#ffffff",
+    color: "var(--color-bone)",
   };
 
   return (

@@ -223,10 +223,11 @@ export default function ParcelSheet({
           type="button"
           onClick={handleSend}
           disabled={busy || cannotPayWallet}
-          className="w-full rounded-md px-4 py-3 text-sm font-semibold text-white shadow-sm transition-opacity disabled:opacity-50"
+          className="w-full rounded-md px-4 py-3 text-sm font-semibold shadow-sm transition-opacity disabled:opacity-50"
           style={{
             backgroundColor: "var(--color-action)",
-            boxShadow: "0 8px 24px rgba(0, 122, 255, 0.32)",
+            color: "var(--color-bone)",
+            boxShadow: "0 8px 24px rgba(31, 77, 46, 0.28)",
           }}
           data-testid="parcel-submit"
         >

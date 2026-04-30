@@ -11,10 +11,10 @@ interface RouteHeaderMapProps {
   mapboxToken: string;
 }
 
-// R5: Apple-blue accent in both themes for the conductor's at-a-glance route
-// preview. Marker stays white-ringed so it pops on streets-v12 base.
-const ACTION = "#007AFF";
-const MARKER_RING = "#ffffff";
+// V1: Forest accent for the conductor's at-a-glance route preview, replacing
+// R5's Apple-blue. Marker ring uses Bone so it pops on streets-v12 base.
+const ACTION = "#1F4D2E";
+const MARKER_RING = "#FFFCEF";
 
 function bounds(coords: Array<[number, number]>): LngLatBoundsLike | null {
   if (coords.length === 0) return null;

@@ -105,8 +105,8 @@ export default function PlanList({
                     style={{
                       backgroundColor:
                         leg.type === "kombi"
-                          ? "rgba(0, 122, 255, 0.16)"
-                          : "rgba(255, 255, 255, 0.08)",
+                          ? "rgba(31, 77, 46, 0.12)"
+                          : "rgba(14, 26, 18, 0.06)",
                       color:
                         leg.type === "kombi"
                           ? "var(--color-action)"
@@ -127,7 +127,7 @@ export default function PlanList({
               <p
                 className="mb-3 rounded px-2 py-1 text-[11px]"
                 style={{
-                  backgroundColor: "rgba(255, 255, 255, 0.04)",
+                  backgroundColor: "rgba(14, 26, 18, 0.04)",
                   color: "var(--color-ink-mute)",
                 }}
               >
@@ -138,10 +138,11 @@ export default function PlanList({
               type="button"
               onClick={() => onChoose(option)}
               disabled={busy || busyOption !== null}
-              className="w-full rounded-2xl px-3 py-3 text-sm font-semibold text-white transition-opacity disabled:opacity-50"
+              className="w-full rounded-2xl px-3 py-3 text-sm font-semibold transition-opacity disabled:opacity-50"
               style={{
                 backgroundColor: "var(--color-action)",
-                boxShadow: "0 8px 24px rgba(0, 122, 255, 0.32)",
+                color: "var(--color-bone)",
+                boxShadow: "0 8px 24px rgba(31, 77, 46, 0.28)",
               }}
             >
               {busy

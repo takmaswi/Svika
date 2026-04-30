@@ -85,10 +85,11 @@ export default function PaymentChoiceSheet({
             type="button"
             onClick={onWallet}
             disabled={busyMethod !== null}
-            className="flex h-14 w-full items-center justify-between rounded-2xl px-4 text-white transition-opacity disabled:opacity-60"
+            className="flex h-14 w-full items-center justify-between rounded-2xl px-4 transition-opacity disabled:opacity-60"
             style={{
               backgroundColor: "var(--color-action)",
-              boxShadow: "0 8px 24px rgba(0, 122, 255, 0.32)",
+              color: "var(--color-bone)",
+              boxShadow: "0 8px 24px rgba(31, 77, 46, 0.28)",
             }}
             data-testid="payment-wallet"
           >
@@ -109,10 +110,11 @@ export default function PaymentChoiceSheet({
             type="button"
             onClick={onTopUp}
             disabled={busyMethod !== null}
-            className="flex h-14 w-full items-center justify-between rounded-2xl px-4 text-white transition-opacity disabled:opacity-60"
+            className="flex h-14 w-full items-center justify-between rounded-2xl px-4 transition-opacity disabled:opacity-60"
             style={{
               backgroundColor: "var(--color-action)",
-              boxShadow: "0 8px 24px rgba(0, 122, 255, 0.32)",
+              color: "var(--color-bone)",
+              boxShadow: "0 8px 24px rgba(31, 77, 46, 0.28)",
             }}
             data-testid="payment-topup"
           >

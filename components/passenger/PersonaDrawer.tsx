@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 
-import ThemeToggle from "@/components/passenger/ThemeToggle";
 import type { Persona } from "@/lib/personas";
 
 interface PersonaDrawerProps {
@@ -168,11 +167,12 @@ export default function PersonaDrawer({
           <div className="flex items-center gap-2">
             <span
               aria-hidden
-              className="flex h-8 w-8 items-center justify-center rounded-full text-white"
+              className="flex h-8 w-8 items-center justify-center rounded-full"
               style={{
                 fontSize: "13px",
                 fontWeight: 600,
                 backgroundColor: "var(--color-action)",
+                color: "var(--color-bone)",
               }}
             >
               {persona.name.charAt(0).toUpperCase()}
@@ -240,11 +240,6 @@ export default function PersonaDrawer({
                 onClose();
               }}
             />
-          </div>
-
-          <SectionHeader>Display</SectionHeader>
-          <div className="mt-2 space-y-2">
-            <ThemeToggle variant="row" />
           </div>
 
           <SectionHeader>Behind the scenes</SectionHeader>
