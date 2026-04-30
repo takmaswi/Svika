@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" aria-label="Svika route mark">
+  <rect x="2" y="2" width="96" height="96" rx="22" fill="#1F4D2E"/>
+  <path
+    d="M 76 26 C 76 18, 68 14, 56 14 C 38 14, 28 22, 28 32 C 28 44, 42 48, 56 50 C 70 52, 76 58, 76 68 C 76 80, 64 86, 50 86 C 36 86, 26 80, 24 70"
+    fill="none" stroke="#FFFCEF" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"
+  />
+  <path
+    d="M 76 26 C 76 18, 68 14, 56 14 C 38 14, 28 22, 28 32 C 28 44, 42 48, 56 50 C 70 52, 76 58, 76 68 C 76 80, 64 86, 50 86 C 36 86, 26 80, 24 70"
+    fill="none" stroke="#1F4D2E" stroke-width="2" stroke-linecap="round" stroke-dasharray="2 4"
+  />
+  <circle cx="76" cy="26" r="6.5" fill="#E84C30"/>
+  <circle cx="76" cy="26" r="2.5" fill="#FFFCEF"/>
+  <circle cx="24" cy="70" r="6.5" fill="#E84C30"/>
+  <circle cx="24" cy="70" r="2.5" fill="#FFFCEF"/>
+</svg>

@@ -1,0 +1,8 @@
+Forest    #1F4D2E    primary CTA, primary ink, primary surface
+Pine      #0E3A1E    pressed states
+Char      #0E1A12    body copy
+Bone      #FFFCEF    page background, light surface
+Linen     #E9E2C8    muted surface (cards, sheet bg)
+Signal    #E84C30    accent, live indicator, key verbs
+Moss      #4D5C44    muted text
+Live dot  #16A34A    pulsing live indicator (legacy, may remap to Signal)

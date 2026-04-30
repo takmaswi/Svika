@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Svika — Logo Directions</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=DM+Sans:opsz,wght@9..40,400..700&family=DM+Serif+Display&family=Fraunces:ital,wght@0,400..700;1,400..700&family=Geist:wght@300..700&family=Geist+Mono:wght@400..600&family=IBM+Plex+Sans:wght@400..600&family=IBM+Plex+Mono:wght@400..600&family=Inter:wght@400..700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --paper:#FAFAF7;
+    --ink:#0E0F12;
+    --ink-2:#23252B;
+    --ash:#6E7178;
+    --mist:#E7E5DE;
+    --line:#D8D6CE;
+    --blue:#0A6CFF;
+    --terracotta:#C9603A;   /* the 5th color */
+    --terracotta-deep:#9F4828;
+    --soil:#F1E7DD;
+    --sun:#E9B949;
+  }
+  html,body{margin:0;background:#EDECE6;color:var(--ink);font-family:"Geist",ui-sans-serif,system-ui,sans-serif;}
+  body{font-feature-settings:"ss01","cv11";}
+  .display{font-family:"Familjen Grotesk","Geist",system-ui,sans-serif;letter-spacing:-0.02em;}
+  .mono{font-family:"Geist Mono",ui-monospace,monospace;}
+  .micro{font-family:"Geist Mono",ui-monospace,monospace;font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--ash);}
+
+  /* Artboard inner reset */
+  .ab{position:relative;width:100%;height:100%;overflow:hidden;background:var(--paper);}
+  .ab.dark{background:#0E0F12;color:#F4F3EE;}
+  .ab.soil{background:var(--soil);}
+  .ab.terracotta{background:var(--terracotta);color:#FAFAF7;}
+
+  /* Margin frame for logo plates */
+  .plate{position:absolute;inset:0;display:grid;place-items:center;}
+  .plate-tl{position:absolute;top:24px;left:28px;}
+  .plate-tr{position:absolute;top:24px;right:28px;text-align:right;}
+  .plate-bl{position:absolute;bottom:24px;left:28px;}
+  .plate-br{position:absolute;bottom:24px;right:28px;text-align:right;}
+
+  /* === Wordmark base === */
+  .wm{
+    font-family:"Familjen Grotesk",system-ui,sans-serif;
+    font-weight:600;
+    letter-spacing:-0.045em;
+    line-height:0.85;
+    font-feature-settings:"ss01";
+  }
+
+  /* Direction A — arrival dot */
+  .wm-a{position:relative;display:inline-flex;align-items:flex-end;}
+  .wm-a .word{display:inline-block;}
+  .wm-a .dot{
+    display:inline-block;
+    background:var(--terracotta);
+    border-radius:50%;
+    margin-left:0.04em;
+    align-self:flex-end;
+  }
+
+  /* Direction B — ticket notch (cut into the 'a') */
+  .wm-b{position:relative;display:inline-block;}
+  .wm-b svg{display:block;}
+
+  /* Direction C — road-curve S, lowercase humanist */
+  .wm-c{position:relative;display:inline-block;}
+  .wm-c svg{display:block;}
+
+  /* Tagline rule */
+  .rule{height:1px;background:currentColor;opacity:0.35;}
+
+  /* small road */
+  .route{stroke:currentColor;fill:none;stroke-linecap:round;}
+
+  /* Plate label rows */
+  .label{font-family:"Geist Mono",monospace;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--ash);}
+
+  /* App mock chrome */
+  .phone{
+    width:280px;height:600px;border-radius:38px;background:#0E0F12;padding:8px;
+    box-shadow:0 30px 60px -20px rgba(14,15,18,0.35), 0 8px 20px -8px rgba(14,15,18,0.25);
+    position:relative;
+  }
+  .phone .screen{width:100%;height:100%;border-radius:30px;background:var(--paper);overflow:hidden;position:relative;}
+  .notch{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:90px;height:22px;background:#0E0F12;border-radius:0 0 14px 14px;z-index:5;}
+
+  /* Conductor terminal */
+  .term-row{display:grid;grid-template-columns:1fr auto;align-items:baseline;padding:14px 18px;border-bottom:1px dashed var(--line);}
+  .term-row:last-child{border-bottom:none;}
+
+  /* Color chip */
+  .chip{height:120px;border-radius:14px;position:relative;overflow:hidden;}
+  .chip .meta{position:absolute;left:14px;bottom:12px;color:#FAFAF7;mix-blend-mode:difference;}
+
+  /* Type spec */
+  .type-row{display:grid;grid-template-columns:120px 1fr;align-items:baseline;padding:18px 0;border-top:1px solid var(--line);}
+  .type-row:last-child{border-bottom:1px solid var(--line);}
+
+</style>
+</head>
+<body>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="logos.jsx"></script>
+<script type="text/babel" src="cards.jsx"></script>
+<script type="text/babel" src="app.jsx"></script>
+
+<div id="root"></div>
+
+</body>
+</html>

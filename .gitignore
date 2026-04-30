@@ -53,3 +53,13 @@ phase*-*.png
 
 # Sim runner single-flight lock (Phase 3 fix)
 .svika-sim.lock
+
+# video-assets generated outputs
+video-assets/audio/*.wav
+video-assets/audio/*.mp3
+video-assets/audio/*.m4a
+video-assets/generated/*
+video-assets/final/*
+!video-assets/audio/.gitkeep
+!video-assets/generated/.gitkeep
+!video-assets/final/.gitkeep

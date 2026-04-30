@@ -1,0 +1,6 @@
+Display: DM Sans 700 (headlines, wordmark voice)
+Body:    IBM Plex Sans (paragraphs, UI text, weights 400/500/600/700)
+Mono:    IBM Plex Mono (codes, fares, timestamps)
+
+All three are SIL OFL 1.1 licensed, free for commercial use.
+Hosted via Google Fonts; loaded in app/layout.tsx via next/font/google.
