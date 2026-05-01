@@ -43,7 +43,7 @@ A few words appear throughout this repo and the demo video. They are everyday sp
 
 - **Kombi.** A 15 seat Toyota Hiace minibus running a fixed informal route. The country's main mode of transport.
 - **Hwindi.** The conductor on a kombi. Calls passengers, collects fares, manages boarding, opens and closes the side door.
-- **Mhanyi.** Slang for *rush*. Used in route names where applicable.
+- **Mhanya.** Shona for *rush*. Used in route names where applicable.
 - **Rank.** A kombi rank. The point where a route starts and ends, where kombis queue and fill.
 - **Svika.** Shona verb meaning *to arrive*. Pronounced *svee ka*.
 - **ZIMRA.** Zimbabwe Revenue Authority. The country's tax collector.
