@@ -317,6 +317,16 @@ Hackathon submission for the GDG Harare Build with AI 2026 hackathon, submitted 
 
 The build was scoped against those weights from day one. Tier 1 features map to *technical execution*. The transferable ticket model, the walking transfer planner, the kombi as courier sidecar, and the on device bilingual narrative map to *innovation and creativity*. The Google AI table maps to *tools utilisation*. The video, the eight slide deck, and this README map to *presentation and completeness*. Honest tier labels exist so a judge cannot mistake a Tier 2 fixture for a Tier 1 system.
 
+## Demo limitations
+
+Svika is a hackathon submission, not a production deployed product. Two design choices made for the demo are worth calling out so you do not mistake them for security holes.
+
+**Persona by query string is the auth stand-in.** The app reads `?as=<persona>` from the URL to pick the active demo user. There is no login flow. Anyone can act as any persona by typing the URL. Real authentication via Supabase Auth is on the roadmap.
+
+**Supabase Row Level Security is bypassed via the service role.** The server uses the service role key to read and write the demo dataset directly. No RLS policies are declared in the migrations. Real persona scoped RLS is on the roadmap. The service role key is server only and never reaches the client bundle, verified by the security pass.
+
+Neither choice is appropriate for a real user pilot. Both are documented in `CLAUDE.md` as locked decisions for the hackathon sprint.
+
 ## License
 
 Copyright (c) 2026 Takunda Maswiwo. All rights reserved.

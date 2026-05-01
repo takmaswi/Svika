@@ -34,7 +34,7 @@ export default function ParcelSheet({
   onBooked,
 }: ParcelSheetProps) {
   const [alightId, setAlightId] = useState<string>(DEFAULT_DEST.id);
-  const [phone, setPhone] = useState("+263772000002");
+  const [phone, setPhone] = useState("+263700000011");
   const [description, setDescription] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"wallet" | "cash">(
     "wallet",
@@ -124,7 +124,7 @@ export default function ParcelSheet({
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            placeholder="+263772000002"
+            placeholder="+263700000011"
             className="mt-1 w-full rounded-md px-2 py-2 text-sm"
             style={fieldStyle}
             data-testid="parcel-phone"

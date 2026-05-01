@@ -7,7 +7,7 @@
  *   1. Open /wa?as=takunda and screenshot the empty state.
  *   2. Tap "balance" chip, wait for reply, screenshot.
  *   3. Tap "kombi near me" chip, wait for reply, screenshot.
- *   4. Type "transfer NNN to +263772000002" against the latest active ticket
+ *   4. Type "transfer NNN to +263700000011" against the latest active ticket
  *      Takunda owns; screenshot the reply.
  *   5. Open /?as=takunda → tap Parcel pill → fill the sheet → submit.
  *      Screenshot the access-code flash.
@@ -149,7 +149,7 @@ async function main(): Promise<void> {
     notes: nearReply,
   });
 
-  // 4 — transfer NNN to +263772000002
+  // 4 — transfer NNN to +263700000011
   const code = await findTakundaTicketCode();
   if (!code) {
     log("WARN — no active Takunda ticket. Skipping transfer step.");
@@ -159,7 +159,7 @@ async function main(): Promise<void> {
     });
   } else {
     inboundCount = (await wa.$$('[data-testid="wa-bubble-in"]')).length;
-    await wa.fill('[data-testid="wa-input"]', `transfer ${code} to +263772000002`);
+    await wa.fill('[data-testid="wa-input"]', `transfer ${code} to +263700000011`);
     await wa.click('[data-testid="wa-send"]');
     const transferReply = await waitForLastInbound(wa, inboundCount);
     evidence.push({

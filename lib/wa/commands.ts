@@ -100,7 +100,7 @@ export function parseWaCommand(rawText: string): WaCommand {
         kind: "transfer",
         raw_text: rawText,
         access_code: codeMatch[1],
-        reason: "Tell me the receiver's phone (e.g. +263772000002).",
+        reason: "Tell me the receiver's phone (e.g. +263700000011).",
       };
     }
     return {
@@ -114,6 +114,6 @@ export function parseWaCommand(rawText: string): WaCommand {
   return {
     kind: "unknown",
     raw_text: rawText,
-    reason: "Try: balance · kombi near me · transfer 482 to +263772000002",
+    reason: "Try: balance · kombi near me · transfer 482 to +263700000011",
   };
 }

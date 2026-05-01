@@ -26,7 +26,7 @@ export async function runWaCommandAction(input: RunInput): Promise<WaReply> {
       kind: "unknown",
       lines: [
         "Sorry, I didn't catch that.",
-        "Try one of: balance · kombi near me · transfer 482 to +263772000002",
+        "Try one of: balance · kombi near me · transfer 482 to +263700000011",
       ],
     };
   }
@@ -41,7 +41,7 @@ export async function runWaCommandAction(input: RunInput): Promise<WaReply> {
       return {
         ok: false,
         kind: "transfer",
-        lines: [command.reason ?? "Format: transfer 482 to +263772000002"],
+        lines: [command.reason ?? "Format: transfer 482 to +263700000011"],
       };
     }
     return runTransfer({
@@ -65,7 +65,7 @@ function helpReply(_cmd: WaCommand): WaReply {
       "Svika WhatsApp helper · 3 commands:",
       "1) *balance* — your wallet credit",
       "2) *kombi near me* — closest active kombi",
-      "3) *transfer 482 to +263772000002* — send a ticket",
+      "3) *transfer 482 to +263700000011* — send a ticket",
     ],
   };
 }
@@ -166,7 +166,7 @@ async function runTransfer(input: TransferInput): Promise<WaReply> {
         kind: "transfer",
         lines: [
           `${input.recipient_phone} is not on Svika yet.`,
-          "Demo only supports the seeded users — try +263772000002 (Rudo).",
+          "Demo only supports the seeded users — try +263700000011 (Rudo).",
         ],
       };
     }

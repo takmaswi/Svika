@@ -24,7 +24,7 @@ interface WaClientProps {
 const SUGGESTIONS = [
   "balance",
   "kombi near me",
-  "transfer 482 to +263772000002",
+  "transfer 482 to +263700000011",
 ];
 
 function nowHHMM(): string {

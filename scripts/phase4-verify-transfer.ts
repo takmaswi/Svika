@@ -1,5 +1,5 @@
 /**
- * Read-only verification — confirms the WA `transfer 775 to +263772000002`
+ * Read-only verification — confirms the WA `transfer 775 to +263700000011`
  * step landed the expected rows: tickets.status='transferred_pending' and
  * a fresh transfers row from Takunda → Rudo.
  *
