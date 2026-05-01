@@ -1248,6 +1248,9 @@ export default function PassengerMap({
      */
     map.on("click", (e: MapMouseEvent) => {
       if (journeyRef.current) return;
+      // Layers are added on `style.load`; clicks before that fires (or during
+      // a setStyle reload) would throw "layer ... does not exist". Bail early.
+      if (!map.getLayer(ROUTES_LAYER_BASE) || !map.getLayer(ROUTES_LAYER_BASE_PRIMARY)) return;
       const routeHits = map.queryRenderedFeatures(e.point, {
         layers: [ROUTES_LAYER_BASE, ROUTES_LAYER_BASE_PRIMARY],
       });
@@ -1272,6 +1275,14 @@ export default function PassengerMap({
         }
         return;
       }
+      // Same race guard for the secondary query (stops + kombis layers).
+      if (
+        !map.getLayer(STOPS_LAYER_HALO) ||
+        !map.getLayer(STOPS_LAYER_DOT) ||
+        !map.getLayer(KOMBIS_LAYER)
+      ) {
+        return;
+      }
       const otherHits = map.queryRenderedFeatures(e.point, {
         layers: [STOPS_LAYER_HALO, STOPS_LAYER_DOT, KOMBIS_LAYER],
       });
@@ -1294,6 +1305,10 @@ export default function PassengerMap({
     // survives setStyle. Cheap enough at four routes; if it ever shows up in
     // a profile, throttle.
     map.on("mousemove", (e: MapMouseEvent) => {
+      // Mousemove fires the moment the cursor is over the canvas — including
+      // before `style.load` has run mountAllSources(). Bail early so we don't
+      // throw "layer 'svika-routes-base' does not exist".
+      if (!map.getLayer(ROUTES_LAYER_BASE) || !map.getLayer(ROUTES_LAYER_BASE_PRIMARY)) return;
       const hits = map.queryRenderedFeatures(e.point, {
         layers: [ROUTES_LAYER_BASE, ROUTES_LAYER_BASE_PRIMARY],
       });
