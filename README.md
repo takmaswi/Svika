@@ -10,7 +10,7 @@ A digital ticketing and trip planning system for Harare's informal kombi network
 [![GDG Harare Build with AI 2026](https://img.shields.io/badge/GDG%20Harare-Build%20with%20AI%202026-E84C30?style=flat-square)](https://gdg.community.dev/gdg-harare/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-000000?style=flat-square&logo=nextdotjs&logoColor=white)](https://nextjs.org)
 [![Supabase](https://img.shields.io/badge/Supabase-Postgres-3ECF8E?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com)
-[![License: MIT](https://img.shields.io/badge/License-MIT-1F4D2E?style=flat-square)](./LICENSE)
+[![All Rights Reserved](https://img.shields.io/badge/License-All%20Rights%20Reserved-E84C30?style=flat-square)](./LICENSE)
 
 </div>
 
@@ -319,10 +319,11 @@ The build was scoped against those weights from day one. Tier 1 features map to 
 
 ## License
 
-```
-MIT License. See LICENSE for details.
-Copyright (c) 2026 Takunda Maswiwo.
-```
+Copyright (c) 2026 Takunda Maswiwo. All rights reserved.
+
+This source is published for the GDG Harare Build with AI 2026 hackathon judging and personal review only. It is not licensed for commercial use, redistribution, production deployment, or derivative works without prior written permission.
+
+For licensing or partnership inquiries, contact takmaswi@gmail.com. See [`LICENSE`](./LICENSE) for the full notice.
 
 ## Acknowledgements
 
