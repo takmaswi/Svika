@@ -16,9 +16,9 @@ A digital ticketing and trip planning system for Harare's informal kombi network
 
 <div align="center">
 
-<img src="./video-assets/references/mockups/03-idle-map.png" alt="Live kombi map for the rider's local area" />
+<img src="./video-assets/references/mockups/04-trip-preview.png" alt="Trip preview with the Lomagundi walking transfer plan" />
 
-<sub><i>Live kombi map filtered to the rider's suburb, with route polylines and bearing rotated kombi markers.</i></sub>
+<sub><i>Trip preview with the Lomagundi walking transfer plan, route polyline highlighted on the map.</i></sub>
 
 </div>
 
