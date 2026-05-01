@@ -161,15 +161,13 @@ const KOMBI_ICON_W = 128;
 const KOMBI_ICON_H = 128;
 
 /**
- * Inline rasterisation of the Refined kombi marker (v4 design from the
- * Claude Design tool, integrated 2026-04-28). The on-disk file at
- * `public/brand/kombi.svg` is the source of truth for the artwork;
- * this constant mirrors the same shapes — kept inline because Mapbox +
- * headless chromium has shown intermittent failure modes when canvas-
- * rasterising a fetched SVG file, and the data URI path has been
- * stable across the project's earlier rehearsals.
+ * The kombi marker is rendered from the inline KOMBI_SVG string below
+ * (Refined v4 design from the Claude Design tool, integrated 2026-04-28).
+ * Kept inline because Mapbox + headless chromium has shown intermittent
+ * failure modes when canvas-rasterising a fetched SVG file, and the
+ * data URI path has been stable across the project's earlier rehearsals.
  *
- * Native viewBox 128×128. Body fills the centre at x:38–90, y:18–106;
+ * Native viewBox 128x128. Body fills the centre at x:38-90, y:18-106;
  * the surrounding padding holds the soft contact shadow ellipse at
  * y:113. Front (rounded nose) is at the top so bearing rotation makes
  * the kombi point in the direction of travel.

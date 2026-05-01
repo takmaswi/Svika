@@ -63,3 +63,24 @@ video-assets/final/*
 !video-assets/audio/.gitkeep
 !video-assets/generated/.gitkeep
 !video-assets/final/.gitkeep
+
+# Subfolder screenshots (catch anything outside the root patterns)
+docs/phase-*-screenshots/
+docs/**/screenshots/
+docs/**/rehearsal-*.png
+scripts/**/screenshots/
+
+# Stray captures in any subfolder
+**/phase-*-rehearsal-*.png
+**/audit-*.png
+**/debug-*.png
+
+# Sandbox uploads
+public/**/uploads/
+
+# Stray brand explorations not in active use
+branding/**
+
+# Internal video assets that should not ship
+video-assets/NOTEBOOKLM-PROMPT.md
+video-assets/references/context/
